@@ -18,7 +18,7 @@ export default async function SearchPage({
   const q = (searchParams.q ?? "").trim();
   const clubs = q ? await getClubs({ q }) : [];
   const schools = q ? await getSchools({ q }) : [];
-  const coaches = q ? getCoaches({ q }) : [];
+  const coaches = q ? await getCoaches({ q }) : [];
   const total = clubs.length + schools.length + coaches.length;
 
   return (

@@ -99,6 +99,7 @@ export default async function AdminPage() {
             <div className="flex gap-2">
               <Link href="/admin/clubs" className="btn-amber text-sm">Clubs →</Link>
               <Link href="/admin/schools" className="btn-amber text-sm">Schools →</Link>
+              <Link href="/admin/coaches" className="btn-amber text-sm">Coaches →</Link>
               <Link href="/admin/pricing" className="btn-outline text-sm">Pricing &amp; plans →</Link>
               <Link href="/admin/ads" className="btn-outline text-sm">Ads →</Link>
             </div>

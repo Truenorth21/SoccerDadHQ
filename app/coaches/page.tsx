@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     "Find and review youth soccer coaches and private trainers across Florida. Filter by region, age group, gender and private-training availability.",
 };
 
-export default function CoachesPage({
+export default async function CoachesPage({
   searchParams,
 }: {
   searchParams: Record<string, string | string[] | undefined>;
@@ -20,7 +20,7 @@ export default function CoachesPage({
   const filters: Filters = Object.fromEntries(
     Object.entries(searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v ?? ""])
   );
-  const coaches = getCoaches(filters);
+  const coaches = await getCoaches(filters);
 
   return (
     <>

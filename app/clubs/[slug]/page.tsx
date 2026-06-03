@@ -53,7 +53,7 @@ export default async function ClubProfile({ params }: { params: { slug: string }
 
   const extraReviews = await getSupabaseReviews("club", club.id);
   const reviews = [...extraReviews, ...club.reviews];
-  const coaches = getCoachesForClub(club.id);
+  const coaches = await getCoachesForClub(club.id);
   const commitments = getCommitmentsForClub(club.id);
   const nearby = await getNearbyClubs(club, 4);
   const logo = await getLogo("club", club.slug);

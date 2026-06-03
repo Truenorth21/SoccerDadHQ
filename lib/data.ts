@@ -1,7 +1,7 @@
 import { CLUBS, COACHES, TRYOUTS } from "./seed";
 import { SCHOOLS } from "./schools";
 import { COMMITMENTS } from "./commitments";
-import type { Club, ClubReviewScores, Coach, School, SchoolReviewScores, Tryout, Review, Commitment } from "./types";
+import type { Club, ClubReviewScores, Coach, CoachReviewScores, School, SchoolReviewScores, Tryout, Review, Commitment } from "./types";
 import type { RegionKey } from "./regions";
 import { createClient } from "./supabase/server";
 import { publicClient } from "./supabase/public";
@@ -186,8 +186,57 @@ export interface CoachFilters {
   private?: string;
 }
 
-export function getCoaches(filters: CoachFilters = {}): Coach[] {
-  let results = [...COACHES];
+const EMPTY_COACH_SCORES: CoachReviewScores = {
+  communication: 0, development: 0, personality: 0, fairness: 0, game_management: 0, overall_impact: 0,
+};
+
+function dbRowToCoach(r: Record<string, any>): Coach {
+  return {
+    id: String(r.id),
+    slug: r.slug,
+    name: r.name,
+    region: r.region as RegionKey,
+    city: r.city ?? "",
+    club_id: r.club_id ?? undefined,
+    club_name: r.club_name ?? undefined,
+    title: r.title ?? "",
+    bio: r.bio ?? "",
+    photo_color: r.photo_color ?? "#1a4fa0",
+    certifications: r.certifications ?? [],
+    specialties: r.specialties ?? [],
+    age_groups: r.age_groups ?? [],
+    genders: r.genders ?? [],
+    private_training: !!r.private_training,
+    private_training_note: r.private_training_note ?? undefined,
+    email: r.email ?? undefined,
+    phone: r.phone ?? undefined,
+    featured: !!r.featured,
+    plan: (r.plan ?? "free") as Coach["plan"],
+    rating: 0,
+    review_count: 0,
+    scores: { ...EMPTY_COACH_SCORES },
+    reviews: [],
+  };
+}
+
+/** Seeded coaches + real coaches from Supabase, merged by slug (DB wins). */
+export async function loadCoaches(): Promise<Coach[]> {
+  const supabase = publicClient();
+  if (!supabase) return COACHES;
+  try {
+    const { data, error } = await supabase.from("coaches").select("*");
+    if (error || !data || data.length === 0) return COACHES;
+    const bySlug = new Map<string, Coach>();
+    for (const c of COACHES) bySlug.set(c.slug, c);
+    for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToCoach(r));
+    return Array.from(bySlug.values());
+  } catch {
+    return COACHES;
+  }
+}
+
+export async function getCoaches(filters: CoachFilters = {}): Promise<Coach[]> {
+  let results = [...(await loadCoaches())];
   if (filters.q) {
     const q = filters.q.toLowerCase();
     results = results.filter(
@@ -206,12 +255,12 @@ export function getCoaches(filters: CoachFilters = {}): Coach[] {
   return [...results.filter((c) => c.featured), ...results.filter((c) => !c.featured)];
 }
 
-export function getCoachBySlug(slug: string): Coach | undefined {
-  return COACHES.find((c) => c.slug === slug);
+export async function getCoachBySlug(slug: string): Promise<Coach | undefined> {
+  return (await loadCoaches()).find((c) => c.slug === slug);
 }
 
-export function getCoachesForClub(clubId: string): Coach[] {
-  return COACHES.filter((c) => c.club_id === clubId);
+export async function getCoachesForClub(clubId: string): Promise<Coach[]> {
+  return (await loadCoaches()).filter((c) => c.club_id === clubId);
 }
 
 export function getTryouts(limit?: number): Tryout[] {

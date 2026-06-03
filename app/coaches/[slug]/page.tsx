@@ -23,8 +23,8 @@ export function generateStaticParams() {
   return COACHES.map((c) => ({ slug: c.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const coach = getCoachBySlug(params.slug);
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const coach = await getCoachBySlug(params.slug);
   if (!coach) return { title: "Coach not found" };
   const title = `${coach.name} — ${coach.title}, ${coach.club_name}`;
   const description = `${coach.name}, ${coach.title} at ${coach.club_name} (${coach.city}, FL). ${coach.rating.toFixed(1)}★ from ${coach.review_count} reviews. ${coach.specialties.join(", ")}.`;
@@ -37,7 +37,7 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 }
 
 export default async function CoachProfile({ params }: { params: { slug: string } }) {
-  const coach = getCoachBySlug(params.slug);
+  const coach = await getCoachBySlug(params.slug);
   if (!coach) notFound();
 
   const extraReviews = await getSupabaseReviews("coach", coach.id);
