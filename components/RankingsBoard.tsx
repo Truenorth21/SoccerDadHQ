@@ -9,6 +9,17 @@ import type { RankingItem } from "@/lib/types";
 
 const TOP_DEFAULT = 10;
 
+// The question each vote answers, per category — keeps it clear what voting means.
+const PROMPTS: Record<string, string> = {
+  clubs: "Which clubs would you recommend to other families?",
+  schools: "Which high school programs stand out?",
+  coaches: "Which coaches do families rate highest?",
+  "training-centers": "Which training centers would you recommend?",
+  facilities: "Which facilities are the best to play at?",
+  tournaments: "Which tournaments are worth playing?",
+  camps: "Which camps would you recommend?",
+};
+
 function Trend({ trend }: { trend: RankingItem["trend"] }) {
   if (trend === "new")
     return (
@@ -64,16 +75,15 @@ function VoteButton({ item, canVote }: { item: RankingItem; canVote: boolean }) 
     <button
       onClick={vote}
       disabled={voted}
-      title={canVote ? `Vote for ${item.name}` : "Log in to vote"}
-      className={`flex shrink-0 flex-col items-center rounded-lg px-3 py-1.5 transition-colors ${
+      title={canVote ? `Recommend ${item.name} (1 vote per month)` : "Log in to vote"}
+      className={`flex w-[62px] shrink-0 flex-col items-center rounded-lg px-2 py-1.5 leading-none transition-colors ${
         voted ? "bg-brand-sky text-white" : "bg-slate-100 text-navy hover:bg-brand-sky/10"
       }`}
       aria-label={canVote ? `Vote for ${item.name}` : `Log in to vote for ${item.name}`}
     >
-      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-        <path d="M10 3l7 9h-4v5H7v-5H3l7-9z" />
-      </svg>
-      <span className="font-heading text-sm font-bold leading-none">{votes}</span>
+      <span className="text-sm">{voted ? "✓" : "👍"}</span>
+      <span className="mt-0.5 font-heading text-base font-bold">{votes}</span>
+      <span className="mt-0.5 text-[9px] font-bold uppercase tracking-wide opacity-80">{voted ? "Voted" : "Vote"}</span>
     </button>
   );
 }
@@ -161,10 +171,12 @@ export default function RankingsBoard({
   data,
   authed = false,
   supabaseConfigured = false,
+  period = "this month",
 }: {
   data: Record<string, RankingItem[]>;
   authed?: boolean;
   supabaseConfigured?: boolean;
+  period?: string;
 }) {
   const [tab, setTab] = useState("clubs");
   const [region, setRegion] = useState("");
@@ -209,15 +221,18 @@ export default function RankingsBoard({
 
   return (
     <div>
-      {/* Login prompt when voting requires an account */}
-      {supabaseConfigured && !authed && (
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-navy px-4 py-3 text-sm text-white">
-          <span>🗳️ Voting is one vote per person, per item, per month. Log in to cast yours.</span>
-          <Link href="/login?next=/rankings" className="btn-amber px-4 py-1.5 text-sm">
+      {/* Always-on explainer: makes it clear what voting is + the rules */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-navy px-4 py-3 text-sm text-white">
+        <span>
+          👍 <strong>Tap “Vote” to recommend a program.</strong> One vote each per person, per month — the board
+          resets on the 1st, so this shows <strong className="text-amber-300">{period}</strong>’s votes.
+        </span>
+        {supabaseConfigured && !authed && (
+          <Link href="/login?next=/rankings" className="btn-amber shrink-0 px-4 py-1.5 text-sm">
             Log in to vote
           </Link>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Category tabs */}
       <div className="mb-6 flex flex-wrap gap-2">
@@ -235,6 +250,9 @@ export default function RankingsBoard({
           </button>
         ))}
       </div>
+
+      {/* Per-category question — frames what a vote means */}
+      <p className="mb-4 font-heading text-lg font-bold text-navy">{PROMPTS[tab] ?? "Community favorites"}</p>
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-3">

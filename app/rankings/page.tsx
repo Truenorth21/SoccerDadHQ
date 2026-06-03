@@ -71,7 +71,7 @@ export default async function RankingsPage() {
         <div className="mb-6">
           <AdSlot placement="rankings-sidebar" variant="leaderboard" seed={2} />
         </div>
-        <RankingsBoard data={data} authed={authed} supabaseConfigured={isSupabaseConfigured} />
+        <RankingsBoard data={data} authed={authed} supabaseConfigured={isSupabaseConfigured} period={monthName} />
 
         {/* Methodology */}
         <section className="mt-14 grid gap-6 md:grid-cols-2">
