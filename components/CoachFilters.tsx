@@ -84,6 +84,16 @@ export default function CoachFilters() {
             Private training only
           </span>
         </label>
+        <div>
+          <label className="label">Minimum rating</label>
+          <select className="input" value={get("rating")} onChange={(e) => update({ rating: e.target.value })}>
+            <option value="">Any rating</option>
+            <option value="4.5">4.5+ ★</option>
+            <option value="4">4.0+ ★</option>
+            <option value="3.5">3.5+ ★</option>
+            <option value="3">3.0+ ★</option>
+          </select>
+        </div>
       </div>
       </div>
     </div>

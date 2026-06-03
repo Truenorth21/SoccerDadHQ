@@ -22,6 +22,7 @@ export interface ClubFilters {
   zip?: string;
   radius?: string; // miles
   tryouts?: string; // "1" to filter open
+  rating?: string; // minimum star rating, e.g. "4"
   sort?: string;
 }
 
@@ -128,6 +129,10 @@ export async function getClubs(filters: ClubFilters = {}): Promise<(Club & { dis
   if (filters.gender) results = results.filter((c) => c.genders.includes(filters.gender!));
   if (filters.age) results = results.filter((c) => c.age_groups.includes(filters.age!));
   if (filters.tryouts === "1") results = results.filter((c) => c.tryouts_open);
+  if (filters.rating) {
+    const min = parseFloat(filters.rating);
+    if (min > 0) results = results.filter((c) => c.rating >= min);
+  }
 
   if (filters.zip && /^\d{5}$/.test(filters.zip)) {
     const center = zipCenter(filters.zip);
@@ -184,6 +189,7 @@ export interface CoachFilters {
   gender?: string;
   age?: string;
   private?: string;
+  rating?: string;
 }
 
 const EMPTY_COACH_SCORES: CoachReviewScores = {
@@ -251,6 +257,10 @@ export async function getCoaches(filters: CoachFilters = {}): Promise<Coach[]> {
   if (filters.gender) results = results.filter((c) => c.genders.includes(filters.gender!));
   if (filters.age) results = results.filter((c) => c.age_groups.includes(filters.age!));
   if (filters.private === "1") results = results.filter((c) => c.private_training);
+  if (filters.rating) {
+    const min = parseFloat(filters.rating);
+    if (min > 0) results = results.filter((c) => c.rating >= min);
+  }
   results.sort((a, b) => b.rating - a.rating);
   return [...results.filter((c) => c.featured), ...results.filter((c) => !c.featured)];
 }
@@ -293,6 +303,7 @@ export interface SchoolFilters {
   gender?: string;
   zip?: string;
   radius?: string;
+  rating?: string;
   sort?: string;
 }
 
@@ -367,6 +378,10 @@ export async function getSchools(filters: SchoolFilters = {}): Promise<(School &
   if (filters.type) results = results.filter((s) => s.type === filters.type);
   if (filters.cls) results = results.filter((s) => s.fhsaa_class === filters.cls);
   if (filters.gender) results = results.filter((s) => s.programs.includes(filters.gender!));
+  if (filters.rating) {
+    const min = parseFloat(filters.rating);
+    if (min > 0) results = results.filter((s) => s.rating >= min);
+  }
 
   if (filters.zip && /^\d{5}$/.test(filters.zip)) {
     const center = zipCenter(filters.zip);
