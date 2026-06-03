@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyNewSubmission } from "@/lib/notifyEmail";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,17 @@ export async function POST(request: Request) {
     status: "pending",
   });
   if (error) return NextResponse.json({ error: "Could not submit. Please try again." }, { status: 500 });
+
+  // Admin alert (no-op if Resend is unset).
+  await notifyNewSubmission({
+    kind: b.kind,
+    name: b.name.trim(),
+    region: b.region || null,
+    city: b.city || null,
+    website: b.website || null,
+    notes: b.notes || null,
+    submitter_email: userData.user.email ?? null,
+  });
 
   return NextResponse.json({ message: "Thanks! Your submission is in — we'll review it and add it to the directory." });
 }

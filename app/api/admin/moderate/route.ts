@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient, MODERATION_TABLES } from "@/lib/admin";
 import { DEFAULT_ADS, type Ad, type AdsConfig } from "@/lib/ads";
+import { notifyApproved } from "@/lib/notifyEmail";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +79,14 @@ export async function POST(request: Request) {
   // Approving an ad order to "live" also creates the live inventory creative.
   if (body.table === "ad_orders" && body.status === "live") {
     await publishAdOrder(service, body.id);
+  }
+
+  // Notify the claimant/submitter when their claim or submission is approved.
+  const notifyClaim = body.table === "claim_requests" && (body.status === "approved" || body.status === "active");
+  const notifySubmission = body.table === "submissions" && body.status === "approved";
+  if (notifyClaim || notifySubmission) {
+    const { data: r } = await service.from(body.table!).select("*").eq("id", body.id).single();
+    if (r) await notifyApproved(body.table!, r as Record<string, any>);
   }
 
   return NextResponse.json({ ok: true, status: body.status });

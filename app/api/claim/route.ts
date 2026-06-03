@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { notifyNewClaim } from "@/lib/notifyEmail";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -45,6 +46,22 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: "Could not submit your claim. Please try again." }, { status: 500 });
   }
+
+  // Fire the admin alert + claimant confirmation (no-ops if Resend is unset).
+  await notifyNewClaim({
+    subject_type,
+    subject_name,
+    subject_slug,
+    claimant_name: name,
+    role,
+    email,
+    phone,
+    message,
+    plan: plan === "featured" ? "featured" : "claim",
+    plan_price: typeof plan_price === "number" ? plan_price : null,
+    promo_code,
+    referral_code,
+  });
 
   return NextResponse.json({ message: "Claim request received — complete payment to activate, and we'll verify your details." });
 }
