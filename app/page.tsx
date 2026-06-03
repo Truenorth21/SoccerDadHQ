@@ -7,8 +7,8 @@ import NewsletterSignup from "@/components/NewsletterSignup";
 import AdSlot from "@/components/AdSlot";
 import HomeNews from "@/components/HomeNews";
 import { getFeaturedClubs, getActiveTryouts, getFeaturedSchools, getRecentCommitments } from "@/lib/data";
-import CommitmentCard from "@/components/CommitmentCard";
 import TryoutTicker from "@/components/TryoutTicker";
+import DailyHub from "@/components/DailyHub";
 import { getNews } from "@/lib/news";
 import { RANKED_CLUBS } from "@/lib/rankings";
 import { REGIONS } from "@/lib/regions";
@@ -20,10 +20,14 @@ export const revalidate = 1800;
 export default async function HomePage() {
   const featured = getFeaturedClubs(6);
   const featuredSchools = getFeaturedSchools(3);
-  const recentCommits = getRecentCommitments(3);
   const tryouts = getActiveTryouts(12);
   const news = (await getNews()).slice(0, 6);
   const topClubs = RANKED_CLUBS.slice(0, 5);
+
+  // Region-filterable datasets for the daily hub (filtered client-side).
+  const hubTryouts = getActiveTryouts(60);
+  const hubCommits = getRecentCommitments(40);
+  const hubRegions = REGIONS.map((r) => ({ key: r.key, name: r.name }));
 
   return (
     <>
@@ -67,6 +71,9 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* DAILY HUB — region-aware dashboard: tryouts (+alerts), commitments, movers */}
+      <DailyHub tryouts={hubTryouts} commits={hubCommits} movers={RANKED_CLUBS} regions={hubRegions} />
 
       <div className="container-page py-14">
         {/* LATEST NEWS — featured + cards */}
@@ -142,24 +149,6 @@ export default async function HomePage() {
             ))}
           </div>
         </section>
-
-        {/* RECENT COMMITMENTS */}
-        {recentCommits.length > 0 && (
-          <section className="mt-16">
-            <div className="mb-5 flex items-end justify-between">
-              <div>
-                <h2 className="section-title">Recent Commitments</h2>
-                <p className="text-sm text-slate-500">Where Florida players are headed next</p>
-              </div>
-              <Link href="/commitments" className="link-arrow">Commitment tracker →</Link>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {recentCommits.map((c) => (
-                <CommitmentCard key={c.id} commitment={c} />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* REGIONS */}
         <section className="mt-16">
