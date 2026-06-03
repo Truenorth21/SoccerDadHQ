@@ -1,0 +1,15 @@
+name,region,city,type,mascot,programs,website,featured
+American Heritage School,south-florida,Plantation,Private,Patriots,Boys;Girls,https://www.ahschool.com,true
+Belen Jesuit Preparatory,south-florida,Miami,Private,Wolverines,Boys,https://www.belenjesuit.org,true
+Christopher Columbus High School,south-florida,Miami,Private,Explorers,Boys,,false
+Gulliver Preparatory School,south-florida,Miami,Private,Raiders,Boys;Girls,,false
+Archbishop McCarthy High School,south-florida,Southwest Ranches,Private,Mavericks,Boys;Girls,,false
+St. Thomas Aquinas High School,south-florida,Fort Lauderdale,Private,Raiders,Boys;Girls,,false
+Pine Crest School,south-florida,Fort Lauderdale,Private,Panthers,Boys;Girls,,false
+Cypress Bay High School,south-florida,Weston,Public,Lightning,Boys;Girls,,false
+Western High School,south-florida,Davie,Public,Wildcats,Boys;Girls,,false
+Cooper City High School,south-florida,Cooper City,Public,Cowboys,Boys;Girls,,false
+Coral Reef Senior High School,south-florida,Miami,Public,Barracudas,Boys;Girls,,false
+Coral Gables Senior High School,south-florida,Coral Gables,Public,Cavaliers,Boys;Girls,,false
+Miami Palmetto Senior High School,south-florida,Pinecrest,Public,Panthers,Boys;Girls,,false
+Doral Academy,south-florida,Doral,Public,Firebirds,Boys;Girls,,false
