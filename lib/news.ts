@@ -17,19 +17,25 @@ export const NEWS_CATEGORIES = [
   "Opinion",
 ] as const;
 
-interface Feed {
-  url: string;
-  source: string;
-}
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-// Public RSS/Atom feeds covering US youth & pro soccer.
-const FEEDS: Feed[] = [
-  { url: "https://www.soccerwire.com/feed/", source: "SoccerWire" },
-  { url: "https://www.soccerwire.com/category/youth/feed/", source: "SoccerWire Youth" },
-  { url: "https://www.topdrawersoccer.com/rss/news", source: "TopDrawerSoccer" },
-  { url: "https://www.mlssoccer.com/rss/news", source: "MLSsoccer.com" },
-  { url: "https://www.ussoccer.com/rss", source: "U.S. Soccer" },
+// We source news through Google News RSS search, which reliably indexes the
+// youth-soccer publishers (SoccerWire, TopDrawerSoccer, ECNL, MLS NEXT, Girls
+// Academy) whose own feeds are dead or bot-blocked. `site:` queries pin those
+// sources; the topical queries broaden coverage and keep it Florida-focused.
+const NEWS_QUERIES: string[] = [
+  "site:soccerwire.com",
+  "site:topdrawersoccer.com",
+  'florida (youth OR club OR "high school") soccer',
+  '"ECNL" OR "MLS NEXT" OR "Girls Academy" youth soccer',
+  "florida soccer college commitment OR recruiting",
+  "florida high school soccer state championship OR FHSAA",
 ];
+
+// How many of the freshest stories to enrich with a real image + summary
+// (each enrichment fetches the article page). The rest fall back to a tile.
+const ENRICH_LIMIT = 18;
 
 function categorize(title: string, body: string): string {
   const t = `${title} ${body}`.toLowerCase();
@@ -88,8 +94,8 @@ function stripHtml(s: string): string {
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")
     .replace(/&amp;/g, "&")
-    .replace(/&#8217;|&#039;|&rsquo;/g, "'")
-    .replace(/&#8220;|&#8221;|&ldquo;|&rdquo;/g, '"')
+    .replace(/&#8217;|&#039;|&#39;|&rsquo;/g, "'")
+    .replace(/&#8220;|&#8221;|&ldquo;|&rdquo;|&quot;/g, '"')
     .replace(/&hellip;/g, "…")
     .replace(/\s+/g, " ")
     .trim();
@@ -100,57 +106,108 @@ function asArray<T>(x: T | T[] | undefined): T[] {
   return Array.isArray(x) ? x : [x];
 }
 
-/** Best-effort image extraction from common RSS shapes (media, enclosure, <img>). */
-function extractImage(item: any): string | undefined {
-  const pickUrl = (x: any): string | undefined => {
-    if (!x) return undefined;
-    const one = Array.isArray(x) ? x[0] : x;
-    return one?.["@_url"] ?? (typeof one === "string" ? one : undefined);
-  };
-  const media = pickUrl(item["media:content"]) ?? pickUrl(item["media:thumbnail"]);
-  if (media) return media;
-  const enc = item.enclosure;
-  if (enc?.["@_url"] && String(enc["@_type"] ?? "image").startsWith("image")) return enc["@_url"];
-  const content = item["content:encoded"] ?? item.description ?? item.content ?? "";
-  const text = typeof content === "object" ? content?.["#text"] ?? "" : String(content);
-  const m = text.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return m?.[1];
+function slug(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
 }
 
-async function fetchFeed(feed: Feed): Promise<NewsItem[]> {
+function normKey(title: string): string {
+  return title.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 60);
+}
+
+/** Fetch + parse one Google News RSS search query into clean NewsItems. */
+async function fetchQuery(query: string): Promise<NewsItem[]> {
   try {
-    const res = await fetch(feed.url, {
-      headers: { "User-Agent": "SoccerDadHQ/1.0 (+https://soccerdadhq.com)" },
+    const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`;
+    const res = await fetch(url, {
+      headers: { "User-Agent": BROWSER_UA },
       next: { revalidate: 1800 }, // 30 min ISR cache
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return [];
     const xml = await res.text();
     const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
     const data = parser.parse(xml);
+    const items = asArray(data?.rss?.channel?.item);
 
-    const items = asArray(data?.rss?.channel?.item).concat(asArray(data?.feed?.entry));
-    return items.slice(0, 12).map((item: any, i: number): NewsItem => {
-      const title = stripHtml(String(item.title?.["#text"] ?? item.title ?? "Untitled"));
-      const linkRaw = item.link?.["@_href"] ?? item.link ?? item.guid?.["#text"] ?? item.guid ?? "#";
-      const link = typeof linkRaw === "string" ? linkRaw : "#";
-      const rawDesc = item.description ?? item.summary ?? item.content ?? item["content:encoded"] ?? "";
-      const excerpt = stripHtml(String(typeof rawDesc === "object" ? rawDesc["#text"] ?? "" : rawDesc)).slice(0, 220);
-      const pub = item.pubDate ?? item.published ?? item.updated ?? new Date(Date.UTC(2026, 4, 31)).toISOString();
-      return {
-        id: `${feed.source}-${i}`,
+    const out: NewsItem[] = [];
+    items.slice(0, 12).forEach((item: any, i: number) => {
+      let title = stripHtml(String(item.title?.["#text"] ?? item.title ?? ""));
+
+      // Source comes from the <source> element; Google also appends " - Source" to titles.
+      const srcRaw = typeof item.source === "object" ? item.source?.["#text"] : item.source;
+      let source = stripHtml(String(srcRaw ?? ""));
+      const dash = title.lastIndexOf(" - ");
+      if (dash > 5) {
+        const tail = title.slice(dash + 3).trim();
+        if (!source) source = tail;
+        if (tail.toLowerCase() === source.toLowerCase()) title = title.slice(0, dash).trim();
+      }
+
+      // Skip channel/homepage/junk entries.
+      const lower = title.toLowerCase();
+      if (!title || title.length < 15) return;
+      if (lower === "google news" || /^homepage\b/.test(lower) || lower.endsWith(".com")) return;
+      if (/\barchives?$|^category\b|^tag\b/.test(lower)) return; // index/category pages
+      if (source && lower === source.toLowerCase()) return;
+
+      const link = typeof item.link === "string" ? item.link : item.link?.["@_href"] ?? "#";
+      const pub = item.pubDate ?? item.published ?? new Date(Date.UTC(2026, 4, 31)).toISOString();
+      const descRaw = stripHtml(String(item.description ?? ""));
+      const excerpt = descRaw && normKey(descRaw) !== normKey(title) ? descRaw.slice(0, 220) : "";
+
+      out.push({
+        id: `gn-${slug(title)}-${i}`,
         title,
         link,
-        source: feed.source,
+        source: source || "Google News",
         category: categorize(title, excerpt),
         excerpt,
         published: new Date(pub).toISOString(),
-        image: extractImage(item),
-      };
+      });
     });
+    return out;
   } catch {
     return [];
   }
+}
+
+function ogMeta(html: string, prop: string): string | undefined {
+  const m =
+    html.match(new RegExp(`<meta[^>]+property=["']og:${prop}["'][^>]+content=["']([^"']+)["']`, "i")) ||
+    html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:${prop}["']`, "i"));
+  return m?.[1];
+}
+
+/** Pull a real image + summary from the article page (og: tags). */
+async function enrich(item: NewsItem): Promise<NewsItem> {
+  try {
+    const res = await fetch(item.link, {
+      headers: { "User-Agent": BROWSER_UA, Range: "bytes=0-150000" }, // og: tags live in <head>
+      next: { revalidate: 1800 },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return item;
+    const html = await res.text();
+    let image = ogMeta(html, "image");
+    if (image) image = image.replace(/&amp;/g, "&").replace(/=s0-w\d+/, "=s0-w640");
+    const desc = ogMeta(html, "description");
+    return {
+      ...item,
+      image: image ?? item.image,
+      excerpt: item.excerpt || (desc ? stripHtml(desc).slice(0, 220) : ""),
+    };
+  } catch {
+    return item;
+  }
+}
+
+/** Run `fn` over items with bounded concurrency. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = [];
+  for (let i = 0; i < items.length; i += limit) {
+    out.push(...(await Promise.all(items.slice(i, i + limit).map(fn))));
+  }
+  return out;
 }
 
 // Editorial fallback so the page is never empty (e.g. offline build/deploy).
@@ -230,21 +287,28 @@ const FALLBACK: NewsItem[] = [
 ];
 
 export async function getNews(): Promise<NewsItem[]> {
-  const results = await Promise.all(FEEDS.map(fetchFeed));
-  const all = results.flat();
-  const merged = all.length >= 6 ? all : [...all, ...FALLBACK];
-  // de-dupe by title
+  const results = await Promise.all(NEWS_QUERIES.map(fetchQuery));
+  let all = results.flat();
+
+  // De-dupe by normalized title (queries overlap, esp. site: vs topical).
   const seen = new Set<string>();
-  const deduped = merged.filter((n) => {
-    const key = n.title.toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
+  all = all.filter((n) => {
+    const k = normKey(n.title);
+    if (seen.has(k)) return false;
+    seen.add(k);
     return true;
   });
+
   // Geo-tag each story to a Florida region when its text names one.
-  const tagged = deduped.map((n) => ({
-    ...n,
-    region: n.region ?? detectRegion(`${n.title} ${n.excerpt}`),
-  }));
-  return tagged.sort((a, b) => +new Date(b.published) - +new Date(a.published));
+  all = all.map((n) => ({ ...n, region: n.region ?? detectRegion(`${n.title} ${n.excerpt}`) }));
+
+  // Newest first.
+  all.sort((a, b) => +new Date(b.published) - +new Date(a.published));
+
+  // If the live fetch came up short (offline build, Google hiccup), top up.
+  if (all.length < 6) all = [...all, ...FALLBACK];
+
+  // Enrich the freshest stories with a real image + summary; the rest keep a tile.
+  const enriched = await mapLimit(all.slice(0, ENRICH_LIMIT), 6, enrich);
+  return [...enriched, ...all.slice(ENRICH_LIMIT)];
 }
