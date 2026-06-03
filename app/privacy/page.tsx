@@ -73,7 +73,7 @@ export default function PrivacyPage() {
         <h2>Contact</h2>
         <p>
           Questions? Email <a href="mailto:privacy@soccerdadhq.com">privacy@soccerdadhq.com</a>.
-          {" "}Mailing address: [Your business address here].
+          {" "}Mailing address: SoccerDadHQ, a True North Trading company — Doral, FL 33178.
         </p>
       </div>
     </div>

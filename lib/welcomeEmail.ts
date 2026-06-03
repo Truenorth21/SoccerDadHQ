@@ -4,7 +4,7 @@ import { getAdsConfig } from "./adsServer";
 import { sendEmail } from "./email";
 import { unsubUrl } from "./unsubscribe";
 
-const MAILING_ADDRESS = "SoccerDadHQ · [Your business address], Florida";
+const MAILING_ADDRESS = "SoccerDadHQ, a True North Trading company · Doral, FL 33178";
 
 /**
  * Welcome email for "SoccerDadHQ: The Sideline".

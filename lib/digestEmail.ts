@@ -73,7 +73,7 @@ Vote → ${SITE_URL}/sideline
 — — —
 ${sponsor.house ? "SPONSOR THE SIDELINE" : "PRESENTED BY " + sponsor.advertiser.toUpperCase()}: ${sponsor.headline} → ${SITE_URL}/advertise
 
-SoccerDadHQ · [Your business address], Florida
+SoccerDadHQ, a True North Trading company · Doral, FL 33178
 Unsubscribe: ${UNSUB_PLACEHOLDER}`;
 
   /* ---------- html ---------- */
@@ -172,7 +172,7 @@ Unsubscribe: ${UNSUB_PLACEHOLDER}`;
 
     <p style="font-size:11px;color:#94a3b8;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:12px">
       You're getting the ${label} edition of The Sideline.<br/>
-      SoccerDadHQ · [Your business address], Florida ·
+      SoccerDadHQ, a True North Trading company · Doral, FL 33178 ·
       <a href="${UNSUB_PLACEHOLDER}" style="color:#1a4fa0">Unsubscribe</a>
     </p>
   </div>

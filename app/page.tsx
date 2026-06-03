@@ -55,7 +55,7 @@ export default async function HomePage() {
                 { n: `${CLUBS.length}`, l: "Clubs listed" },
                 { n: `${SCHOOLS.length}`, l: "High schools" },
                 { n: `${COACHES.length}`, l: "Coaches profiled" },
-                { n: "1,000s", l: "Parent reviews" },
+                { n: `${REGIONS.length}`, l: "Regions covered" },
               ].map((s) => (
                 <div key={s.l}>
                   <div className="font-heading text-3xl font-bold text-brand-amber">{s.n}</div>

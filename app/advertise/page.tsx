@@ -33,7 +33,7 @@ export default async function AdvertisePage() {
             Reach Florida soccer families where they're already looking
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-200">
-            Thousands of parents use SoccerDadHQ to compare clubs, schools and coaches every week.
+            SoccerDadHQ is where Florida families compare clubs, schools and coaches — all in one place.
             Upgrade your profile or run an ad to put your program in front of them.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
