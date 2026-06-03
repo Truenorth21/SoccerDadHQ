@@ -52,9 +52,9 @@ export default async function HomePage() {
             </div>
             <div className="mt-6 flex flex-wrap gap-8">
               {[
-                { n: `${CLUBS.length}+`, l: "Clubs listed" },
-                { n: `${SCHOOLS.length}+`, l: "High schools" },
-                { n: `${COACHES.length}+`, l: "Coaches profiled" },
+                { n: `${CLUBS.length}`, l: "Clubs listed" },
+                { n: `${SCHOOLS.length}`, l: "High schools" },
+                { n: `${COACHES.length}`, l: "Coaches profiled" },
                 { n: "1,000s", l: "Parent reviews" },
               ].map((s) => (
                 <div key={s.l}>
