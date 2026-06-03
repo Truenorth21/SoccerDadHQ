@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Browse Florida high school soccer programs (FHSAA) by region, class, public/private and boys/girls. Read reviews, see state-title history and find the right school program.",
 };
 
-export default function SchoolsPage({
+export default async function SchoolsPage({
   searchParams,
 }: {
   searchParams: Record<string, string | string[] | undefined>;
@@ -21,7 +21,7 @@ export default function SchoolsPage({
   const filters: Filters = Object.fromEntries(
     Object.entries(searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v ?? ""])
   );
-  const schools = getSchools(filters);
+  const schools = await getSchools(filters);
   const heading = filters.region ? `${regionName(filters.region)} High Schools` : "Florida High School Soccer";
 
   return (

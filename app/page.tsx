@@ -19,7 +19,7 @@ export const revalidate = 1800;
 
 export default async function HomePage() {
   const featured = await getFeaturedClubs(6);
-  const featuredSchools = getFeaturedSchools(3);
+  const featuredSchools = await getFeaturedSchools(3);
   const tryouts = getActiveTryouts(12);
   const news = (await getNews()).slice(0, 6);
   const topClubs = RANKED_CLUBS.slice(0, 5);

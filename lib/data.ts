@@ -1,7 +1,7 @@
 import { CLUBS, COACHES, TRYOUTS } from "./seed";
 import { SCHOOLS } from "./schools";
 import { COMMITMENTS } from "./commitments";
-import type { Club, ClubReviewScores, Coach, School, Tryout, Review, Commitment } from "./types";
+import type { Club, ClubReviewScores, Coach, School, SchoolReviewScores, Tryout, Review, Commitment } from "./types";
 import type { RegionKey } from "./regions";
 import { createClient } from "./supabase/server";
 import { publicClient } from "./supabase/public";
@@ -247,8 +247,63 @@ export interface SchoolFilters {
   sort?: string;
 }
 
-export function getSchools(filters: SchoolFilters = {}): (School & { distance?: number })[] {
-  let results: (School & { distance?: number })[] = [...SCHOOLS];
+const EMPTY_SCHOOL_SCORES: SchoolReviewScores = {
+  coaching: 0, development: 0, culture: 0, competitiveness: 0, academics: 0, facilities: 0,
+};
+
+function dbRowToSchool(r: Record<string, any>): School {
+  return {
+    id: String(r.id),
+    slug: r.slug,
+    name: r.name,
+    region: r.region as RegionKey,
+    city: r.city,
+    state: r.state ?? "FL",
+    zip: r.zip ?? "",
+    lat: r.lat ?? 0,
+    lng: r.lng ?? 0,
+    type: r.type === "Private" ? "Private" : "Public",
+    fhsaa_class: r.fhsaa_class ?? "",
+    district: r.district ?? "",
+    mascot: r.mascot ?? "",
+    colors: r.colors ?? [],
+    logo_color: r.logo_color ?? "#1a4fa0",
+    programs: r.programs ?? [],
+    head_coach_boys: r.head_coach_boys ?? undefined,
+    head_coach_girls: r.head_coach_girls ?? undefined,
+    state_titles: r.state_titles ?? 0,
+    last_title: r.last_title ?? undefined,
+    district_titles: r.district_titles ?? 0,
+    enrollment: r.enrollment ?? 0,
+    description: r.description ?? "",
+    website: r.website ?? undefined,
+    featured: !!r.featured,
+    plan: (r.plan ?? "free") as School["plan"],
+    rating: 0,
+    review_count: 0,
+    scores: { ...EMPTY_SCHOOL_SCORES },
+    reviews: [],
+  };
+}
+
+/** Seeded schools + real schools from Supabase, merged by slug (DB wins). */
+export async function loadSchools(): Promise<School[]> {
+  const supabase = publicClient();
+  if (!supabase) return SCHOOLS;
+  try {
+    const { data, error } = await supabase.from("schools").select("*");
+    if (error || !data || data.length === 0) return SCHOOLS;
+    const bySlug = new Map<string, School>();
+    for (const s of SCHOOLS) bySlug.set(s.slug, s);
+    for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToSchool(r));
+    return Array.from(bySlug.values());
+  } catch {
+    return SCHOOLS;
+  }
+}
+
+export async function getSchools(filters: SchoolFilters = {}): Promise<(School & { distance?: number })[]> {
+  let results: (School & { distance?: number })[] = [...(await loadSchools())];
   if (filters.q) {
     const q = filters.q.toLowerCase();
     results = results.filter(
@@ -297,19 +352,20 @@ export function getSchools(filters: SchoolFilters = {}): (School & { distance?: 
   return results;
 }
 
-export function getSchoolBySlug(slug: string): School | undefined {
-  return SCHOOLS.find((s) => s.slug === slug);
+export async function getSchoolBySlug(slug: string): Promise<School | undefined> {
+  return (await loadSchools()).find((s) => s.slug === slug);
 }
 
-export function getNearbySchools(school: School, limit = 4): (School & { distance: number })[] {
-  return SCHOOLS.filter((s) => s.id !== school.id)
+export async function getNearbySchools(school: School, limit = 4): Promise<(School & { distance: number })[]> {
+  return (await loadSchools())
+    .filter((s) => s.id !== school.id)
     .map((s) => ({ ...s, distance: distanceMiles(school.lat, school.lng, s.lat, s.lng) }))
     .sort((a, b) => a.distance - b.distance)
     .slice(0, limit);
 }
 
-export function getFeaturedSchools(limit = 6): School[] {
-  return [...SCHOOLS].sort((a, b) => b.state_titles - a.state_titles || b.rating - a.rating).slice(0, limit);
+export async function getFeaturedSchools(limit = 6): Promise<School[]> {
+  return [...(await loadSchools())].sort((a, b) => b.state_titles - a.state_titles || b.rating - a.rating).slice(0, limit);
 }
 
 /* ------------------------------------------------------------------ *

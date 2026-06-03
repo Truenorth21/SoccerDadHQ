@@ -1,12 +1,12 @@
 import type { MetadataRoute } from "next";
 import { COACHES } from "@/lib/seed";
-import { SCHOOLS } from "@/lib/schools";
 import { LISTINGS, KIND_CONFIG } from "@/lib/listings";
-import { loadClubs } from "@/lib/data";
+import { loadClubs, loadSchools } from "@/lib/data";
 import { SITE_URL } from "@/lib/utils";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const CLUBS = await loadClubs();
+  const SCHOOLS = await loadSchools();
   const staticRoutes = ["", "/clubs", "/schools", "/coaches", "/training-centers", "/facilities", "/tournaments", "/camps", "/commitments", "/rankings", "/news", "/sideline", "/advertise", "/advertise/order", "/partners", "/privacy", "/terms", "/login"].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: new Date(Date.UTC(2026, 4, 31)),

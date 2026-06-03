@@ -20,7 +20,7 @@ export default async function ComparePage({
 
   const items = (type === "club"
     ? await Promise.all(slugs.map((s) => getClubBySlug(s)))
-    : slugs.map((s) => getSchoolBySlug(s))
+    : await Promise.all(slugs.map((s) => getSchoolBySlug(s)))
   ).filter(Boolean) as any[];
 
   const cats = type === "club" ? CLUB_REVIEW_CATEGORIES : SCHOOL_REVIEW_CATEGORIES;

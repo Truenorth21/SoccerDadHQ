@@ -97,7 +97,8 @@ export default async function AdminPage() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Moderation Queue</h1>
             <div className="flex gap-2">
-              <Link href="/admin/clubs" className="btn-amber text-sm">Manage clubs →</Link>
+              <Link href="/admin/clubs" className="btn-amber text-sm">Clubs →</Link>
+              <Link href="/admin/schools" className="btn-amber text-sm">Schools →</Link>
               <Link href="/admin/pricing" className="btn-outline text-sm">Pricing &amp; plans →</Link>
               <Link href="/admin/ads" className="btn-outline text-sm">Ads →</Link>
             </div>

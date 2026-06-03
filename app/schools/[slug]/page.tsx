@@ -27,8 +27,8 @@ export function generateStaticParams() {
   return SCHOOLS.map((s) => ({ slug: s.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const school = getSchoolBySlug(params.slug);
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const school = await getSchoolBySlug(params.slug);
   if (!school) return { title: "School not found" };
   const title = `${school.name} Soccer — Reviews & Program Info`;
   const description = `${school.name} (${school.mascot}) ${school.fhsaa_class} ${school.type.toLowerCase()} high school soccer in ${school.city}, FL. ${school.rating.toFixed(1)}★ from ${school.review_count} reviews. ${school.state_titles} state title${school.state_titles === 1 ? "" : "s"}.`;
@@ -41,13 +41,13 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 }
 
 export default async function SchoolProfile({ params }: { params: { slug: string } }) {
-  const school = getSchoolBySlug(params.slug);
+  const school = await getSchoolBySlug(params.slug);
   if (!school) notFound();
 
   const extraReviews = await getSupabaseReviews("school", school.id);
   const reviews = [...extraReviews, ...school.reviews];
   const commitments = getCommitmentsForSchool(school.id);
-  const nearby = getNearbySchools(school, 4);
+  const nearby = await getNearbySchools(school, 4);
   const logo = await getLogo("school", school.slug);
 
   const jsonLd = {
