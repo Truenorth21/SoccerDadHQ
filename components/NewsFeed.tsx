@@ -7,6 +7,29 @@ import { timeAgo } from "@/lib/utils";
 import type { NewsItem } from "@/lib/types";
 import AdSlot from "./AdSlot";
 import CompactShare from "./CompactShare";
+import { GradientPanel } from "./Crest";
+
+// Hex colors for the image fallback gradient, by category.
+const CAT_HEX: Record<string, string> = {
+  ECNL: "#1a4fa0",
+  "MLS NEXT": "#1d7a4d",
+  "Girls Academy": "#9b2d2d",
+  "Girls Soccer": "#9b2d2d",
+  "Boys Soccer": "#2a7de1",
+  "High School": "#5a2d82",
+  Recruiting: "#e8a020",
+  Tournaments: "#5a2d82",
+  "Parent Life": "#0d7a6f",
+  Opinion: "#142844",
+};
+
+function NewsImage({ item, className }: { item: NewsItem; className: string }) {
+  if (item.image) {
+    // eslint-disable-next-line @next/next/no-img-element
+    return <img src={item.image} alt="" loading="lazy" className={`${className} object-cover`} />;
+  }
+  return <GradientPanel seed={item.id} color={CAT_HEX[item.category] ?? "#1a4fa0"} className={className} label={item.category} />;
+}
 
 const CAT_COLOR: Record<string, string> = {
   ECNL: "bg-blue-50 text-brand-blue ring-blue-100",
@@ -134,7 +157,7 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
               {idx > 0 && idx % 6 === 0 && (
                 <AdSlot placement="news-infeed" variant="infeed" seed={idx} />
               )}
-            <div className="card card-hover group relative flex flex-col p-5">
+            <div className="card card-hover group relative flex flex-col overflow-hidden">
               <a
                 href={item.link}
                 target="_blank"
@@ -142,26 +165,29 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
                 aria-label={item.title}
                 className="absolute inset-0 z-[1]"
               />
-              <div className="mb-3 flex items-center justify-between">
-                <div className="flex flex-wrap items-center gap-1.5">
-                  <Tag cat={item.category} />
-                  {item.region && (
-                    <span className="inline-flex rounded-full bg-navy/5 px-2 py-0.5 text-xs font-semibold text-navy ring-1 ring-navy/10">
-                      📍 {regionName(item.region)}
-                    </span>
-                  )}
+              <NewsImage item={item} className="aspect-[16/9] w-full" />
+              <div className="flex flex-1 flex-col p-5">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <Tag cat={item.category} />
+                    {item.region && (
+                      <span className="inline-flex rounded-full bg-navy/5 px-2 py-0.5 text-xs font-semibold text-navy ring-1 ring-navy/10">
+                        📍 {regionName(item.region)}
+                      </span>
+                    )}
+                  </div>
+                  <span className="shrink-0 text-xs text-slate-400">{timeAgo(item.published)}</span>
                 </div>
-                <span className="shrink-0 text-xs text-slate-400">{timeAgo(item.published)}</span>
-              </div>
-              <h3 className="font-heading text-lg font-bold leading-snug text-navy group-hover:text-brand-sky">
-                {item.title}
-              </h3>
-              <p className="mt-2 line-clamp-3 flex-1 text-sm text-slate-600">{item.excerpt}</p>
-              <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
-                <span className="text-xs font-semibold text-slate-500">via {item.source}</span>
-                <span className="relative z-[2]">
-                  <CompactShare url={item.link} title={item.title} />
-                </span>
+                <h3 className="font-heading text-lg font-bold leading-snug text-navy group-hover:text-brand-sky">
+                  {item.title}
+                </h3>
+                <p className="mt-2 line-clamp-3 flex-1 text-sm text-slate-600">{item.excerpt}</p>
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+                  <span className="text-xs font-semibold text-slate-500">via {item.source}</span>
+                  <span className="relative z-[2]">
+                    <CompactShare url={item.link} title={item.title} />
+                  </span>
+                </div>
               </div>
             </div>
             </Fragment>
