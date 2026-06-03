@@ -1,8 +1,10 @@
 import { sendEmail } from "./email";
 import { SITE_URL } from "./utils";
 
-// Where admin alerts (new claims / submissions) are sent.
-const ADMIN_EMAIL = process.env.ADMIN_ALERT_EMAIL || "hello@soccerdadhq.com";
+// Where admin alerts (new claims / submissions) are sent. Sent straight to the
+// real inbox (not hello@, which forwards) — same-domain mail through a forward
+// gets spam-filtered by Gmail, so direct delivery is far more reliable.
+const ADMIN_EMAIL = process.env.ADMIN_ALERT_EMAIL || "soccerdadhq@gmail.com";
 
 const TYPE_LABEL: Record<string, string> = {
   club: "Club",
