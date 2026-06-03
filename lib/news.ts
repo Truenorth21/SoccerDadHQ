@@ -33,10 +33,6 @@ const NEWS_QUERIES: string[] = [
   "florida high school soccer state championship OR FHSAA",
 ];
 
-// How many of the freshest stories to enrich with a real image + summary
-// (each enrichment fetches the article page). The rest fall back to a tile.
-const ENRICH_LIMIT = 18;
-
 function categorize(title: string, body: string): string {
   const t = `${title} ${body}`.toLowerCase();
   if (/\bmls next\b|\bmlsnext\b/.test(t)) return "MLS NEXT";
@@ -171,45 +167,6 @@ async function fetchQuery(query: string): Promise<NewsItem[]> {
   }
 }
 
-function ogMeta(html: string, prop: string): string | undefined {
-  const m =
-    html.match(new RegExp(`<meta[^>]+property=["']og:${prop}["'][^>]+content=["']([^"']+)["']`, "i")) ||
-    html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:${prop}["']`, "i"));
-  return m?.[1];
-}
-
-/** Pull a real image + summary from the article page (og: tags). */
-async function enrich(item: NewsItem): Promise<NewsItem> {
-  try {
-    const res = await fetch(item.link, {
-      headers: { "User-Agent": BROWSER_UA, Range: "bytes=0-150000" }, // og: tags live in <head>
-      next: { revalidate: 1800 },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return item;
-    const html = await res.text();
-    let image = ogMeta(html, "image");
-    if (image) image = image.replace(/&amp;/g, "&").replace(/=s0-w\d+/, "=s0-w640");
-    const desc = ogMeta(html, "description");
-    return {
-      ...item,
-      image: image ?? item.image,
-      excerpt: item.excerpt || (desc ? stripHtml(desc).slice(0, 220) : ""),
-    };
-  } catch {
-    return item;
-  }
-}
-
-/** Run `fn` over items with bounded concurrency. */
-async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
-  const out: R[] = [];
-  for (let i = 0; i < items.length; i += limit) {
-    out.push(...(await Promise.all(items.slice(i, i + limit).map(fn))));
-  }
-  return out;
-}
-
 // Editorial fallback so the page is never empty (e.g. offline build/deploy).
 const FALLBACK: NewsItem[] = [
   {
@@ -308,7 +265,5 @@ export async function getNews(): Promise<NewsItem[]> {
   // If the live fetch came up short (offline build, Google hiccup), top up.
   if (all.length < 6) all = [...all, ...FALLBACK];
 
-  // Enrich the freshest stories with a real image + summary; the rest keep a tile.
-  const enriched = await mapLimit(all.slice(0, ENRICH_LIMIT), 6, enrich);
-  return [...enriched, ...all.slice(ENRICH_LIMIT)];
+  return all;
 }
