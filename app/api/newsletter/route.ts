@@ -24,13 +24,15 @@ export async function POST(request: Request) {
 
   const supabase = createClient();
 
-  // Persist the subscriber if Supabase is configured.
+  // Persist the subscriber if Supabase is configured. Plain insert (only needs
+  // the "anyone subscribe" INSERT policy); a duplicate email (23505) is fine —
+  // they're already on the list.
   if (supabase) {
     const { error } = await supabase
       .from("newsletter_subscribers")
-      .upsert({ email, region }, { onConflict: "email" });
-    if (error) {
-      return NextResponse.json({ error: "Could not subscribe right now. Please try again." }, { status: 500 });
+      .insert({ email, region });
+    if (error && error.code !== "23505") {
+      return NextResponse.json({ error: `Could not subscribe: ${error.message}` }, { status: 500 });
     }
   }
 
