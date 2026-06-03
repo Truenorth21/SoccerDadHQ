@@ -48,7 +48,10 @@ export default async function AdminClubsPage() {
               <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Manage Clubs</h1>
               <p className="mt-1 text-slate-300">Add or edit real clubs — they appear live in the directory immediately.</p>
             </div>
-            <Link href="/admin" className="btn-outline text-sm">← Moderation</Link>
+            <div className="flex gap-2">
+              <Link href="/admin" className="btn-outline text-sm">← Moderation</Link>
+              <Link href="/admin/clubs/import" className="btn-amber text-sm">CSV import →</Link>
+            </div>
           </div>
         </div>
       </section>
