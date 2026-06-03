@@ -44,8 +44,8 @@ function parseCSV(text: string): string[][] {
 const multi = (v: string) => (v ?? "").split(/[;|]/).map((x) => x.trim()).filter(Boolean);
 const bool = (v: string) => /^(1|true|yes|y|open)$/i.test((v ?? "").trim());
 
-const regionByKey = new Set(REGIONS.map((r) => r.key));
-const regionByName = new Map(REGIONS.map((r) => [r.name.toLowerCase(), r.key]));
+const regionByKey = new Set<string>(REGIONS.map((r) => r.key));
+const regionByName = new Map<string, string>(REGIONS.map((r) => [r.name.toLowerCase(), r.key]));
 function resolveRegion(v: string): string | null {
   const t = (v ?? "").trim();
   if (regionByKey.has(t)) return t;
