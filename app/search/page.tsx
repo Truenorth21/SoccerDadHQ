@@ -10,13 +10,13 @@ export const metadata: Metadata = {
   description: "Search across Florida youth soccer clubs, high schools and coaches.",
 };
 
-export default function SearchPage({
+export default async function SearchPage({
   searchParams,
 }: {
   searchParams: { q?: string };
 }) {
   const q = (searchParams.q ?? "").trim();
-  const clubs = q ? getClubs({ q }) : [];
+  const clubs = q ? await getClubs({ q }) : [];
   const schools = q ? getSchools({ q }) : [];
   const coaches = q ? getCoaches({ q }) : [];
   const total = clubs.length + schools.length + coaches.length;

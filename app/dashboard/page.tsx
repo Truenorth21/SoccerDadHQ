@@ -43,7 +43,7 @@ export default async function DashboardPage() {
 
   const displayName = user?.email?.split("@")[0] ?? "SoccerDad";
   const email = user?.email ?? "demo@soccerdadhq.com";
-  const suggested = getFeaturedClubs(3);
+  const suggested = await getFeaturedClubs(3);
 
   return (
     <div className="container-page py-10">

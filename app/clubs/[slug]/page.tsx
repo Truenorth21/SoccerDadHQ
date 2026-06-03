@@ -34,8 +34,8 @@ export function generateStaticParams() {
   return CLUBS.map((c) => ({ slug: c.slug }));
 }
 
-export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const club = getClubBySlug(params.slug);
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const club = await getClubBySlug(params.slug);
   if (!club) return { title: "Club not found" };
   const title = `${club.name} — Reviews, Tryouts & Info`;
   const description = `${club.name} in ${club.city}, FL. ${club.rating.toFixed(1)}★ from ${club.review_count} parent reviews. Leagues: ${club.leagues.join(", ")}. Age groups ${club.age_groups[0]}–${club.age_groups[club.age_groups.length - 1]}.`;
@@ -48,14 +48,14 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
 }
 
 export default async function ClubProfile({ params }: { params: { slug: string } }) {
-  const club = getClubBySlug(params.slug);
+  const club = await getClubBySlug(params.slug);
   if (!club) notFound();
 
   const extraReviews = await getSupabaseReviews("club", club.id);
   const reviews = [...extraReviews, ...club.reviews];
   const coaches = getCoachesForClub(club.id);
   const commitments = getCommitmentsForClub(club.id);
-  const nearby = getNearbyClubs(club, 4);
+  const nearby = await getNearbyClubs(club, 4);
   const logo = await getLogo("club", club.slug);
 
   const jsonLd = {

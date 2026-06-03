@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Search and compare youth soccer clubs across Florida by region, league, age group, gender and location. Read parent reviews and find open tryouts.",
 };
 
-export default function ClubsPage({
+export default async function ClubsPage({
   searchParams,
 }: {
   searchParams: Record<string, string | string[] | undefined>;
@@ -21,7 +21,7 @@ export default function ClubsPage({
   const filters: Filters = Object.fromEntries(
     Object.entries(searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v ?? ""])
   );
-  const clubs = getClubs(filters);
+  const clubs = await getClubs(filters);
 
   const heading = filters.region
     ? `${regionName(filters.region)} Clubs`

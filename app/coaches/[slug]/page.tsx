@@ -42,7 +42,7 @@ export default async function CoachProfile({ params }: { params: { slug: string 
 
   const extraReviews = await getSupabaseReviews("coach", coach.id);
   const reviews = [...extraReviews, ...coach.reviews];
-  const club = coach.club_name ? getClubBySlug(slugify(coach.club_name)) : undefined;
+  const club = coach.club_name ? await getClubBySlug(slugify(coach.club_name)) : undefined;
 
   const jsonLd = {
     "@context": "https://schema.org",

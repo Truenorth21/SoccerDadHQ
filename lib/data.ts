@@ -1,9 +1,10 @@
 import { CLUBS, COACHES, TRYOUTS } from "./seed";
 import { SCHOOLS } from "./schools";
 import { COMMITMENTS } from "./commitments";
-import type { Club, Coach, School, Tryout, Review, Commitment } from "./types";
+import type { Club, ClubReviewScores, Coach, School, Tryout, Review, Commitment } from "./types";
 import type { RegionKey } from "./regions";
 import { createClient } from "./supabase/server";
+import { publicClient } from "./supabase/public";
 
 /* ------------------------------------------------------------------ *
  *  Directory reference data (clubs, coaches, tryouts) ships embedded
@@ -48,8 +49,69 @@ function zipCenter(zip: string): { lat: number; lng: number } | null {
   return null;
 }
 
-export function getClubs(filters: ClubFilters = {}): (Club & { distance?: number })[] {
-  let results: (Club & { distance?: number })[] = [...CLUBS];
+const EMPTY_SCORES: ClubReviewScores = {
+  coaching: 0, development: 0, organization: 0, culture: 0, value: 0, facilities: 0,
+};
+
+/* Map a Supabase `clubs` row to the Club shape the UI expects. Ratings/reviews
+ *  start empty — a real new club's rating comes from real reviews over time. */
+function dbRowToClub(r: Record<string, any>): Club {
+  return {
+    id: String(r.id),
+    slug: r.slug,
+    name: r.name,
+    region: r.region as RegionKey,
+    city: r.city,
+    state: r.state ?? "FL",
+    zip: r.zip ?? "",
+    lat: r.lat ?? 0,
+    lng: r.lng ?? 0,
+    founded: r.founded ?? undefined,
+    description: r.description ?? "",
+    logo_color: r.logo_color ?? "#1a4fa0",
+    website: r.website ?? undefined,
+    email: r.email ?? undefined,
+    phone: r.phone ?? undefined,
+    instagram: r.instagram ?? undefined,
+    facebook: r.facebook ?? undefined,
+    twitter: r.twitter ?? undefined,
+    leagues: r.leagues ?? [],
+    age_groups: r.age_groups ?? [],
+    genders: r.genders ?? [],
+    gallery: [],
+    tryouts_open: !!r.tryouts_open,
+    tryout_note: r.tryout_note ?? undefined,
+    claimed: !!r.claimed,
+    verified: !!r.verified,
+    featured: !!r.featured,
+    plan: (r.plan ?? "free") as Club["plan"],
+    rating: 0,
+    review_count: 0,
+    scores: { ...EMPTY_SCORES },
+    reviews: [],
+  };
+}
+
+/** All clubs = seeded clubs + real clubs from Supabase, merged by slug (DB wins).
+ *  Falls back to seed when Supabase is unconfigured/empty. Cookieless read, so
+ *  it stays safe for static/ISR pages. */
+export async function loadClubs(): Promise<Club[]> {
+  const supabase = publicClient();
+  if (!supabase) return CLUBS;
+  try {
+    const { data, error } = await supabase.from("clubs").select("*");
+    if (error || !data || data.length === 0) return CLUBS;
+    const bySlug = new Map<string, Club>();
+    for (const c of CLUBS) bySlug.set(c.slug, c);
+    for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToClub(r));
+    return Array.from(bySlug.values());
+  } catch {
+    return CLUBS;
+  }
+}
+
+export async function getClubs(filters: ClubFilters = {}): Promise<(Club & { distance?: number })[]> {
+  let results: (Club & { distance?: number })[] = [...(await loadClubs())];
 
   if (filters.q) {
     const q = filters.q.toLowerCase();
@@ -104,12 +166,13 @@ export function getClubs(filters: ClubFilters = {}): (Club & { distance?: number
   return results;
 }
 
-export function getClubBySlug(slug: string): Club | undefined {
-  return CLUBS.find((c) => c.slug === slug);
+export async function getClubBySlug(slug: string): Promise<Club | undefined> {
+  return (await loadClubs()).find((c) => c.slug === slug);
 }
 
-export function getNearbyClubs(club: Club, limit = 4): (Club & { distance: number })[] {
-  return CLUBS.filter((c) => c.id !== club.id)
+export async function getNearbyClubs(club: Club, limit = 4): Promise<(Club & { distance: number })[]> {
+  return (await loadClubs())
+    .filter((c) => c.id !== club.id)
     .map((c) => ({ ...c, distance: distanceMiles(club.lat, club.lng, c.lat, c.lng) }))
     .sort((a, b) => a.distance - b.distance)
     .slice(0, limit);
@@ -166,8 +229,8 @@ export function getActiveTryouts(limit?: number): Tryout[] {
   return limit ? upcoming.slice(0, limit) : upcoming;
 }
 
-export function getFeaturedClubs(limit = 6): Club[] {
-  return [...CLUBS].sort((a, b) => b.rating - a.rating).slice(0, limit);
+export async function getFeaturedClubs(limit = 6): Promise<Club[]> {
+  return [...(await loadClubs())].sort((a, b) => b.rating - a.rating).slice(0, limit);
 }
 
 /* ------------------------------------------------------------------ *

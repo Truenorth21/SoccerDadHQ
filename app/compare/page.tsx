@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: "Compare Florida youth soccer clubs and high school programs side by side.",
 };
 
-export default function ComparePage({
+export default async function ComparePage({
   searchParams,
 }: {
   searchParams: { type?: string; slugs?: string };
@@ -19,7 +19,7 @@ export default function ComparePage({
   const slugs = (searchParams.slugs ?? "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 4);
 
   const items = (type === "club"
-    ? slugs.map((s) => getClubBySlug(s))
+    ? await Promise.all(slugs.map((s) => getClubBySlug(s)))
     : slugs.map((s) => getSchoolBySlug(s))
   ).filter(Boolean) as any[];
 

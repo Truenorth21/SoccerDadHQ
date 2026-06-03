@@ -18,7 +18,7 @@ import { SCHOOLS } from "@/lib/schools";
 export const revalidate = 1800;
 
 export default async function HomePage() {
-  const featured = getFeaturedClubs(6);
+  const featured = await getFeaturedClubs(6);
   const featuredSchools = getFeaturedSchools(3);
   const tryouts = getActiveTryouts(12);
   const news = (await getNews()).slice(0, 6);
