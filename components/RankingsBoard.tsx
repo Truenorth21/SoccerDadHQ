@@ -184,6 +184,7 @@ export default function RankingsBoard({
   const [gender, setGender] = useState("");
   const [level, setLevel] = useState("Varsity");
   const [cls, setCls] = useState("");
+  const [query, setQuery] = useState("");
   const [showAll, setShowAll] = useState(false);
 
   // In demo mode (no Supabase) voting stays open; with Supabase, login is required.
@@ -198,10 +199,14 @@ export default function RankingsBoard({
     if (isSchools && gender) list = list.filter((i) => i.gender === gender);
     if (isSchools && level) list = list.filter((i) => i.level === level);
     if (isSchools && cls) list = list.filter((i) => i.cls === cls);
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      list = list.filter((i) => i.name.toLowerCase().includes(q) || (i.subtitle ?? "").toLowerCase().includes(q));
+    }
     return list
       .sort((a, b) => b.votes - a.votes)
       .map((i, idx) => ({ ...i, rank: idx + 1 }));
-  }, [data, tab, region, league, gender, level, cls, isSchools]);
+  }, [data, tab, region, league, gender, level, cls, isSchools, query]);
 
   const showLeague = tab === "clubs";
   const podium = items.slice(0, 3);
@@ -256,6 +261,13 @@ export default function RankingsBoard({
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap gap-3">
+        <input
+          className="input max-w-[240px]"
+          placeholder="🔍 Find your club, coach…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search rankings to vote"
+        />
         <select className="input max-w-[220px]" value={region} onChange={(e) => setRegion(e.target.value)}>
           <option value="">All regions</option>
           {REGIONS.map((r) => (

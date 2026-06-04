@@ -14,6 +14,7 @@ import MapEmbed from "@/components/MapEmbed";
 import AdSlot from "@/components/AdSlot";
 import LogoManager from "@/components/LogoManager";
 import ShareButtons from "@/components/ShareButtons";
+import RankingVote from "@/components/RankingVote";
 import { getLogo } from "@/lib/logos";
 import {
   getClubBySlug,
@@ -56,6 +57,7 @@ export default async function ClubProfile({ params }: { params: { slug: string }
   const coaches = await getCoachesForClub(club.id);
   const commitments = getCommitmentsForClub(club.id);
   const nearby = await getNearbyClubs(club, 4);
+  const rankingPeriod = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   const logo = await getLogo("club", club.slug);
 
   const jsonLd = {
@@ -266,6 +268,8 @@ export default async function ClubProfile({ params }: { params: { slug: string }
 
           {/* SIDEBAR */}
           <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+            <RankingVote itemId={club.id} itemName={club.name} period={rankingPeriod} />
+
             {/* Contact */}
             <div className="card p-5">
               <h3 className="mb-3 font-heading text-lg font-bold uppercase text-navy">Contact</h3>

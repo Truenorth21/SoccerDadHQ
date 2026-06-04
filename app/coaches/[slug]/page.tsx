@@ -10,6 +10,7 @@ import ContactForm from "@/components/ContactForm";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import AdSlot from "@/components/AdSlot";
 import ShareButtons from "@/components/ShareButtons";
+import RankingVote from "@/components/RankingVote";
 import ClaimForm from "@/components/ClaimForm";
 import { getCoachBySlug, getSupabaseReviews, getClubBySlug } from "@/lib/data";
 import { COACHES, slugify } from "@/lib/seed";
@@ -42,6 +43,7 @@ export default async function CoachProfile({ params }: { params: { slug: string 
 
   const extraReviews = await getSupabaseReviews("coach", coach.id);
   const reviews = [...extraReviews, ...coach.reviews];
+  const rankingPeriod = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   const club = coach.club_name ? await getClubBySlug(slugify(coach.club_name)) : undefined;
 
   const jsonLd = {
@@ -172,6 +174,7 @@ export default async function CoachProfile({ params }: { params: { slug: string 
           </div>
 
           <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+            <RankingVote itemId={coach.id} itemName={coach.name} period={rankingPeriod} />
             <ContactForm recipient={coach.name} />
             {club && (
               <div className="card p-5">
