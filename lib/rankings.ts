@@ -1,114 +1,161 @@
-import { CLUBS, COACHES } from "./seed";
-import { SCHOOLS } from "./schools";
-import { LISTINGS, KIND_CONFIG, type ListingKind } from "./listings";
-import type { RankingItem } from "./types";
+import { loadListings, KIND_CONFIG, type ListingKind } from "./listings";
+import { loadClubs, loadSchools, loadCoaches, getVoteTalliesPublic } from "./data";
+import type { RankingItem, School } from "./types";
 
-const trends: RankingItem["trend"][] = ["up", "down", "flat", "new", "up", "flat", "down", "up"];
+/* Community rankings are built from the live directory (DB + seed) and ordered by
+ * REAL community votes for the current month. With no/few votes, the tiebreaker is
+ * the program's parent-review rating — so the board is never empty or arbitrary,
+ * and real votes take over the moment they come in. No fake/seeded vote counts. */
 
-function baseVotes(seed: number, rank: number): number {
-  // higher ranks get more votes, with deterministic spread
-  return Math.max(8, Math.round(420 - rank * 11 + ((seed * 37) % 60)));
+// School programs are split into team rankings (e.g. "Boys Varsity"); bigger/private
+// schools also field a feeder middle-school team.
+function schoolLevels(s: School): string[] {
+  return s.type === "Private" || s.enrollment > 2000 ? ["Varsity", "JV", "Middle School"] : ["Varsity", "JV"];
 }
 
-// Rank the FULL list — the UI shows the top 10 with a "show all" toggle.
-function rankList<T>(
-  items: T[],
-  toItem: (t: T, rank: number) => Omit<RankingItem, "rank" | "votes" | "trend">
-): RankingItem[] {
-  return items.map((t, i) => {
-    const rank = i + 1;
-    const partial = toItem(t, rank);
-    return {
-      ...partial,
-      rank,
-      votes: baseVotes(i + 7, rank),
-      trend: trends[i % trends.length],
-    };
-  });
+// votes desc → rating desc → name (stable, deterministic, fair at 0 votes).
+function orderByVotes(a: RankingItem, b: RankingItem): number {
+  return b.votes - a.votes || (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name);
 }
 
-// Clubs ranked by rating
-export const RANKED_CLUBS: RankingItem[] = rankList(
-  [...CLUBS].sort((a, b) => b.rating - a.rating || b.review_count - a.review_count),
-  (c) => ({
-    id: c.id,
-    name: c.name,
-    subtitle: `${c.city}, FL • ${c.leagues[0]}`,
-    region: c.region,
-    league: c.leagues[0],
-    href: `/clubs/${c.slug}`,
-    color: c.logo_color,
-  })
-);
+function ranked(items: RankingItem[]): RankingItem[] {
+  return [...items].sort(orderByVotes).map((it, i) => ({ ...it, rank: i + 1 }));
+}
 
-// School teams ranked per gender + level — each team votes separately, so a
-// school can appear as e.g. "Boys Varsity" and "Girls JV" as distinct entries.
-export const RANKED_SCHOOLS: RankingItem[] = (() => {
-  const sorted = [...SCHOOLS].sort((a, b) => b.state_titles - a.state_titles || b.rating - a.rating);
-  const out: RankingItem[] = [];
-  let i = 0;
-  for (const s of sorted) {
-    // Most programs field a feeder middle-school team only at private/large schools.
-    const levels = s.type === "Private" || s.enrollment > 2000 ? ["Varsity", "JV", "Middle School"] : ["Varsity", "JV"];
+/** All category rankings, live from the DB+seed directory with real monthly votes.
+ *  Pass `talliesOverride` to rank against fresh (uncached) vote counts — e.g. right
+ *  after a vote, so the voter sees their impact immediately. */
+export async function getRankings(talliesOverride?: Record<string, number>): Promise<Record<string, RankingItem[]>> {
+  const [clubs, schools, coaches, listings, tallies] = await Promise.all([
+    loadClubs(),
+    loadSchools(),
+    loadCoaches(),
+    loadListings(),
+    talliesOverride ?? getVoteTalliesPublic(),
+  ]);
+  const v = (id: string) => tallies[id] ?? 0;
+
+  const clubItems = ranked(
+    clubs.map((c) => ({
+      id: c.id,
+      rank: 0,
+      name: c.name,
+      subtitle: `${c.city}, FL${c.leagues[0] ? ` • ${c.leagues[0]}` : ""}`,
+      region: c.region,
+      league: c.leagues[0],
+      href: `/clubs/${c.slug}`,
+      color: c.logo_color,
+      votes: v(c.id),
+      rating: c.rating,
+      trend: "flat" as const,
+    }))
+  );
+
+  const coachItems = ranked(
+    coaches.map((c) => ({
+      id: c.id,
+      rank: 0,
+      name: c.name,
+      subtitle: `${c.title}${c.club_name ? ` • ${c.club_name}` : ""}`,
+      region: c.region,
+      href: `/coaches/${c.slug}`,
+      color: c.photo_color,
+      votes: v(c.id),
+      rating: c.rating,
+      trend: "flat" as const,
+    }))
+  );
+
+  const schoolRaw: RankingItem[] = [];
+  for (const s of schools) {
     for (const gender of s.programs) {
-      for (const level of levels) {
-        const rank = ++i;
-        out.push({
-          id: `${s.id}-${gender.toLowerCase()}-${level.toLowerCase().replace(/\s+/g, "-")}`,
-          rank,
+      for (const level of schoolLevels(s)) {
+        const id = `${s.id}-${gender.toLowerCase()}-${level.toLowerCase().replace(/\s+/g, "-")}`;
+        schoolRaw.push({
+          id,
+          rank: 0,
           name: s.name,
-          subtitle: `${gender} ${level} • ${s.mascot} • ${s.city}, FL • ${s.fhsaa_class}`,
+          subtitle: `${gender} ${level} • ${s.mascot}${s.fhsaa_class ? ` • ${s.fhsaa_class}` : ""} • ${s.city}, FL`,
           region: s.region,
           href: `/schools/${s.slug}`,
           color: s.logo_color,
           gender,
           level,
           cls: s.fhsaa_class,
-          votes: baseVotes(i + 5, rank),
-          trend: trends[i % trends.length],
+          votes: v(id),
+          rating: s.rating,
+          trend: "flat" as const,
         });
       }
     }
   }
-  return out;
-})();
+  const schoolItems = ranked(schoolRaw);
 
-export const RANKED_COACHES: RankingItem[] = rankList(
-  [...COACHES].sort((a, b) => b.rating - a.rating || b.review_count - a.review_count),
-  (c) => ({
-    id: c.id,
-    name: c.name,
-    subtitle: `${c.title} • ${c.club_name}`,
-    region: c.region,
-    href: `/coaches/${c.slug}`,
-    color: c.photo_color,
-  })
-);
+  const listingItems = (kind: ListingKind) =>
+    ranked(
+      listings.filter((l) => l.kind === kind).map((l) => ({
+        id: l.id,
+        rank: 0,
+        name: l.name,
+        subtitle: `${l.tags.join(" · ")} • ${l.city}, FL`,
+        region: l.region,
+        href: `${KIND_CONFIG[kind].path}/${l.slug}`,
+        color: l.color,
+        votes: v(l.id),
+        rating: l.rating,
+        trend: "flat" as const,
+      }))
+    );
 
-// Rankings for the listing kinds are derived from the listings so each entry
-// links to a real, claimable profile.
-function listingRank(kind: ListingKind): RankingItem[] {
-  return LISTINGS.filter((l) => l.kind === kind)
-    .sort((a, b) => b.rating - a.rating || b.review_count - a.review_count)
-    .map((l, i) => ({
-      id: l.id,
-      rank: i + 1,
-      name: l.name,
-      subtitle: `${l.tags.join(" · ")} • ${l.city}, FL`,
-      region: l.region,
-      votes: baseVotes(i + 3, i + 1),
-      trend: trends[i % trends.length],
-      color: l.color,
-      href: `${KIND_CONFIG[kind].path}/${l.slug}`,
-    }));
+  return {
+    clubs: clubItems,
+    schools: schoolItems,
+    coaches: coachItems,
+    "training-centers": listingItems("training-center"),
+    facilities: listingItems("facility"),
+    tournaments: listingItems("tournament"),
+    camps: listingItems("camp"),
+  };
 }
 
-export const RANKINGS: Record<string, RankingItem[]> = {
-  clubs: RANKED_CLUBS,
-  schools: RANKED_SCHOOLS,
-  coaches: RANKED_COACHES,
-  "training-centers": listingRank("training-center"),
-  facilities: listingRank("facility"),
-  tournaments: listingRank("tournament"),
-  camps: listingRank("camp"),
-};
+export interface RankInfo {
+  itemId: string; // the ranked item id (for schools, the chosen team's id)
+  rank: number; // statewide rank within the category
+  regionRank: number; // rank within the entity's own region
+  regionTotal: number; // how many ranked entities share that region
+  region: string;
+  votes: number; // real recommendations behind it (0 = not yet ranked)
+  programLabel?: string; // for schools: which team (e.g. "Boys Varsity")
+}
+
+/**
+ * Find one entity's standing in a category. For schools (which split into team
+ * rankings) pass `prefix: true` to match the school id across its programs and
+ * return its best-ranked team. Returns null if the entity isn't in the category.
+ */
+export async function getRankFor(
+  category: string,
+  id: string,
+  opts?: { prefix?: boolean; tallies?: Record<string, number> }
+): Promise<RankInfo | null> {
+  const all = await getRankings(opts?.tallies);
+  const list = all[category];
+  if (!list) return null;
+  const matches = opts?.prefix
+    ? list.filter((it) => it.id === id || it.id.startsWith(`${id}-`))
+    : list.filter((it) => it.id === id);
+  if (!matches.length) return null;
+  // Best = most real votes; the list is already vote-sorted so ties resolve fairly.
+  const item = matches.reduce((best, it) => ((it.votes ?? 0) > (best.votes ?? 0) ? it : best), matches[0]);
+  const regionList = list.filter((it) => it.region === item.region);
+  const regionRank = regionList.findIndex((it) => it.id === item.id) + 1;
+  return {
+    itemId: item.id,
+    rank: item.rank,
+    regionRank,
+    regionTotal: regionList.length,
+    region: item.region,
+    votes: item.votes ?? 0,
+    programLabel: item.gender && item.level ? `${item.gender} ${item.level}` : undefined,
+  };
+}

@@ -18,7 +18,8 @@ export default function LoginForm() {
   const [message, setMessage] = useState("");
 
   const supabase = createClient();
-  const next = params.get("next") || "/dashboard";
+  const explicitNext = params.get("next");
+  const next = explicitNext || "/dashboard";
 
   async function emailAuth(e: React.FormEvent) {
     e.preventDefault();
@@ -42,7 +43,17 @@ export default function LoginForm() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        router.push(next);
+        // With no explicit destination, send admins straight to the moderation
+        // dashboard instead of the member dashboard.
+        let dest = next;
+        if (!explicitNext) {
+          const { data: u } = await supabase.auth.getUser();
+          if (u.user) {
+            const { data: p } = await supabase.from("profiles").select("role").eq("id", u.user.id).single();
+            if ((p as { role?: string } | null)?.role === "admin") dest = "/admin";
+          }
+        }
+        router.push(dest);
         router.refresh();
       }
     } catch (err: any) {

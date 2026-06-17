@@ -6,26 +6,41 @@ import PollDeck from "@/components/PollDeck";
 import NewsletterSignup from "@/components/NewsletterSignup";
 import AdSlot from "@/components/AdSlot";
 import HomeNews from "@/components/HomeNews";
-import { getFeaturedClubs, getActiveTryouts, getFeaturedSchools, getRecentCommitments } from "@/lib/data";
+import { getFeaturedClubs, getActiveTryouts, getFeaturedSchools, getRecentCommitments, getLatestSnapshotRanksPublic, loadClubs, loadSchools, loadCoaches } from "@/lib/data";
 import TryoutTicker from "@/components/TryoutTicker";
-import DailyHub from "@/components/DailyHub";
+import SidelineToday from "@/components/SidelineToday";
 import { getNews } from "@/lib/news";
-import { RANKED_CLUBS } from "@/lib/rankings";
+import { getRankings } from "@/lib/rankings";
 import { REGIONS } from "@/lib/regions";
-import { CLUBS, COACHES } from "@/lib/seed";
-import { SCHOOLS } from "@/lib/schools";
+import type { RankingItem } from "@/lib/types";
 
 export const revalidate = 1800;
 
 export default async function HomePage() {
   const featured = await getFeaturedClubs(6);
   const featuredSchools = await getFeaturedSchools(3);
-  const tryouts = getActiveTryouts(12);
-  const news = (await getNews()).slice(0, 6);
-  const topClubs = RANKED_CLUBS.slice(0, 5);
+  // Real, live counts (seed + imported) so the hero stats match the directories.
+  const [clubCount, schoolCount, coachCount] = await Promise.all([
+    loadClubs().then((a) => a.length),
+    loadSchools().then((a) => a.length),
+    loadCoaches().then((a) => a.length),
+  ]);
+  const tryouts = await getActiveTryouts(12);
+  const news = (await getNews()).slice(0, 7);
+  const rankings = await getRankings();
+  // Real trend vs. last month's final standings → powers the "Movers" rail.
+  const { ranks: prevRanks, hasSnapshot } = await getLatestSnapshotRanksPublic();
+  const rankedClubs = rankings.clubs.map((c) => {
+    if (!hasSnapshot) return c;
+    const prev = prevRanks[c.id];
+    const trend: RankingItem["trend"] =
+      prev === undefined ? "new" : c.rank < prev ? "up" : c.rank > prev ? "down" : "flat";
+    return { ...c, trend };
+  });
+  const topClubs = rankedClubs.slice(0, 5);
 
-  // Region-filterable datasets for the daily hub (filtered client-side).
-  const hubTryouts = getActiveTryouts(60);
+  // Data for the "Sideline Today" daily snapshot rail.
+  const hubTryouts = await getActiveTryouts(60);
   const hubCommits = getRecentCommitments(40);
   const hubRegions = REGIONS.map((r) => ({ key: r.key, name: r.name }));
 
@@ -52,9 +67,9 @@ export default async function HomePage() {
             </div>
             <div className="mt-6 flex flex-wrap gap-8">
               {[
-                { n: `${CLUBS.length}`, l: "Clubs listed" },
-                { n: `${SCHOOLS.length}`, l: "High schools" },
-                { n: `${COACHES.length}`, l: "Coaches profiled" },
+                { n: `${clubCount}`, l: "Clubs listed" },
+                { n: `${schoolCount}`, l: "High schools" },
+                { n: `${coachCount}`, l: "Coaches profiled" },
                 { n: `${REGIONS.length}`, l: "Regions covered" },
               ].map((s) => (
                 <div key={s.l}>
@@ -72,17 +87,21 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* DAILY HUB — region-aware dashboard: tryouts (+alerts), commitments, movers */}
-      <DailyHub tryouts={hubTryouts} commits={hubCommits} movers={RANKED_CLUBS} regions={hubRegions} />
-
       <div className="container-page py-14">
-        {/* LATEST NEWS — featured + cards */}
+        {/* TODAY ZONE — daily-refresh hook: dated "Sideline Today" rail beside the news */}
         <section>
           <div className="mb-5 flex items-end justify-between">
-            <h2 className="section-title">Latest News</h2>
-            <Link href="/news" className="link-arrow">View all →</Link>
+            <h2 className="section-title">Today on SoccerDadHQ</h2>
+            <Link href="/news" className="link-arrow">All news →</Link>
           </div>
-          <HomeNews items={news} />
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-1">
+              <SidelineToday tryouts={hubTryouts} commits={hubCommits} movers={rankedClubs} regions={hubRegions} />
+            </div>
+            <div className="lg:col-span-2">
+              <HomeNews items={news} />
+            </div>
+          </div>
         </section>
 
         {/* TOP CLUBS + PARENT POLL */}
@@ -103,7 +122,9 @@ export default async function HomePage() {
                       <p className="truncate font-heading font-bold leading-tight text-navy">{c.name}</p>
                       <p className="truncate text-xs text-slate-500">{c.subtitle}</p>
                     </div>
-                    <span className="font-heading text-sm font-bold text-brand-amber">{c.votes}</span>
+                    <span className="font-heading text-sm font-bold text-brand-amber">
+                      {c.votes > 0 ? `${c.votes} 👍` : c.rating ? `${c.rating.toFixed(1)}★` : "—"}
+                    </span>
                   </Link>
                 </li>
               ))}
@@ -122,8 +143,8 @@ export default async function HomePage() {
         <section className="mt-16">
           <div className="mb-5 flex items-end justify-between">
             <div>
-              <h2 className="section-title">Featured Clubs</h2>
-              <p className="text-sm text-slate-500">Top-rated programs across the state</p>
+              <h2 className="section-title">Club Spotlight</h2>
+              <p className="text-sm text-slate-500">Editorial picks from across the state</p>
             </div>
             <Link href="/clubs" className="link-arrow">All clubs →</Link>
           </div>
@@ -146,6 +167,27 @@ export default async function HomePage() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {featuredSchools.map((school) => (
               <SchoolCard key={school.id} school={school} />
+            ))}
+          </div>
+        </section>
+
+        {/* EXPLORE ALSO — surfaces the secondary directories (SEO + discovery) */}
+        <section className="mt-16">
+          <h2 className="section-title mb-5">Explore More</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { href: "/training-centers", label: "Training Centers", blurb: "Private & small-group skills academies", icon: "⚽" },
+              { href: "/facilities", label: "Facilities", blurb: "Fields, complexes & indoor arenas", icon: "🏟️" },
+              { href: "/tournaments", label: "Tournaments", blurb: "Showcases, cups & college events", icon: "🏆" },
+              { href: "/camps", label: "Camps", blurb: "Day, residential & ID camps", icon: "🏕️" },
+            ].map((c) => (
+              <Link key={c.href} href={c.href} className="card card-hover group flex items-start gap-3 p-4">
+                <span className="text-2xl" aria-hidden>{c.icon}</span>
+                <div>
+                  <h3 className="font-heading text-lg font-bold text-navy group-hover:text-brand-sky">{c.label}</h3>
+                  <p className="text-xs text-slate-500">{c.blurb}</p>
+                </div>
+              </Link>
             ))}
           </div>
         </section>

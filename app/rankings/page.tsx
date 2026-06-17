@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import RankingsBoard from "@/components/RankingsBoard";
 import AdSlot from "@/components/AdSlot";
-import { RANKINGS } from "@/lib/rankings";
-import { getVoteTallies, getLatestSnapshotRanks } from "@/lib/data";
+import { getRankings } from "@/lib/rankings";
+import { getLatestSnapshotRanks } from "@/lib/data";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import type { RankingItem } from "@/lib/types";
@@ -22,32 +22,25 @@ const monthName = new Date().toLocaleDateString("en-US", {
 });
 
 export default async function RankingsPage() {
-  // Merge live community vote counts onto the seed baseline so real votes move the board.
-  const tallies = await getVoteTallies();
+  // Live rankings from the real directory + this month's real votes (ordered votes → rating → name).
+  const rankings = await getRankings();
   // Last month's final standings → real trend arrows.
   const { ranks: prevRanks, hasSnapshot } = await getLatestSnapshotRanks();
 
   const data: Record<string, RankingItem[]> = Object.fromEntries(
-    Object.entries(RANKINGS).map(([cat, items]) => {
-      const withVotes = items.map((it) => ({ ...it, votes: it.votes + (tallies[it.id] ?? 0) }));
-      // Current category-wide rank (by votes) to compare against last month.
-      const ordered = [...withVotes].sort((a, b) => b.votes - a.votes);
-      const currentRank = new Map(ordered.map((it, i) => [it.id, i + 1]));
-      return [
-        cat,
-        withVotes.map((it) => {
-          if (!hasSnapshot) return it; // no history yet → keep seeded trend
-          const cur = currentRank.get(it.id)!;
-          const prev = prevRanks[it.id];
-          let trend: RankingItem["trend"];
-          if (prev === undefined) trend = "new";
-          else if (cur < prev) trend = "up";
-          else if (cur > prev) trend = "down";
-          else trend = "flat";
-          return { ...it, trend };
-        }),
-      ];
-    })
+    Object.entries(rankings).map(([cat, items]) => [
+      cat,
+      items.map((it) => {
+        if (!hasSnapshot) return it; // no history yet → no trend arrow
+        const prev = prevRanks[it.id];
+        let trend: RankingItem["trend"];
+        if (prev === undefined) trend = "new";
+        else if (it.rank < prev) trend = "up";
+        else if (it.rank > prev) trend = "down";
+        else trend = "flat";
+        return { ...it, trend };
+      }),
+    ])
   );
 
   const supabase = createClient();
@@ -61,8 +54,9 @@ export default async function RankingsPage() {
             Community Rankings
           </h1>
           <p className="mt-1 max-w-2xl text-slate-300">
-            Powered entirely by parent and player votes. Vote for your favorites — the board resets
-            on the 1st of every month. Current period: <strong className="text-brand-amber">{monthName}</strong>.
+            Ranked by community votes. Vote for your favorites — the board resets on the 1st of
+            every month. Until votes come in, programs are listed by their parent-review rating.
+            Current period: <strong className="text-brand-amber">{monthName}</strong>.
           </p>
         </div>
       </section>
@@ -78,10 +72,10 @@ export default async function RankingsPage() {
           <div className="card p-6">
             <h2 className="mb-2 font-heading text-xl font-bold uppercase text-navy">How rankings work</h2>
             <ul className="space-y-2 text-sm text-slate-600">
-              <li className="flex gap-2"><span className="text-brand-sky">①</span> Each entry is ranked purely by the number of community votes it receives in the current month.</li>
-              <li className="flex gap-2"><span className="text-brand-sky">②</span> Registered users get one vote per entry, per category, per month to keep things fair.</li>
-              <li className="flex gap-2"><span className="text-brand-sky">③</span> Trend arrows compare an entry's current position to last month's final standing.</li>
-              <li className="flex gap-2"><span className="text-brand-sky">④</span> Vote counts reset to zero on the 1st, so a great month can vault any program to the top.</li>
+              <li className="flex gap-2"><span className="text-brand-sky">①</span> Each entry is ranked by the number of community votes it receives in the current month.</li>
+              <li className="flex gap-2"><span className="text-brand-sky">②</span> Before votes come in, entries are ordered by their parent-review rating — so the board is never empty or arbitrary.</li>
+              <li className="flex gap-2"><span className="text-brand-sky">③</span> Registered users get one vote per entry, per category, per month to keep things fair.</li>
+              <li className="flex gap-2"><span className="text-brand-sky">④</span> Trend arrows compare an entry's current position to last month's final standing. Votes reset on the 1st.</li>
             </ul>
           </div>
           <div className="card p-6">

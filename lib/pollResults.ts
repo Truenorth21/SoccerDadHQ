@@ -1,4 +1,4 @@
-import { POLLS, INSIGHT_POLLS, insightOfTheWeekIndex, type Poll } from "./funPolls";
+import { POLLS, INSIGHT_POLLS, FUN_POLLS, insightOfTheWeekIndex, pollOfTheWeekIndex, POLL_REVEAL_THRESHOLD, type Poll } from "./funPolls";
 import { publicClient } from "./supabase/public";
 
 export interface OptionResult {
@@ -11,6 +11,7 @@ export interface PollResult {
   poll: Poll;
   total: number; // total counted (real, or base+real when blended)
   realTotal: number; // real (Supabase) votes only — what the admin cares about
+  revealed: boolean; // realTotal >= POLL_REVEAL_THRESHOLD (safe to show percentages)
   options: OptionResult[];
   topIndex: number;
 }
@@ -47,7 +48,7 @@ function blend(poll: Poll, live: Record<number, number>, includeBase: boolean): 
     votes: counts[i],
     pct: total > 0 ? Math.round((counts[i] / total) * 100) : 0,
   }));
-  return { poll, total, realTotal, options, topIndex };
+  return { poll, total, realTotal, revealed: realTotal >= POLL_REVEAL_THRESHOLD, options, topIndex };
 }
 
 /** Insight poll of the week, blended (seed + real) — credible numbers for the
@@ -55,7 +56,15 @@ function blend(poll: Poll, live: Record<number, number>, includeBase: boolean): 
 export async function getInsightOfTheWeek(client?: SupaLike): Promise<PollResult> {
   const poll = INSIGHT_POLLS[insightOfTheWeekIndex()];
   const tallies = await fetchTallies(client);
-  return blend(poll, tallies[poll.id] || {}, true);
+  return blend(poll, tallies[poll.id] || {}, false);
+}
+
+/** Fun poll of the week, blended (seed + real) — gives the newsletter's Sideline
+ *  Life section credible result bars instead of a bare option list. */
+export async function getFunPollOfTheWeek(client?: SupaLike): Promise<PollResult> {
+  const poll = FUN_POLLS[pollOfTheWeekIndex()];
+  const tallies = await fetchTallies(client);
+  return blend(poll, tallies[poll.id] || {}, false);
 }
 
 /** Real-vote results for every poll (no seed) — for the admin Poll Pulse panel. */

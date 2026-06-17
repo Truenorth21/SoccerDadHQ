@@ -1,26 +1,23 @@
 import type { Metadata } from "next";
-import { Barlow_Condensed, DM_Sans } from "next/font/google";
+import { Suspense } from "react";
+import { Roboto } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import SampleDataBanner from "@/components/SampleDataBanner";
 import CompareTray from "@/components/CompareTray";
 import Analytics from "@/components/Analytics";
+import Track from "@/components/Track";
 import AdsProvider from "@/components/AdsProvider";
 import { getAdsConfig } from "@/lib/adsServer";
+import { getAdPlacementsMap } from "@/lib/adPlacements";
 import { SITE_URL } from "@/lib/utils";
 
-const barlow = Barlow_Condensed({
+// Roboto for both headings and body — clean, non-condensed, easy on the eyes
+// (matches SoccerWire). Drives both --font-barlow (headings) and --font-dmsans (body).
+const roboto = Roboto({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-barlow",
-  display: "swap",
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-dmsans",
+  weight: ["400", "500", "700", "900"],
+  variable: "--font-roboto",
   display: "swap",
 });
 
@@ -58,18 +55,28 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const adsConfig = await getAdsConfig();
+  const [adsConfig, adPlacements] = await Promise.all([getAdsConfig(), getAdPlacementsMap()]);
   return (
-    <html lang="en" className={`${barlow.variable} ${dmSans.variable}`}>
+    <html lang="en" className={roboto.variable}>
+      <head>
+        {/* Google AdSense loader — site-wide. */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9830230292354443"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="flex min-h-screen flex-col">
-        <AdsProvider config={adsConfig}>
-          <SampleDataBanner />
+        <AdsProvider config={adsConfig} placements={adPlacements}>
           <Navbar />
           <main className="flex-1">{children}</main>
           <Footer />
           <CompareTray />
         </AdsProvider>
         <Analytics />
+        <Suspense fallback={null}>
+          <Track />
+        </Suspense>
       </body>
     </html>
   );

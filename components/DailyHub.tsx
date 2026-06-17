@@ -200,7 +200,9 @@ export default function DailyHub({
                         <span className="block truncate font-heading font-bold leading-tight text-navy">{m.name}</span>
                         <span className="block truncate text-xs text-slate-500">{m.subtitle}</span>
                       </span>
-                      <span className="font-heading text-sm font-bold text-brand-amber">{m.votes}</span>
+                      <span className="font-heading text-sm font-bold text-brand-amber">
+                        {m.votes > 0 ? `${m.votes} 👍` : m.rating ? `${m.rating.toFixed(1)}★` : "—"}
+                      </span>
                     </Link>
                   </li>
                 ))}

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL } from "@/lib/supabase/config";
-import { RANKINGS } from "@/lib/rankings";
+import { getRankings } from "@/lib/rankings";
 
 export const dynamic = "force-dynamic";
 
@@ -50,12 +50,14 @@ export async function GET(request: Request) {
     tallies[row.item_id] = Number(row.votes);
   }
 
-  // Rank each category by (seed baseline + that period's votes) and build rows.
+  // Rank each category by that period's REAL votes, tie-broken by rating then name —
+  // the same ordering the live board uses — and build the snapshot rows.
+  const rankings = await getRankings();
   const rows: { period: string; category: string; item_id: string; rank: number; votes: number }[] = [];
-  for (const [category, items] of Object.entries(RANKINGS)) {
+  for (const [category, items] of Object.entries(rankings)) {
     const ranked = items
-      .map((it) => ({ id: it.id, votes: it.votes + (tallies[it.id] ?? 0) }))
-      .sort((a, b) => b.votes - a.votes);
+      .map((it) => ({ id: it.id, name: it.name, rating: it.rating ?? 0, votes: tallies[it.id] ?? 0 }))
+      .sort((a, b) => b.votes - a.votes || b.rating - a.rating || a.name.localeCompare(b.name));
     ranked.forEach((it, i) => {
       rows.push({ period, category, item_id: it.id, rank: i + 1, votes: it.votes });
     });

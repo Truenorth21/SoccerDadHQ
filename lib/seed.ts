@@ -257,11 +257,14 @@ export function slugify(s: string): string {
 function buildClub(raw: RawClub, idx: number): Club {
   const slug = slugify(raw.name);
   const r = rng(slug);
-  const reviewCount = 3 + Math.floor(r() * 6);
-  const reviews = clubReviews(slug, reviewCount);
+  // Honest launch: seed clubs are real directory entries but start UNRATED —
+  // no fabricated reviews or stars. Real parent reviews fill these in over time.
+  // (The RNG draw is kept so the other demo states below stay stable.)
+  void (3 + Math.floor(r() * 6));
+  const reviewCount = 0;
+  const reviews: Review[] = [];
   const scores = avgClubScores(reviews);
-  const rating =
-    Math.round((reviews.reduce((a, rv) => a + rv.rating, 0) / reviews.length) * 10) / 10;
+  const rating = 0;
 
   // Age groups: a contiguous-ish range
   const startIdx = Math.floor(r() * 3);
@@ -304,11 +307,13 @@ function buildClub(raw: RawClub, idx: number): Club {
     description: `${raw.name} is a youth soccer club based in ${raw.city}, Florida, founded in ${raw.founded}. The club fields competitive teams across ${ages.length} age groups and competes in ${raw.topLeagues.join(" and ")}. ${raw.name} focuses on long-term player development, a clear pathway to college and pro opportunities, and a positive team culture for families across the ${raw.region.replace(/-/g, " ")} area.`,
     logo_color: CREST_COLORS[idx % CREST_COLORS.length],
     website: raw.website,
-    email: `info@${slug.replace(/-/g, "")}.com`,
-    phone: `(${pick(["305", "561", "239", "813", "407", "321", "904", "352", "850"], r)}) ${100 + Math.floor(r() * 899)}-${1000 + Math.floor(r() * 8999)}`,
-    instagram: `https://instagram.com/${slug.replace(/-/g, "")}`,
-    facebook: `https://facebook.com/${slug.replace(/-/g, "")}`,
-    twitter: `https://x.com/${slug.replace(/-/g, "")}`,
+    // Unclaimed profiles show no fabricated contact details — the program fills these
+    // in when it claims the page. (Email/phone/socials were auto-generated placeholders.)
+    email: undefined,
+    phone: undefined,
+    instagram: undefined,
+    facebook: undefined,
+    twitter: undefined,
     leagues,
     age_groups: ages,
     genders,
@@ -319,8 +324,8 @@ function buildClub(raw: RawClub, idx: number): Club {
     tryout_note: tryoutsOpen
       ? `Open tryouts for the 2026–27 season are being held now. Register through the club website to reserve a spot for your age group.`
       : undefined,
-    claimed: r() > 0.6,
-    verified: r() > 0.5,
+    claimed: false, // unclaimed until a real owner claims the profile
+    verified: false, // not "verified" until we've actually verified it
     rating,
     review_count: reviewCount,
     scores,
@@ -407,11 +412,12 @@ export const COACHES: Coach[] = (() => {
       const last = pick(COACH_LAST, r);
       const name = `${first} ${last}`;
       const slug = slugify(`${name}-${club.slug}`);
-      const reviewCount = 2 + Math.floor(r() * 5);
-      const reviews = coachReviews(slug, reviewCount);
+      // Honest launch: coaches start unrated (no fabricated reviews/stars).
+      void (2 + Math.floor(r() * 5));
+      const reviewCount = 0;
+      const reviews: Review[] = [];
       const scores = avgCoachScores(reviews);
-      const rating =
-        Math.round((reviews.reduce((a, rv) => a + rv.rating, 0) / reviews.length) * 10) / 10;
+      const rating = 0;
       const title = COACH_TITLES[(ci + k) % COACH_TITLES.length];
       const privateTraining = r() > 0.4;
       const cpRoll = r();
@@ -435,8 +441,8 @@ export const COACHES: Coach[] = (() => {
         private_training_note: privateTraining
           ? "Offers private and small-group technical sessions on weekends. Rates and availability on request via the contact form."
           : undefined,
-        email: `${slugify(name)}@${club.slug.replace(/-/g, "")}.com`,
-        phone: club.phone,
+        email: undefined,
+        phone: undefined,
         featured: coachPlan === "featured",
         plan: coachPlan,
         rating,

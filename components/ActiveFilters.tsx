@@ -15,6 +15,7 @@ const LABELS: Record<string, (v: string) => string> = {
   type: (v) => v,
   cls: (v) => v,
   private: () => "Private training",
+  rating: (v) => `${v}+ ★`,
 };
 
 export default function ActiveFilters({ basePath }: { basePath: string }) {

@@ -48,12 +48,19 @@ Unsubscribe: ${unsub}`;
   const html = `
 <div style="font-family:Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#0a1628">
   <div style="background:#0a1628;border-radius:14px 14px 0 0;padding:28px 32px">
-    <div style="font-size:22px;font-weight:700;letter-spacing:.5px;color:#fff">
-      Soccer<span style="color:#2a7de1">Dad</span>HQ
-    </div>
-    <div style="font-size:13px;letter-spacing:2px;color:#e8a020;text-transform:uppercase;margin-top:4px">
-      The Sideline
-    </div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td style="padding-right:12px;vertical-align:middle">
+        <img src="https://soccerdadhq.com/icon.png" width="46" height="46" alt="SoccerDadHQ" style="display:block;width:46px;height:46px;border-radius:50%;background:#fff;border:0" />
+      </td>
+      <td style="vertical-align:middle">
+        <div style="font-size:22px;font-weight:700;letter-spacing:.5px;color:#fff;line-height:1.1">
+          Soccer<span style="color:#2a7de1">Dad</span>HQ
+        </div>
+        <div style="font-size:13px;letter-spacing:2px;color:#e8a020;text-transform:uppercase;margin-top:4px">
+          The Sideline
+        </div>
+      </td>
+    </tr></table>
   </div>
   <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px;padding:28px 32px">
     <h1 style="font-size:24px;margin:0 0 8px">Welcome to The Sideline ⚽</h1>

@@ -43,7 +43,7 @@ export const CLAIM_TIERS: { key: ClaimTierKey; name: string; tagline: string; fe
     key: "free",
     name: "Free listing",
     tagline: "Be found",
-    features: ["Listed in the directory", "Reviews & community rating shown", "Appears in search & rankings"],
+    features: ["Listed in the directory", "Real parent reviews & rating shown", "Appears in search & rankings"],
   },
   {
     key: "claim",
@@ -51,25 +51,13 @@ export const CLAIM_TIERS: { key: ClaimTierKey; name: string; tagline: string; fe
     tagline: "Manage your profile",
     features: [
       "Everything in Free, plus:",
-      "Verified ✓ badge",
+      "“Managed by owner” badge on your profile",
+      "Edit your info, links & upload a logo",
+      "Post tryout dates — shown in the homepage ticker",
       "Respond to every review",
-      "Edit info, photos & links",
-      "Post tryouts & events",
-      "Announce college/pro commitments",
-      "Lead capture & profile analytics",
-    ],
-  },
-  {
-    key: "featured",
-    name: "Featured",
-    tagline: "Stand out",
-    features: [
-      "Everything in Claim, plus:",
-      "★ Featured placement — pinned atop the directory",
-      "Priority in search results",
+      "Announce college, pro & national-team commitments",
       "Ad-free profile",
-      "Homepage & region spotlight",
-      "Monthly performance report",
+      "Owner dashboard: profile views, family messages & monthly rank trend",
     ],
   },
 ];
@@ -96,6 +84,10 @@ export interface PricingConfig {
   claimPlans: Record<string, ClaimPlan>;
   promos: PromoCode[];
   referral: ReferralConfig;
+  /** Temporary flat-fee promo: when enabled, every paid type is priced at
+   *  `price`, except types in `exceptTypes` (which keep their own rate) and
+   *  any type whose base price is $0 (e.g. public facilities stay free). */
+  flatPromo?: { enabled: boolean; price: number; exceptTypes: string[] };
 }
 
 export const DEFAULT_PRICING: PricingConfig = {
@@ -165,10 +157,11 @@ export const DEFAULT_PRICING: PricingConfig = {
         "Pro profile included — verified, gallery, review responses",
         "Featured placement on your directory",
         "Up to 3 featured tournament / event listings",
-        "600,000 logo-impression guarantee",
+        "Priority logo placement across the site",
         "4 newsletter brand inclusions",
         "Unlimited commitment announcements",
         "Editorial profile review",
+        "Monthly performance report — real impressions & clicks",
       ],
     },
     {
@@ -181,7 +174,7 @@ export const DEFAULT_PRICING: PricingConfig = {
         "$5,000 advertising credit",
         "Featured profile with priority placement",
         "Up to 5 featured tournament / event listings",
-        "1,000,000 logo-impression guarantee",
+        "Top-priority, site-wide logo placement",
         "8 newsletter brand inclusions + 1 sole-sponsor issue",
         "Staff-written feature article",
         "Homepage & region spotlight rotation",
@@ -190,11 +183,11 @@ export const DEFAULT_PRICING: PricingConfig = {
     },
   ],
   adPackages: [
-    { name: "Homepage banner", desc: "Top-of-funnel reach on the most-visited page.", price: "from $400/mo" },
-    { name: "Directory sponsorship", desc: "Sidebar unit on Clubs, Schools or Coaches — shown to parents actively comparing.", price: "from $250/mo" },
-    { name: "News in-feed", desc: "Native placement inside the news feed parents read weekly.", price: "from $200/mo" },
-    { name: "Profile local sponsor", desc: "Your business on the club/school pages in your area.", price: "from $150/mo" },
-    { name: "Rankings sponsor", desc: "High-visibility slot on one of the most-shared pages.", price: "from $300/mo" },
+    { name: "Homepage banner", desc: "Sole sponsor of the homepage banner slot for the month.", price: "from $400/mo" },
+    { name: "Directory sponsorship", desc: "Own the sidebar slot on Clubs, Schools or Coaches — in front of parents comparing programs.", price: "from $250/mo" },
+    { name: "News in-feed", desc: "A native slot inside the news feed parents read each week.", price: "from $200/mo" },
+    { name: "Profile local sponsor", desc: "Your business featured on the club & school pages in your area.", price: "from $150/mo" },
+    { name: "Rankings sponsor", desc: "Sponsor the slot on one of the most-shared pages on the site.", price: "from $300/mo" },
     { name: "The Sideline newsletter", desc: "Sole sponsor of a weekly issue, in every subscriber inbox.", price: "from $350/issue" },
   ],
   adRates: {
@@ -204,14 +197,20 @@ export const DEFAULT_PRICING: PricingConfig = {
   },
   // Annual claim price per entity type (basic listing stays free; claiming is paid).
   claimPlans: {
-    club: { label: "Club", claim: 199, featured: 399 },
-    school: { label: "High School", claim: 149, featured: 299 },
-    coach: { label: "Coach", claim: 99, featured: 199 },
-    "training-center": { label: "Training Center", claim: 199, featured: 399 },
-    facility: { label: "Facility", claim: 149, featured: 299 },
-    tournament: { label: "Tournament", claim: 249, featured: 499 },
-    camp: { label: "Camp", claim: 199, featured: 399 },
+    // Per-type annual rates (admin-editable in /admin/pricing). Two tiers only:
+    // Free (unclaimed) + Claim. `featured` mirrors `claim` for back-compat.
+    // Facilities are $0 — free for public city/county/state facilities (the claim
+    // form requires confirming that). All values editable by admin.
+    club: { label: "Club", claim: 199.99, featured: 199.99 },
+    school: { label: "High School", claim: 99.99, featured: 99.99 },
+    coach: { label: "Coach", claim: 49.99, featured: 49.99 },
+    "training-center": { label: "Training Center", claim: 249.99, featured: 249.99 },
+    facility: { label: "Facility", claim: 0, featured: 0 },
+    tournament: { label: "Tournament", claim: 299.99, featured: 299.99 },
+    camp: { label: "Camp", claim: 199.99, featured: 199.99 },
   },
+  // Off by default; admin flips on for a "$99 for everyone except coaches" sale.
+  flatPromo: { enabled: false, price: 99, exceptTypes: ["coach"] },
   promos: [
     { code: "LAUNCH50", kind: "percent", value: 50, note: "Launch — 50% off year one", active: true },
     { code: "SAVE25", kind: "amount", value: 25, note: "$25 off", active: true },
@@ -229,10 +228,15 @@ export function claimPlanFor(cfg: PricingConfig, type: string): ClaimPlan {
   return cfg.claimPlans[type] ?? { label: "Profile", claim: 199, featured: 399 };
 }
 
-/** Annual price for a given entity type + paid tier. */
+/** Annual price for a given entity type. Applies the flat-fee promo when active:
+ *  every paid type is priced at the flat rate, except `exceptTypes` (e.g. coaches
+ *  keep their lower rate) and free types (base $0, e.g. public facilities). */
 export function claimPriceFor(cfg: PricingConfig, type: string, tier: "claim" | "featured" = "claim"): number {
   const plan = claimPlanFor(cfg, type);
-  return tier === "featured" ? plan.featured : plan.claim;
+  const base = tier === "featured" ? plan.featured : plan.claim;
+  const fp = cfg.flatPromo;
+  if (fp?.enabled && base > 0 && !(fp.exceptTypes ?? []).includes(type)) return fp.price;
+  return base;
 }
 
 /** Validate a promo code against config; returns the $ discount on a given price. */

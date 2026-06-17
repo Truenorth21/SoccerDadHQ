@@ -1,9 +1,127 @@
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient, MODERATION_TABLES } from "@/lib/admin";
-import { DEFAULT_ADS, type Ad, type AdsConfig } from "@/lib/ads";
+import { DEFAULT_ADS, adPlacementFromOrder, type Ad, type AdsConfig } from "@/lib/ads";
 import { notifyApproved } from "@/lib/notifyEmail";
 
 export const dynamic = "force-dynamic";
+
+function slugify(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+}
+
+function toArr(v: unknown): string[] {
+  if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
+  return String(v ?? "").split(/[,;|]/).map((x) => x.trim()).filter(Boolean);
+}
+function nz(v: unknown): string | null {
+  const s = String(v ?? "").trim();
+  return s || null;
+}
+
+/** Turn an approved crowdsourced submission into a live directory listing. Returns
+ *  the admin manager URL where the admin can finish/edit it, or undefined for kinds
+ *  that have no DB table yet (training-center/facility/tournament/camp stay submission-only). */
+async function publishSubmission(
+  service: ReturnType<typeof adminServiceClient>,
+  sub: Record<string, any>
+): Promise<string | undefined> {
+  if (!service) return undefined;
+  const kind = sub.kind as string;
+  const LISTING_KINDS = ["training-center", "facility", "tournament", "camp"];
+  if (!["club", "school", "coach", ...LISTING_KINDS].includes(kind)) return undefined;
+
+  const name = String(sub.name ?? "").trim();
+  const region = String(sub.region ?? "").trim();
+  const city = String(sub.city ?? "").trim();
+  const website = sub.website || null;
+  if (!name) throw new Error("Submission has no name.");
+  if (!region) throw new Error("Submission is missing a region — can't publish. Reject it or ask the submitter.");
+  const slug = slugify(name);
+  // Filter-relevant fields the submitter provided (optional; admin completes the rest).
+  const det = sub.details && typeof sub.details === "object" ? (sub.details as Record<string, any>) : {};
+
+  const friendly = (e: { code?: string; message: string }) =>
+    e.code === "23505"
+      ? new Error(`A ${kind} with this name/slug is already in the directory.`)
+      : new Error(e.message);
+
+  if (kind === "club") {
+    if (!city) throw new Error("Club submission is missing a city.");
+    const { error } = await service.from("clubs").upsert(
+      {
+        id: `c-${slug}`, slug, name, region, city, website,
+        zip: nz(det.zip),
+        phone: nz(det.phone),
+        email: nz(det.email),
+        leagues: toArr(det.leagues),
+        age_groups: toArr(det.age_groups),
+        genders: toArr(det.genders),
+      },
+      { onConflict: "id" }
+    );
+    if (error) throw friendly(error);
+    return "/admin/clubs";
+  }
+  if (kind === "school") {
+    if (!city) throw new Error("School submission is missing a city.");
+    const programs = toArr(det.programs);
+    const { error } = await service.from("schools").upsert(
+      {
+        id: `s-${slug}`, slug, name, region, city, website,
+        zip: nz(det.zip),
+        type: det.type === "Private" ? "Private" : "Public",
+        fhsaa_class: nz(det.fhsaa_class),
+        district: nz(det.district),
+        programs: programs.length ? programs : ["Boys", "Girls"],
+      },
+      { onConflict: "id" }
+    );
+    if (error) throw friendly(error);
+    return "/admin/schools";
+  }
+  if (LISTING_KINDS.includes(kind)) {
+    if (!city) throw new Error("Submission is missing a city.");
+    // Filter facets the submitter picked (facet_focus/format/surface/type/level)
+    // become the listing's tags, so the directory's facet filters work.
+    const facetVals = Object.entries(det)
+      .filter(([k]) => k.startsWith("facet_"))
+      .map(([, v]) => String(v ?? "").trim())
+      .filter(Boolean);
+    const tags = Array.from(new Set([...facetVals, ...toArr(det.tags)]));
+    const { error } = await service.from("listings").upsert(
+      {
+        id: `${kind}-${slug}`, slug, kind, name, region, city, website,
+        description: sub.notes || null,
+        zip: nz(det.zip),
+        phone: nz(det.phone),
+        email: nz(det.email),
+        tags,
+      },
+      { onConflict: "id" }
+    );
+    if (error) {
+      if (error.message?.includes("does not exist") || (error as any).code === "42P01")
+        throw new Error("The listings table doesn't exist yet — run the listings migration in Supabase first.");
+      throw friendly(error);
+    }
+    return "/admin/listings";
+  }
+
+  // coach (coaches table has no website column → fold extra detail into bio)
+  const { error } = await service.from("coaches").upsert(
+    {
+      id: `coach-${slug}`, slug, name, region, city: city || null,
+      bio: sub.notes || null,
+      phone: nz(det.phone),
+      age_groups: toArr(det.age_groups),
+      genders: toArr(det.genders),
+      private_training: det.private_training === true,
+    },
+    { onConflict: "id" }
+  );
+  if (error) throw friendly(error);
+  return "/admin/coaches";
+}
 
 /** Turn an approved ad order into a live inventory creative (one click). */
 async function publishAdOrder(service: ReturnType<typeof adminServiceClient>, orderId: string) {
@@ -27,6 +145,7 @@ async function publishAdOrder(service: ReturnType<typeof adminServiceClient>, or
     image: o.creative_url || undefined,
     starts: start ? start.toISOString() : undefined,
     ends,
+    placement: adPlacementFromOrder(o.placement),
   };
 
   const { data: row } = await service.from("site_config").select("value").eq("key", "ads").single();
@@ -73,6 +192,21 @@ export async function POST(request: Request) {
   if (!body.status || !cfg.statuses.includes(body.status)) {
     return NextResponse.json({ error: "Invalid status for this table." }, { status: 400 });
   }
+
+  // Approving a crowdsourced submission first creates the live directory listing —
+  // if that fails (missing region/city, duplicate), we DON'T flip the status, so the
+  // admin sees the problem and the submission stays in the queue.
+  let editHref: string | undefined;
+  if (body.table === "submissions" && body.status === "approved") {
+    const { data: sub } = await service.from("submissions").select("*").eq("id", body.id).single();
+    if (!sub) return NextResponse.json({ error: "Submission not found." }, { status: 404 });
+    try {
+      editHref = await publishSubmission(service, sub as Record<string, any>);
+    } catch (e: any) {
+      return NextResponse.json({ error: e.message || "Could not create the listing." }, { status: 400 });
+    }
+  }
+
   const { error } = await service.from(body.table!).update({ status: body.status }).eq("id", body.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -86,8 +220,28 @@ export async function POST(request: Request) {
   const notifySubmission = body.table === "submissions" && body.status === "approved";
   if (notifyClaim || notifySubmission) {
     const { data: r } = await service.from(body.table!).select("*").eq("id", body.id).single();
-    if (r) await notifyApproved(body.table!, r as Record<string, any>);
+    if (r) {
+      await notifyApproved(body.table!, r as Record<string, any>);
+      // Approving a claim grants ownership for 1 year — recorded in profile_claims
+      // (decoupled from the entity so it works for seed + DB profiles).
+      if (notifyClaim) {
+        const c = r as Record<string, any>;
+        const until = new Date();
+        until.setUTCFullYear(until.getUTCFullYear() + 1);
+        await service.from("profile_claims").upsert(
+          {
+            subject_type: c.subject_type,
+            subject_slug: c.subject_slug,
+            subject_name: c.subject_name ?? null,
+            owner_id: c.user_id ?? null,
+            plan: c.plan ?? "claim",
+            claimed_until: until.toISOString().slice(0, 10),
+          },
+          { onConflict: "subject_type,subject_slug" }
+        );
+      }
+    }
   }
 
-  return NextResponse.json({ ok: true, status: body.status });
+  return NextResponse.json({ ok: true, status: body.status, editHref });
 }

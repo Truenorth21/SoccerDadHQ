@@ -11,7 +11,10 @@ export async function getAdsConfig(): Promise<AdsConfig> {
     const v = data?.value as Partial<AdsConfig> | undefined;
     if (!v) return DEFAULT_ADS;
     return {
-      inventory: v.inventory?.length ? v.inventory : DEFAULT_ADS.inventory,
+      // Respect an explicitly-saved inventory even when empty — clearing all
+      // sponsors must stick (an empty list lets AdSense fill the waterfall).
+      // Only fall back to the demo defaults when no inventory was ever saved.
+      inventory: Array.isArray(v.inventory) ? v.inventory : DEFAULT_ADS.inventory,
       house: { ...DEFAULT_ADS.house, ...(v.house ?? {}) },
     };
   } catch {

@@ -93,19 +93,71 @@ function dbRowToClub(r: Record<string, any>): Club {
   };
 }
 
-/** All clubs = seeded clubs + real clubs from Supabase, merged by slug (DB wins).
- *  Falls back to seed when Supabase is unconfigured/empty. Cookieless read, so
- *  it stays safe for static/ISR pages. */
+type ReviewAggregate = { count: number; rating: number; scores: Record<string, number> };
+
+/** Aggregate real reviews (avg overall rating, count, avg per-category scores) for
+ *  one subject type, keyed by subject_id. Cookieless + cache-capped so it's safe in
+ *  static/ISR pages. Lets the directory + rankings reflect actual parent reviews. */
+async function getReviewAggregates(subjectType: string): Promise<Record<string, ReviewAggregate>> {
+  const supabase = publicClient();
+  if (!supabase) return {};
+  try {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("subject_id, overall_rating, scores")
+      .eq("subject_type", subjectType);
+    if (error || !data) return {};
+    const acc: Record<string, { sum: number; count: number; scoreSums: Record<string, number> }> = {};
+    for (const r of data as { subject_id: string; overall_rating: number; scores: Record<string, number> | null }[]) {
+      const a = (acc[r.subject_id] ??= { sum: 0, count: 0, scoreSums: {} });
+      a.sum += Number(r.overall_rating);
+      a.count += 1;
+      for (const [k, v] of Object.entries(r.scores ?? {})) a.scoreSums[k] = (a.scoreSums[k] ?? 0) + Number(v);
+    }
+    const out: Record<string, ReviewAggregate> = {};
+    for (const [id, a] of Object.entries(acc)) {
+      const scores: Record<string, number> = {};
+      for (const [k, s] of Object.entries(a.scoreSums)) scores[k] = Math.round((s / a.count) * 10) / 10;
+      out[id] = { count: a.count, rating: Math.round((a.sum / a.count) * 10) / 10, scores };
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** Fold review aggregates onto entities by id — sets rating, review_count and
+ *  per-category scores. Entities with no reviews are returned unchanged (rating 0). */
+function applyReviewAggregates<T extends { id: string; rating: number; review_count: number; scores: object }>(
+  items: T[],
+  agg: Record<string, ReviewAggregate>,
+  emptyScores: object
+): T[] {
+  return items.map((it) => {
+    const a = agg[it.id];
+    if (!a || a.count === 0) return it;
+    return { ...it, rating: a.rating, review_count: a.count, scores: { ...emptyScores, ...a.scores } };
+  });
+}
+
+/** All clubs = seeded clubs + real clubs from Supabase, merged by slug (DB wins),
+ *  with real review ratings/counts folded in. Falls back to seed when Supabase is
+ *  unconfigured. Cookieless read, so it stays safe for static/ISR pages. */
 export async function loadClubs(): Promise<Club[]> {
   const supabase = publicClient();
   if (!supabase) return CLUBS;
   try {
-    const { data, error } = await supabase.from("clubs").select("*");
-    if (error || !data || data.length === 0) return CLUBS;
+    const [clubsRes, agg, ovMap] = await Promise.all([
+      supabase.from("clubs").select("*").order("slug"),
+      getReviewAggregates("club"),
+      fetchOverridesMap("club"),
+    ]);
+    const { data, error } = clubsRes;
     const bySlug = new Map<string, Club>();
     for (const c of CLUBS) bySlug.set(c.slug, c);
-    for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToClub(r));
-    return Array.from(bySlug.values());
+    if (!error && data) for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToClub(r));
+    const withReviews = applyReviewAggregates(Array.from(bySlug.values()), agg, EMPTY_SCORES);
+    return applyOverridesMap(withReviews, "club", ovMap);
   } catch {
     return CLUBS;
   }
@@ -171,8 +223,82 @@ export async function getClubs(filters: ClubFilters = {}): Promise<(Club & { dis
   return results;
 }
 
+/** Fields an owner is allowed to edit per profile type (everything else —
+ *  name, region, rank, votes, plan — is off-limits). Used by both the merge
+ *  below and the owner-edit API as the single source of truth. */
+export const OVERRIDE_FIELDS: Record<string, string[]> = {
+  club: ["description", "website", "email", "phone", "instagram", "facebook", "twitter", "leagues", "age_groups", "genders", "founded", "tryouts_open", "next_tryout_date", "tryout_note"],
+  school: ["description", "website", "email", "phone", "mascot", "tryouts_open", "next_tryout_date", "tryout_note"],
+  coach: ["bio", "phone", "title", "specialties", "private_training"],
+  "training-center": ["description", "website", "email", "phone", "tags"],
+  facility: ["description", "website", "email", "phone", "tags"],
+  tournament: ["description", "website", "email", "phone", "tags"],
+  camp: ["description", "website", "email", "phone", "tags"],
+};
+
+/** Read an owner's saved edits for a profile (cookieless, cache-safe). */
+export async function getOverride(subjectType: string, slug: string): Promise<Record<string, unknown>> {
+  const supabase = publicClient();
+  if (!supabase) return {};
+  try {
+    const { data } = await supabase
+      .from("profile_overrides")
+      .select("data")
+      .eq("subject_type", subjectType)
+      .eq("slug", slug)
+      .maybeSingle();
+    return ((data as { data?: Record<string, unknown> } | null)?.data) ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** Fetch all owner overrides for a type as a slug→data map (one query). Split
+ *  out so the loaders can run it in parallel with their other reads. */
+export async function fetchOverridesMap(type: string): Promise<Record<string, Record<string, unknown>>> {
+  const supabase = publicClient();
+  if (!supabase || !OVERRIDE_FIELDS[type]) return {};
+  const map: Record<string, Record<string, unknown>> = {};
+  try {
+    const { data } = await supabase.from("profile_overrides").select("slug, data").eq("subject_type", type);
+    for (const r of (data ?? []) as { slug: string; data: Record<string, unknown> }[]) map[r.slug] = r.data ?? {};
+  } catch {
+    /* table missing → no overrides */
+  }
+  return map;
+}
+
+/** Apply a pre-fetched override map to a directory list, so cards reflect owner
+ *  edits. Crucially, `tryouts_open` is REAL-only — the seed flag is ignored and
+ *  it's true only when an owner explicitly set it — so the directory badge/filter
+ *  matches the homepage ticker. */
+export function applyOverridesMap<T extends { slug: string }>(list: T[], type: string, map: Record<string, Record<string, unknown>>): T[] {
+  const allow = OVERRIDE_FIELDS[type] ?? [];
+  if (!allow.length) return list;
+  const gatesTryouts = allow.includes("tryouts_open");
+  return list.map((e) => {
+    const ov = map[e.slug];
+    const patch: Record<string, unknown> = {};
+    if (ov) for (const k of allow) if (ov[k] !== undefined && ov[k] !== null) patch[k] = ov[k];
+    const out = { ...(e as Record<string, unknown>), ...patch } as T & { tryouts_open?: boolean };
+    // Honest tryouts: seed flag never counts — only an explicit owner setting does.
+    if (gatesTryouts) out.tryouts_open = ov?.tryouts_open === true;
+    return out;
+  });
+}
+
+/** Merge an owner's whitelisted edits onto an entity. */
+export function applyOverride<T>(entity: T, type: string, data: Record<string, unknown>): T {
+  const allow = OVERRIDE_FIELDS[type] ?? [];
+  const patch: Record<string, unknown> = {};
+  for (const k of allow) if (data[k] !== undefined && data[k] !== null) patch[k] = data[k];
+  return { ...(entity as Record<string, unknown>), ...patch } as T;
+}
+
 export async function getClubBySlug(slug: string): Promise<Club | undefined> {
-  return (await loadClubs()).find((c) => c.slug === slug);
+  const club = (await loadClubs()).find((c) => c.slug === slug);
+  if (!club) return undefined;
+  return applyOverride(club, "club", await getOverride("club", slug));
 }
 
 export async function getNearbyClubs(club: Club, limit = 4): Promise<(Club & { distance: number })[]> {
@@ -230,12 +356,12 @@ export async function loadCoaches(): Promise<Coach[]> {
   const supabase = publicClient();
   if (!supabase) return COACHES;
   try {
-    const { data, error } = await supabase.from("coaches").select("*");
-    if (error || !data || data.length === 0) return COACHES;
+    const { data, error } = await supabase.from("coaches").select("*").order("slug");
     const bySlug = new Map<string, Coach>();
     for (const c of COACHES) bySlug.set(c.slug, c);
-    for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToCoach(r));
-    return Array.from(bySlug.values());
+    if (!error && data) for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToCoach(r));
+    const agg = await getReviewAggregates("coach");
+    return applyReviewAggregates(Array.from(bySlug.values()), agg, EMPTY_COACH_SCORES);
   } catch {
     return COACHES;
   }
@@ -266,7 +392,9 @@ export async function getCoaches(filters: CoachFilters = {}): Promise<Coach[]> {
 }
 
 export async function getCoachBySlug(slug: string): Promise<Coach | undefined> {
-  return (await loadCoaches()).find((c) => c.slug === slug);
+  const coach = (await loadCoaches()).find((c) => c.slug === slug);
+  if (!coach) return undefined;
+  return applyOverride(coach, "coach", await getOverride("coach", slug));
 }
 
 export async function getCoachesForClub(clubId: string): Promise<Coach[]> {
@@ -280,12 +408,71 @@ export function getTryouts(limit?: number): Tryout[] {
 
 /** Only tryouts whose date is still in the future, sorted soonest-first.
  *  Drives the homepage ticker — when this is empty the ticker is hidden. */
-export function getActiveTryouts(limit?: number): Tryout[] {
-  const now = Date.now();
-  const upcoming = [...TRYOUTS]
-    .filter((t) => +new Date(t.date) > now)
-    .sort((a, b) => +new Date(a.date) - +new Date(b.date));
-  return limit ? upcoming.slice(0, limit) : upcoming;
+interface TryoutOverride {
+  tryouts_open?: boolean;
+  next_tryout_date?: string;
+  tryout_note?: string;
+  age_groups?: string[];
+  genders?: string[];
+}
+
+/** Upcoming tryouts for the homepage ticker / newsletter — built from REAL owner
+ *  input: a club OR school the owner marked "tryouts open" with a future
+ *  next_tryout_date. The note (location/times) lives on the profile. No
+ *  fabricated dates — empty until owners set real ones. */
+export async function getActiveTryouts(limit?: number): Promise<Tryout[]> {
+  const supabase = publicClient();
+  if (!supabase) return [];
+  // Keep tryouts dated today or later (date-only values; don't drop a same-day tryout).
+  const startOfToday = new Date();
+  startOfToday.setUTCHours(0, 0, 0, 0);
+  const cutoff = startOfToday.getTime();
+  let rows: { subject_type: string; slug: string; data: TryoutOverride }[] = [];
+  try {
+    const { data } = await supabase
+      .from("profile_overrides")
+      .select("subject_type, slug, data")
+      .in("subject_type", ["club", "school"])
+      .order("slug");
+    rows = (data ?? []) as typeof rows;
+  } catch {
+    return [];
+  }
+  if (!rows.length) return [];
+  const hasClub = rows.some((r) => r.subject_type === "club");
+  const hasSchool = rows.some((r) => r.subject_type === "school");
+  const [clubs, schools] = await Promise.all([
+    hasClub ? loadClubs() : Promise.resolve([]),
+    hasSchool ? loadSchools() : Promise.resolve([]),
+  ]);
+  const clubBySlug = new Map(clubs.map((c) => [c.slug, c]));
+  const schoolBySlug = new Map(schools.map((s) => [s.slug, s]));
+  const out: Tryout[] = [];
+  for (const row of rows) {
+    const d = row.data || {};
+    if (d.tryouts_open === false || !d.next_tryout_date) continue;
+    if (+new Date(d.next_tryout_date) < cutoff) continue;
+    const isSchool = row.subject_type === "school";
+    const ent = isSchool ? schoolBySlug.get(row.slug) : clubBySlug.get(row.slug);
+    if (!ent) continue;
+    const ages = Array.isArray(d.age_groups) ? d.age_groups : (ent as { age_groups?: string[] }).age_groups ?? [];
+    const genders = Array.isArray(d.genders) ? d.genders : (ent as { genders?: string[]; programs?: string[] }).genders ?? (ent as { programs?: string[] }).programs ?? [];
+    out.push({
+      id: `${row.subject_type}-${row.slug}-${d.next_tryout_date}`,
+      club_id: ent.id,
+      club_name: ent.name,
+      club_slug: row.slug,
+      href: `${isSchool ? "/schools" : "/clubs"}/${row.slug}`,
+      region: ent.region,
+      city: ent.city,
+      age_groups: isSchool ? "High school" : ages.length ? `${ages[0]}–${ages[ages.length - 1]}` : "",
+      gender: genders.join(" & "),
+      date: new Date(d.next_tryout_date).toISOString(),
+      note: d.tryout_note || "",
+    });
+  }
+  out.sort((a, b) => +new Date(a.date) - +new Date(b.date));
+  return limit ? out.slice(0, limit) : out;
 }
 
 export async function getFeaturedClubs(limit = 6): Promise<Club[]> {
@@ -351,12 +538,17 @@ export async function loadSchools(): Promise<School[]> {
   const supabase = publicClient();
   if (!supabase) return SCHOOLS;
   try {
-    const { data, error } = await supabase.from("schools").select("*");
-    if (error || !data || data.length === 0) return SCHOOLS;
+    const [schoolsRes, agg, ovMap] = await Promise.all([
+      supabase.from("schools").select("*").order("slug"),
+      getReviewAggregates("school"),
+      fetchOverridesMap("school"),
+    ]);
+    const { data, error } = schoolsRes;
     const bySlug = new Map<string, School>();
     for (const s of SCHOOLS) bySlug.set(s.slug, s);
-    for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToSchool(r));
-    return Array.from(bySlug.values());
+    if (!error && data) for (const r of data as Record<string, any>[]) bySlug.set(r.slug, dbRowToSchool(r));
+    const withReviews = applyReviewAggregates(Array.from(bySlug.values()), agg, EMPTY_SCHOOL_SCORES);
+    return applyOverridesMap(withReviews, "school", ovMap);
   } catch {
     return SCHOOLS;
   }
@@ -417,7 +609,9 @@ export async function getSchools(filters: SchoolFilters = {}): Promise<(School &
 }
 
 export async function getSchoolBySlug(slug: string): Promise<School | undefined> {
-  return (await loadSchools()).find((s) => s.slug === slug);
+  const school = (await loadSchools()).find((s) => s.slug === slug);
+  if (!school) return undefined;
+  return applyOverride(school, "school", await getOverride("school", slug));
 }
 
 export async function getNearbySchools(school: School, limit = 4): Promise<(School & { distance: number })[]> {
@@ -499,13 +693,48 @@ export async function getVoteTallies(): Promise<Record<string, number>> {
   }
 }
 
+/** Cookieless variant of getVoteTallies — safe to call from statically-rendered
+ *  pages (homepage, digest, sitemap) without opting them out of ISR caching. */
+export async function getVoteTalliesPublic(): Promise<Record<string, number>> {
+  const supabase = publicClient();
+  if (!supabase) return {};
+  const period = new Date().toISOString().slice(0, 7);
+  try {
+    const { data, error } = await supabase
+      .from("vote_tallies")
+      .select("item_id, votes, period")
+      .eq("period", period);
+    if (error || !data) return {};
+    const map: Record<string, number> = {};
+    for (const row of data as { item_id: string; votes: number }[]) {
+      map[row.item_id] = Number(row.votes);
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
 /** Most recent end-of-month standings, keyed by item id → its rank that month.
  *  Drives real trend arrows. Empty (and hasSnapshot=false) until a snapshot exists. */
 export async function getLatestSnapshotRanks(): Promise<{
   ranks: Record<string, number>;
   hasSnapshot: boolean;
 }> {
-  const supabase = createClient();
+  return latestSnapshotRanksFrom(createClient());
+}
+
+/** Cookieless variant — safe for ISR-cached pages (homepage) without forcing dynamic. */
+export async function getLatestSnapshotRanksPublic(): Promise<{
+  ranks: Record<string, number>;
+  hasSnapshot: boolean;
+}> {
+  return latestSnapshotRanksFrom(publicClient());
+}
+
+async function latestSnapshotRanksFrom(
+  supabase: ReturnType<typeof createClient> | ReturnType<typeof publicClient>
+): Promise<{ ranks: Record<string, number>; hasSnapshot: boolean }> {
   if (!supabase) return { ranks: {}, hasSnapshot: false };
   try {
     const { data, error } = await supabase
@@ -558,6 +787,8 @@ export async function getSupabaseReviews(
       title: row.title,
       body: row.body,
       created_at: row.created_at,
+      owner_reply: (row as { owner_reply?: string }).owner_reply ?? undefined,
+      owner_reply_at: (row as { owner_reply_at?: string }).owner_reply_at ?? undefined,
     }));
   } catch {
     return [];

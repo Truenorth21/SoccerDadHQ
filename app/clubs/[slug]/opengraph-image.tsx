@@ -1,17 +1,21 @@
 import { ImageResponse } from "next/og";
-import { CLUBS } from "@/lib/seed";
+import { getClubBySlug } from "@/lib/data";
+import { getRankFor } from "@/lib/rankings";
 import { regionName } from "@/lib/regions";
 import { initials } from "@/lib/utils";
 
-export const runtime = "edge";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "Club profile — SoccerDadHQ";
 
-export default function Image({ params }: { params: { slug: string } }) {
-  const club = CLUBS.find((c) => c.slug === params.slug);
+// DB + seed so crowdsourced/imported clubs get a real card, not the generic one.
+export default async function Image({ params }: { params: { slug: string } }) {
+  const club = await getClubBySlug(params.slug);
   const name = club?.name ?? "SoccerDadHQ";
   const color = club?.logo_color ?? "#1a4fa0";
+  // Only stamp a rank when it's backed by real recommendations (honest).
+  const rank = club ? await getRankFor("clubs", club.id) : null;
+  const showRank = !!rank && rank.votes > 0;
 
   return new ImageResponse(
     (
@@ -28,41 +32,55 @@ export default function Image({ params }: { params: { slug: string } }) {
           fontFamily: "sans-serif",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 130,
-              height: 130,
-              borderRadius: 24,
-              background: color,
-              fontSize: 56,
-              fontWeight: 800,
-            }}
-          >
-            {initials(name)}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ display: "flex", fontSize: 26, color: "#e8a020", letterSpacing: 3, textTransform: "uppercase" }}>
-              {club ? regionName(club.region) : "Florida Youth Soccer"}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 28 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 130,
+                height: 130,
+                borderRadius: 24,
+                background: color,
+                fontSize: 56,
+                fontWeight: 800,
+              }}
+            >
+              {initials(name)}
             </div>
-            <div style={{ display: "flex", fontSize: 64, fontWeight: 800, marginTop: 8, maxWidth: 920, lineHeight: 1.05 }}>
-              {name}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ display: "flex", fontSize: 26, color: "#e8a020", letterSpacing: 3, textTransform: "uppercase" }}>
+                {club ? regionName(club.region) : "Florida Youth Soccer"}
+              </div>
+              <div style={{ display: "flex", fontSize: 64, fontWeight: 800, marginTop: 8, maxWidth: showRank ? 640 : 920, lineHeight: 1.05 }}>
+                {name}
+              </div>
             </div>
           </div>
+          {showRank && rank && (
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end" }}>
+              <div style={{ display: "flex", fontSize: 96, fontWeight: 800, color: "#e8a020", lineHeight: 1 }}>#{rank.regionRank}</div>
+              <div style={{ display: "flex", fontSize: 22, color: "#cbd5e1", letterSpacing: 2, textTransform: "uppercase", marginTop: 4 }}>
+                in {regionName(rank.region)}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 16, fontSize: 34 }}>
-            {club && (
+            {club && club.review_count > 0 && (
               <span style={{ display: "flex", color: "#e8a020", fontWeight: 800 }}>
                 ★ {club.rating.toFixed(1)} · {club.review_count} reviews
               </span>
             )}
           </div>
-          <div style={{ display: "flex", fontSize: 30, color: "#94a3b8" }}>SoccerDadHQ.com</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="https://soccerdadhq.com/icon.png" width={44} height={44} alt="" style={{ borderRadius: 9999, background: "#fff" }} />
+            <div style={{ display: "flex", fontSize: 30, color: "#94a3b8" }}>SoccerDadHQ.com</div>
+          </div>
         </div>
       </div>
     ),

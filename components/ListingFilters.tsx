@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import { REGIONS } from "@/lib/regions";
 import { KIND_CONFIG, type ListingKind } from "@/lib/listings";
 
-export default function ListingFilters({ kind }: { kind: ListingKind }) {
+export default function ListingFilters({ kind, hasRatings = false }: { kind: ListingKind; hasRatings?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const cfg = KIND_CONFIG[kind];
@@ -64,8 +64,8 @@ export default function ListingFilters({ kind }: { kind: ListingKind }) {
           <label className="label">Sort by</label>
           <select className="input" value={get("sort")} onChange={(e) => update({ sort: e.target.value })}>
             <option value="name">Name (A–Z)</option>
-            <option value="rating">Highest rated</option>
-            <option value="reviews">Most reviewed</option>
+            {hasRatings && <option value="rating">Highest rated</option>}
+            {hasRatings && <option value="reviews">Most reviewed</option>}
           </select>
         </div>
       </div>

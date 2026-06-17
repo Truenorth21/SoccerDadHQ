@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { POLLS, pollOfTheDayIndex } from "@/lib/funPolls";
+import Link from "next/link";
+import { POLLS, pollOfTheDayIndex, tallyPoll, POLL_REVEAL_THRESHOLD } from "@/lib/funPolls";
 import { SITE_URL } from "@/lib/utils";
 
 const STORE = "sdhq:pollvotes";
@@ -38,8 +39,9 @@ export default function PollDeck() {
   const insight = poll.kind === "insight";
 
   const live = results[poll.id] || {};
-  const countFor = (i: number) => poll.options[i].base + (live[i] || 0) + (myVote === i ? 1 : 0);
-  const total = poll.options.reduce((a, _o, i) => a + countFor(i), 0);
+  const tally = tallyPoll(poll, live, myVote);
+  // Show real percentage bars only once a poll clears the reveal threshold.
+  const showResults = voted && tally.revealed;
 
   function vote(i: number) {
     if (voted) return;
@@ -90,7 +92,7 @@ export default function PollDeck() {
     <div className="card overflow-hidden">
       <div className={`flex items-center justify-between px-5 py-3 text-white ${insight ? "bg-navy" : "bg-hero-grad"}`}>
         <span className="font-heading text-sm font-bold uppercase tracking-wide text-amber-300">
-          {insight ? "📊 Parent Pulse" : "🎉 Sideline Life"}
+          {index === pollOfTheDayIndex() ? "📊 Poll of the Day" : insight ? "📊 The Real Talk" : "🎉 Sideline Life"}
         </span>
         <span className="text-xs text-white/70">
           Poll {index + 1} of {POLLS.length}
@@ -108,7 +110,7 @@ export default function PollDeck() {
 
         <div className="mt-4 space-y-2.5">
           {poll.options.map((o, i) => {
-            const pct = total > 0 ? Math.round((countFor(i) / total) * 100) : 0;
+            const pct = tally.options[i].pct;
             return (
               <button
                 key={i}
@@ -118,7 +120,7 @@ export default function PollDeck() {
                   myVote === i ? "border-brand-sky" : "border-slate-200 hover:border-slate-300"
                 } ${voted ? "cursor-default" : ""}`}
               >
-                {voted && (
+                {showResults && (
                   <span
                     className={`absolute inset-y-0 left-0 ${insight ? "bg-amber-50" : "bg-sky-50"}`}
                     style={{ width: `${pct}%` }}
@@ -130,7 +132,7 @@ export default function PollDeck() {
                     {myVote === i && <span className="mr-1 text-brand-sky">✓</span>}
                     {o.label}
                   </span>
-                  {voted && <span className="font-heading font-bold text-brand-blue">{pct}%</span>}
+                  {showResults && <span className="font-heading font-bold text-brand-blue">{pct}%</span>}
                 </span>
               </button>
             );
@@ -139,7 +141,11 @@ export default function PollDeck() {
 
         <div className="mt-4 flex items-center justify-between gap-3">
           <span className="text-xs text-slate-400">
-            {ready && voted ? `${total.toLocaleString()} votes · ${votedCount} answered` : "Tap an answer to vote"}
+            {!ready || !voted
+              ? "Tap an answer to vote"
+              : tally.revealed
+                ? `${tally.realTotal.toLocaleString()} votes · ${votedCount} answered`
+                : `Thanks! ${tally.realTotal} ${tally.realTotal === 1 ? "vote" : "votes"} so far — results show once ${POLL_REVEAL_THRESHOLD} parents weigh in`}
           </span>
           <div className="flex items-center gap-3">
             <button
@@ -162,6 +168,13 @@ export default function PollDeck() {
             </button>
           </div>
         </div>
+
+        <Link
+          href="/polls"
+          className="mt-3 block border-t border-slate-100 pt-3 text-center font-heading text-sm font-semibold uppercase tracking-wide text-brand-blue hover:text-brand-sky"
+        >
+          See all polls &amp; results →
+        </Link>
       </div>
     </div>
   );

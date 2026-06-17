@@ -8,12 +8,7 @@ import type { School } from "@/lib/types";
 
 export default function SchoolCard({ school }: { school: School & { distance?: number } }) {
   return (
-    <div className={`card card-hover group relative flex flex-col p-4 ${school.featured ? "ring-1 ring-amber-300 bg-amber-50/60" : ""}`}>
-      {school.featured && (
-        <span className="absolute -top-2 left-3 z-[2] rounded-full bg-navy px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-300 shadow-sm">
-          ★ Featured
-        </span>
-      )}
+    <div className="card card-hover group relative flex flex-col p-4">
       <Link href={`/schools/${school.slug}`} className="absolute inset-0 z-[1]" aria-label={school.name} />
       <div className="absolute right-3 top-3 z-[2] flex gap-1.5">
         <CompareButton item={{ type: "school", slug: school.slug, name: school.name }} />

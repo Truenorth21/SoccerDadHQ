@@ -16,3 +16,4 @@ next-env.d.ts
 
 # Local Claude Code settings (personal, not for the repo)
 .claude/
+.env*

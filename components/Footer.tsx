@@ -41,7 +41,8 @@ export default function Footer() {
             <li><Link href="/sideline" className="hover:text-white">Sideline Life 🎉</Link></li>
             <li><Link href="/submit" className="hover:text-white">Submit a Listing</Link></li>
             <li><Link href="/dashboard" className="hover:text-white">My Dashboard</Link></li>
-            <li><Link href="/advertise" className="font-semibold text-brand-amber hover:text-amber-300">Advertise & Upgrade</Link></li>
+            <li><Link href="/claim" className="font-semibold text-brand-amber hover:text-amber-300">Claim Your Profile</Link></li>
+            <li><Link href="/advertise" className="hover:text-white">Advertise & Upgrade</Link></li>
             <li><Link href="/partners" className="hover:text-white">Premier Partners</Link></li>
           </ul>
         </div>
@@ -72,7 +73,10 @@ export default function Footer() {
 
       <div className="border-t border-navy-700">
         <div className="container-page flex flex-col items-center justify-between gap-2 py-5 text-xs text-slate-500 sm:flex-row">
-          <p>© {2026} SoccerDadHQ.com — Independent. Not affiliated with any league or club.</p>
+          <p>
+            © {2026} SoccerDadHQ.com — Independent. Not affiliated with any league or club.{" "}
+            <Link href="/terms" className="underline hover:text-slate-300">Listings may be incomplete — confirm details directly.</Link>
+          </p>
           <div className="flex gap-4">
             <Link href="/rankings" className="hover:text-slate-300">Methodology</Link>
             <Link href="/privacy" className="hover:text-slate-300">Privacy</Link>

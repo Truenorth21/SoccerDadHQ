@@ -16,8 +16,9 @@ export default async function AdvertisePage() {
   const pricing = await getPricing();
   const AD_PACKAGES = pricing.adPackages;
   const plans = Object.entries(pricing.claimPlans); // [type, {label, claim, featured}]
-  const minClaim = Math.min(...plans.map(([, p]) => p.claim));
-  const minFeatured = Math.min(...plans.map(([, p]) => p.featured));
+  const paidClaim = plans.map(([, p]) => p.claim).filter((n) => n > 0);
+  const minClaim = paidClaim.length ? Math.min(...paidClaim) : 0;
+  const minFeatured = minClaim;
   const tierPriceLabel: Record<string, string> = {
     free: "$0",
     claim: `from $${minClaim}`,
@@ -118,6 +119,18 @@ export default async function AdvertisePage() {
           <div className="mb-2 text-center">
             <h2 className="section-title">Advertising packages</h2>
             <p className="mt-1 text-slate-500">Local, contextual placements — clearly labeled, never spammy.</p>
+          </div>
+          <div className="mx-auto mt-4 max-w-2xl rounded-xl bg-white p-4 text-center text-sm text-slate-600 ring-1 ring-slate-200">
+            <p>
+              <strong className="text-navy">Monthly packages are slot sponsorships</strong> — you own the
+              placement for the month (no impression minimums). We&rsquo;re a growing Florida youth-soccer
+              site, so we offer <strong className="text-navy">founding-advertiser rates</strong> and send you
+              <strong className="text-navy"> real impression &amp; click numbers</strong> each month.
+            </p>
+            <p className="mt-1 text-slate-500">
+              Prefer to pay only for impressions delivered?{" "}
+              <Link href="/advertise/order" className="font-semibold text-brand-blue hover:underline">Build a CPM campaign →</Link>
+            </p>
           </div>
           <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {AD_PACKAGES.map((p) => (

@@ -41,6 +41,14 @@ export function Stars({
 }
 
 export function RatingBadge({ value, count }: { value: number; count?: number }) {
+  // No reviews yet → show an honest "not rated" state instead of a hollow 0.0.
+  if (count === 0 || (count === undefined && value <= 0)) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 ring-1 ring-slate-200">
+        ☆ Not yet rated
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1.5">
       <span className="inline-flex items-center gap-1 rounded-md bg-amber-50 px-2 py-1 ring-1 ring-amber-100">

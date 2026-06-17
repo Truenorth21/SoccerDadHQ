@@ -2,12 +2,58 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import AdminQueue from "@/components/AdminQueue";
 import PollPulse from "@/components/PollPulse";
+import RevenueDashboard, { type RevenueSummary, type RevenueBucket } from "@/components/RevenueDashboard";
+import RevenueLedger from "@/components/RevenueLedger";
+import ClaimsAdmin from "@/components/ClaimsAdmin";
+import CollapsibleSection from "@/components/CollapsibleSection";
 import { getRealPollResults } from "@/lib/pollResults";
 import { getCurrentAdmin, adminServiceClient, hasServiceKey } from "@/lib/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
-export const metadata: Metadata = { title: "Admin — Moderation Queue", robots: { index: false } };
+export const metadata: Metadata = { title: "Admin — Dashboard", robots: { index: false } };
 export const dynamic = "force-dynamic";
+
+type RevCat = "ads" | "claims" | "partners" | "other";
+
+/** Booked revenue across periods, by category. Auto: ad orders (invoiced/live/done)
+ *  + approved/active profile claims. Manual: every revenue_entries row (partners,
+ *  offline deals, anything). Monday-start weeks, UTC boundaries. */
+function computeRevenue(
+  adOrders: { estimate: number | null; status: string; created_at: string }[],
+  claims: { plan_price: number | null; status: string; created_at: string }[],
+  entries: { category: string; amount: number | null; occurred_at: string }[]
+): RevenueSummary {
+  const now = new Date();
+  const y = now.getUTCFullYear(), mo = now.getUTCMonth(), d = now.getUTCDate();
+  const todayStart = Date.UTC(y, mo, d);
+  const dow = new Date(todayStart).getUTCDay(); // 0=Sun
+  const weekStart = todayStart - ((dow + 6) % 7) * 86400000; // Monday-start week
+  const monthStart = Date.UTC(y, mo, 1);
+  const yearStart = Date.UTC(y, 0, 1);
+  const empty = (): RevenueBucket => ({ ads: 0, claims: 0, partners: 0, other: 0, total: 0 });
+  const rev: RevenueSummary = { today: empty(), week: empty(), month: empty(), ytd: empty(), all: empty() };
+
+  const add = (cat: RevCat, amount: number, ts: number) => {
+    if (!amount || Number.isNaN(ts)) return;
+    const apply = (b: RevenueBucket) => { b[cat] += amount; b.total += amount; };
+    apply(rev.all);
+    if (ts >= yearStart) apply(rev.ytd);
+    if (ts >= monthStart) apply(rev.month);
+    if (ts >= weekStart) apply(rev.week);
+    if (ts >= todayStart) apply(rev.today);
+  };
+
+  const AD_BOOKED = new Set(["invoiced", "live", "done"]);
+  for (const o of adOrders) if (AD_BOOKED.has(o.status)) add("ads", Number(o.estimate ?? 0), +new Date(o.created_at));
+  const CLAIM_BOOKED = new Set(["approved", "active"]);
+  for (const c of claims) if (CLAIM_BOOKED.has(c.status)) add("claims", Number(c.plan_price ?? 0), +new Date(c.created_at));
+  for (const e of entries) {
+    const cat: RevCat = (["ads", "claims", "partners", "other"].includes(e.category) ? e.category : "other") as RevCat;
+    // occurred_at is a date (YYYY-MM-DD); treat at UTC midnight.
+    add(cat, Number(e.amount ?? 0), Date.parse(`${e.occurred_at}T00:00:00Z`));
+  }
+  return rev;
+}
 
 function Notice({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -70,6 +116,25 @@ export default async function AdminPage() {
   };
   const total = data.claims.length + data.submissions.length + data.commitments.length + data.adOrders.length + data.partners.length;
 
+  // Revenue inputs — auto (ad orders + claims) plus the manual ledger.
+  const [revAds, revClaims, revEntries] = await Promise.all([
+    service.from("ad_orders").select("estimate,status,created_at"),
+    service.from("claim_requests").select("plan_price,status,created_at"),
+    service.from("revenue_entries").select("*").order("occurred_at", { ascending: false }),
+  ]);
+  const ledgerMissing = Boolean(
+    revEntries.error && (revEntries.error.message?.includes("does not exist") || (revEntries.error as { code?: string }).code === "42P01")
+  );
+  const ledger = (revEntries.data ?? []) as any[];
+  const revenue = computeRevenue((revAds.data ?? []) as any, (revClaims.data ?? []) as any, ledger);
+
+  // Claimed profiles (ownership + expiry, Phase 3).
+  const claimsRes = await service.from("profile_claims").select("*, profiles(email)").order("claimed_until", { ascending: true });
+  const claimsMissing = Boolean(
+    claimsRes.error && (claimsRes.error.message?.includes("does not exist") || (claimsRes.error as { code?: string }).code === "42P01")
+  );
+  const profileClaims = (claimsRes.data ?? []) as any[];
+
   // Ad performance for the current month.
   const period = new Date().toISOString().slice(0, 7);
   const { data: tallies } = await service
@@ -95,11 +160,15 @@ export default async function AdminPage() {
       <section className="border-b border-slate-200 bg-navy py-10 text-white">
         <div className="container-page">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Moderation Queue</h1>
-            <div className="flex gap-2">
+            <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Admin Dashboard</h1>
+            <div className="flex flex-wrap gap-2">
               <Link href="/admin/clubs" className="btn-amber text-sm">Clubs →</Link>
               <Link href="/admin/schools" className="btn-amber text-sm">Schools →</Link>
               <Link href="/admin/coaches" className="btn-amber text-sm">Coaches →</Link>
+              <Link href="/admin/listings" className="btn-amber text-sm">Listings →</Link>
+              <Link href="/admin/marketing" className="btn-amber text-sm">Marketing →</Link>
+              <Link href="/admin/messages" className="btn-amber text-sm">Messages →</Link>
+              <Link href="/admin/newsletter" className="btn-amber text-sm">Newsletter →</Link>
               <Link href="/admin/pricing" className="btn-outline text-sm">Pricing &amp; plans →</Link>
               <Link href="/admin/ads" className="btn-outline text-sm">Ads →</Link>
             </div>
@@ -110,16 +179,33 @@ export default async function AdminPage() {
         </div>
       </section>
       <div className="container-page py-8">
-        <AdminQueue data={data} />
+        {/* Revenue first — the at-a-glance numbers */}
+        <RevenueDashboard rev={revenue} />
 
-        <section className="mt-12">
-          <h2 className="section-title mb-3">Ad Performance · {period}</h2>
+        {/* Manual revenue ledger — partner deals & off-site revenue */}
+        <CollapsibleSection title="Revenue ledger" subtitle="Log partner deals & revenue earned off the site" defaultOpen>
+          <RevenueLedger entries={ledger} missing={ledgerMissing} />
+        </CollapsibleSection>
+
+        {/* Moderation queue — the main work area, stays open */}
+        <div className="mt-10">
+          <h2 className="section-title mb-3">Moderation queue</h2>
+          <AdminQueue data={data} />
+        </div>
+
+        {/* Claimed profiles — ownership, expiry & promo/referral month grants */}
+        <CollapsibleSection title="Claimed profiles" subtitle="Owners, expiry & free-month grants">
+          <ClaimsAdmin claims={profileClaims} missing={claimsMissing} />
+        </CollapsibleSection>
+
+        {/* Detail panels — collapsed by default to keep the page tidy */}
+        <CollapsibleSection title={`Ad performance · ${period}`} subtitle="Impressions, clicks & CTR this month">
           {perfRows.length === 0 ? (
-            <p className="rounded-xl bg-white p-6 text-center text-sm text-slate-500 ring-1 ring-slate-100">
+            <p className="rounded-lg bg-slate-50 p-4 text-center text-sm text-slate-500">
               No ad impressions recorded yet this month.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl ring-1 ring-slate-100">
+            <div className="overflow-x-auto rounded-lg ring-1 ring-slate-100">
               <table className="w-full bg-white text-sm">
                 <thead className="bg-slate-50 text-left font-heading text-xs uppercase tracking-wide text-slate-500">
                   <tr>
@@ -142,9 +228,11 @@ export default async function AdminPage() {
               </table>
             </div>
           )}
-        </section>
+        </CollapsibleSection>
 
-        <PollPulse results={pollResults} />
+        <CollapsibleSection title="Poll Pulse" subtitle="Live community vote results">
+          <PollPulse results={pollResults} />
+        </CollapsibleSection>
       </div>
     </>
   );

@@ -1,15 +1,28 @@
-import { TRYOUTS } from "./seed";
 import { COMMITMENTS } from "./commitments";
-import { RANKED_CLUBS } from "./rankings";
+import { getRankings } from "./rankings";
+import { getActiveTryouts } from "./data";
 import { getNews } from "./news";
 import { resolveAd } from "./ads";
 import { getAdsConfig } from "./adsServer";
-import { FUN_POLLS, pollOfTheWeekIndex } from "./funPolls";
-import { getInsightOfTheWeek } from "./pollResults";
+import { getInsightOfTheWeek, getFunPollOfTheWeek } from "./pollResults";
+import { POLL_REVEAL_THRESHOLD } from "./funPolls";
 import { regionName, type RegionKey } from "./regions";
 import { formatDate, SITE_URL } from "./utils";
 import { sendEmail } from "./email";
 import { unsubUrl, UNSUB_PLACEHOLDER } from "./unsubscribe";
+import { publicClient } from "./supabase/public";
+
+/** Admin-written "this week" intro, edited at /admin/newsletter (site_config key 'newsletter'). */
+async function getNewsletterIntro(): Promise<string> {
+  const supabase = publicClient();
+  if (!supabase) return "";
+  try {
+    const { data } = await supabase.from("site_config").select("value").eq("key", "newsletter").single();
+    return ((data?.value as { intro?: string } | null)?.intro ?? "").trim();
+  } catch {
+    return "";
+  }
+}
 
 /**
  * Builds a region-tailored "The Sideline" issue. Leads with platform data that is
@@ -19,23 +32,40 @@ import { unsubUrl, UNSUB_PLACEHOLDER } from "./unsubscribe";
  */
 export async function buildRegionDigest(region?: RegionKey | null) {
   const label = region ? regionName(region) : "Florida";
-  const now = Date.now();
 
-  const tryouts = TRYOUTS.filter((t) => +new Date(t.date) > now)
+  const tryouts = (await getActiveTryouts())
     .filter((t) => !region || t.region === region)
-    .sort((a, b) => +new Date(a.date) - +new Date(b.date))
     .slice(0, 5);
 
-  const topClubs = RANKED_CLUBS.filter((c) => !region || c.region === region).slice(0, 5);
+  const rankedClubs = (await getRankings()).clubs;
+  const topClubs = rankedClubs.filter((c) => !region || c.region === region).slice(0, 5);
 
   const commits = COMMITMENTS.filter((c) => !region || c.region === region).slice(0, 5);
 
+  // News: prefer this region's stories, then any Florida story, then national —
+  // and label the section honestly so a "South Florida" edition never presents
+  // Pacific-NW news as if it were local.
   const allNews = await getNews();
-  const regionNews = region ? allNews.filter((n) => n.region === region) : [];
-  const news = (regionNews.length >= 3 ? regionNews : allNews).slice(0, 5);
+  const floridaNews = allNews.filter((n) => !!n.region);
+  const regionNews = region ? floridaNews.filter((n) => n.region === region) : floridaNews;
+  let news = regionNews;
+  let newsHeading = region ? `News in ${label}` : "Florida News";
+  if (news.length < 2) {
+    const rest = floridaNews.filter((n) => !regionNews.includes(n));
+    news = [...regionNews, ...rest];
+    newsHeading = "Florida News";
+  }
+  if (news.length < 2) {
+    news = allNews;
+    newsHeading = "Around U.S. Youth Soccer";
+  }
+  news = news.slice(0, 5);
 
-  const sponsor = resolveAd(await getAdsConfig(), "newsletter", 4);
-  const poll = FUN_POLLS[pollOfTheWeekIndex()];
+  // Region-aware sponsor: a creative tagged with this region (or untagged) fills the slot.
+  const sponsor = resolveAd(await getAdsConfig(), "newsletter", 4, region ?? "statewide");
+  const intro = await getNewsletterIntro();
+  const fun = await getFunPollOfTheWeek();
+  const funTop = fun.options[fun.topIndex];
   const insight = await getInsightOfTheWeek();
   const insightTop = insight.options[insight.topIndex];
 
@@ -46,7 +76,7 @@ export async function buildRegionDigest(region?: RegionKey | null) {
   /* ---------- plain text ---------- */
   const text = `THE SIDELINE — ${label} edition
 ${SITE_URL}
-
+${intro ? `\n${intro}\n` : ""}
 ${tryouts.length ? `OPEN TRYOUTS
 ${tryouts.map((t) => `• ${t.club_name} — ${t.age_groups} (${t.gender}) — ${formatDate(t.date)} — ${t.city}`).join("\n")}` : ""}
 
@@ -56,18 +86,21 @@ ${topClubs.map((c, i) => `${i + 1}. ${c.name} — ${c.subtitle}`).join("\n")}
 ${commits.length ? `RECENT COMMITMENTS
 ${commits.map((c) => `• ${c.player_name} (${c.position}, '${String(c.grad_year).slice(2)}) → ${c.destination}${c.club_name ? ` — ${c.club_name}` : ""}`).join("\n")}` : ""}
 
-FROM THE NEWS
-${news.map((n) => `• ${n.title} (${n.source}) — ${n.link}`).join("\n")}
+${news.length ? `${newsHeading.toUpperCase()}
+${news.map((n) => `• ${n.title} (${n.source}) — ${n.link}`).join("\n")}` : ""}
 
 PARENT PULSE — WHAT FLORIDA SOCCER PARENTS SAY
 ${insight.poll.emoji} ${insight.poll.question}
-Leading answer: ${insightTop.label} (${insightTop.pct}%)
-${insight.options.map((o) => `  – ${o.label}: ${o.pct}%`).join("\n")}
+${insight.revealed ? `Leading answer: ${insightTop.label} (${insightTop.pct}%)
+${insight.options.map((o) => `  – ${o.label}: ${o.pct}%`).join("\n")}` : `${insight.options.map((o) => `  – ${o.label}`).join("\n")}
+(Be the first to weigh in — results post once ${POLL_REVEAL_THRESHOLD} parents vote.)`}
 Add your vote → ${SITE_URL}/sideline
 
 SIDELINE LIFE — FUN POLL OF THE WEEK
-${poll.emoji} ${poll.question}
-${poll.options.map((o) => `  – ${o.label}`).join("\n")}
+${fun.poll.emoji} ${fun.poll.question}
+${fun.revealed ? `Leading answer: ${funTop.label} (${funTop.pct}%)
+${fun.options.map((o) => `  – ${o.label}: ${o.pct}%`).join("\n")}` : `${fun.options.map((o) => `  – ${o.label}`).join("\n")}
+(Be the first to weigh in — results post once ${POLL_REVEAL_THRESHOLD} parents vote.)`}
 Vote → ${SITE_URL}/sideline
 
 — — —
@@ -114,37 +147,54 @@ Unsubscribe: ${UNSUB_PLACEHOLDER}`;
     )
     .join("");
 
-  // Parent Pulse — the serious insight poll of the week, with live result bars.
-  const pulseBars = insight.options
-    .map((o, i) => {
-      const lead = i === insight.topIndex;
-      return `<div style="margin:7px 0">
+  // Result-bar renderer shared by both polls — lead option in amber, rest in blue.
+  const resultBars = (r: typeof insight) =>
+    r.options
+      .map((o, i) => {
+        const lead = i === r.topIndex;
+        return `<div style="margin:7px 0">
         <div style="font-size:13px;color:#0a1628;font-weight:${lead ? 700 : 500}">${o.label} <span style="color:#1a4fa0;font-weight:700">${o.pct}%</span></div>
         <div style="height:8px;background:#f1f5f9;border-radius:6px;overflow:hidden;margin-top:3px"><div style="height:8px;width:${o.pct}%;background:${lead ? "#e8a020" : "#2a7de1"}"></div></div>
       </div>`;
-    })
-    .join("");
+      })
+      .join("");
+  // Poll body: real result bars once enough genuine votes land, otherwise an
+  // honest "be the first" call-to-action — never fabricated percentages.
+  const pollBody = (r: typeof insight) =>
+    r.revealed
+      ? `<div style="margin-top:10px">${resultBars(r)}</div><div style="font-size:11px;color:#94a3b8;margin-top:6px">${r.realTotal.toLocaleString()} votes</div>`
+      : `<div style="font-size:13px;color:#475569;margin-top:8px">${r.options.map((o) => o.label).join(" · ")}</div><div style="font-size:12px;color:#94a3b8;margin-top:6px">Be the first to weigh in — results post once ${POLL_REVEAL_THRESHOLD} parents vote.</div>`;
+  const insightBody = pollBody(insight);
+  const funBody = pollBody(fun);
 
   const html = `
 <div style="font-family:Helvetica,Arial,sans-serif;max-width:600px;margin:0 auto;color:#0a1628">
   <div style="background:#0a1628;border-radius:14px 14px 0 0;padding:24px 28px">
-    <div style="font-size:22px;font-weight:700;color:#fff">Soccer<span style="color:#2a7de1">Dad</span>HQ</div>
-    <div style="font-size:13px;letter-spacing:2px;color:#e8a020;text-transform:uppercase;margin-top:2px">The Sideline · ${label}</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td style="padding-right:12px;vertical-align:middle">
+        <img src="${SITE_URL}/icon.png" width="46" height="46" alt="SoccerDadHQ" style="display:block;width:46px;height:46px;border-radius:50%;background:#fff;border:0" />
+      </td>
+      <td style="vertical-align:middle">
+        <div style="font-size:22px;font-weight:700;color:#fff;line-height:1.1">Soccer<span style="color:#2a7de1">Dad</span>HQ</div>
+        <div style="font-size:13px;letter-spacing:2px;color:#e8a020;text-transform:uppercase;margin-top:3px">The Sideline · ${label}</div>
+      </td>
+    </tr></table>
   </div>
   <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px;padding:8px 28px 28px">
+    ${intro ? `<div style="font-size:15px;line-height:1.6;color:#334155;padding:12px 0 4px;border-bottom:1px solid #f1f5f9">${intro.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/\n/g, "<br>")}</div>` : ""}
     ${section("Open Tryouts", tryoutsHtml)}
     ${section(`Top Clubs${region ? ` in ${label}` : ""}`, clubsHtml)}
     ${section("Recent Commitments", commitsHtml)}
-    ${section("From the News", newsHtml)}
+    ${section(newsHeading, newsHtml)}
 
     <!-- Parent Pulse: serious insight poll of the week, with results -->
     <div style="margin-top:24px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
       <div style="background:#0a1628;padding:10px 16px">
-        <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e8a020;font-weight:700">📊 Parent Pulse · What FL soccer parents say</span>
+        <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e8a020;font-weight:700">📊 The Real Talk · What FL soccer parents say</span>
       </div>
       <div style="padding:14px 16px">
         <div style="font-size:16px;font-weight:700;color:#0a1628">${insight.poll.emoji} ${insight.poll.question}</div>
-        <div style="margin-top:10px">${pulseBars}</div>
+        ${insightBody}
         <a href="${SITE_URL}/sideline" style="font-size:13px;font-weight:700;color:#1a4fa0;text-decoration:none;display:inline-block;margin-top:8px">Add your vote →</a>
       </div>
     </div>
@@ -155,8 +205,8 @@ Unsubscribe: ${UNSUB_PLACEHOLDER}`;
         <span style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#e8a020;font-weight:700">🎉 Sideline Life · Fun poll of the week</span>
       </div>
       <div style="padding:14px 16px">
-        <div style="font-size:16px;font-weight:700;color:#0a1628">${poll.emoji} ${poll.question}</div>
-        <div style="font-size:13px;color:#475569;margin-top:6px">${poll.options.map((o) => o.label).join(" · ")}</div>
+        <div style="font-size:16px;font-weight:700;color:#0a1628">${fun.poll.emoji} ${fun.poll.question}</div>
+        ${funBody}
         <div style="font-size:13px;font-weight:700;color:#1a4fa0;margin-top:8px">Cast your vote →</div>
       </div>
     </a>

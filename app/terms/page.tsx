@@ -18,11 +18,18 @@ export default function TermsPage() {
 
         <p>By using SoccerDadHQ.com you agree to these terms.</p>
 
-        <h2>Directory &amp; sample data</h2>
+        <h2>Directory data &amp; accuracy</h2>
         <p>
-          The directory currently includes <strong>sample and unverified data</strong> for demonstration. Club,
-          school and coach details, ratings and reviews may not be accurate until a program is claimed and
-          verified. Use the information as a starting point and confirm details directly with the organization.
+          Our directory combines listings we&rsquo;ve compiled with programs added by the community. Information may
+          be <strong>incomplete, out of date, or unverified</strong> &mdash; especially for profiles that haven&rsquo;t
+          yet been claimed by the program, which may show placeholder descriptions or contact details until the
+          organization claims and manages its page. Please treat everything here as a starting point and confirm
+          details (tryout dates, fees, contacts) directly with the club, school or coach.
+        </p>
+        <p>
+          <strong>Ratings and reviews come only from genuine community submissions.</strong> A program with no
+          reviews is shown as &ldquo;not yet rated&rdquo; &mdash; we never publish fabricated ratings. Aggregate
+          ratings reflect the opinions of contributors, not an endorsement by SoccerDadHQ.
         </p>
 
         <h2>Accounts</h2>

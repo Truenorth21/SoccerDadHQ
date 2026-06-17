@@ -109,35 +109,65 @@ export default function PricingEditor({ initial }: { initial: PricingConfig }) {
           the live quote and the <code>/advertise</code> pricing table everywhere.
         </p>
         <div className="overflow-hidden rounded-xl border border-slate-200">
-          <div className="grid grid-cols-3 gap-2 bg-navy px-4 py-2 text-xs font-bold uppercase tracking-wide text-white">
+          <div className="grid grid-cols-2 gap-2 bg-navy px-4 py-2 text-xs font-bold uppercase tracking-wide text-white">
             <span>Category</span>
-            <span>Claim / yr</span>
-            <span>Featured / yr</span>
+            <span>Claim / yr ($0 = free)</span>
           </div>
           <div className="divide-y divide-slate-100">
             {Object.entries(cfg.claimPlans).map(([key, plan]) => (
-              <div key={key} className="grid grid-cols-3 items-center gap-2 px-4 py-2.5 even:bg-slate-50">
+              <div key={key} className="grid grid-cols-2 items-center gap-2 px-4 py-2.5 even:bg-slate-50">
                 <span className="font-heading text-sm font-bold text-navy">{plan.label}</span>
                 <div className="flex items-center gap-1">
                   <span className="text-slate-400">$</span>
                   <input
                     type="number"
-                    className="input w-24"
+                    step="0.01"
+                    className="input w-28"
                     value={plan.claim}
-                    onChange={(e) => update({ claimPlans: { ...cfg.claimPlans, [key]: { ...plan, claim: Number(e.target.value) } } })}
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-slate-400">$</span>
-                  <input
-                    type="number"
-                    className="input w-24"
-                    value={plan.featured}
-                    onChange={(e) => update({ claimPlans: { ...cfg.claimPlans, [key]: { ...plan, featured: Number(e.target.value) } } })}
+                    onChange={(e) => { const v = Number(e.target.value); update({ claimPlans: { ...cfg.claimPlans, [key]: { ...plan, claim: v, featured: v } } }); }}
                   />
                 </div>
               </div>
             ))}
+          </div>
+          <p className="mt-2 text-xs text-slate-400">Set a category to $0 to make it free to claim (e.g. public facilities).</p>
+        </div>
+
+        {/* Flat-fee promo */}
+        <div className="mt-6 rounded-xl border border-slate-200 p-4">
+          <label className="flex items-center gap-2 font-heading text-sm font-bold text-navy">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-brand-sky"
+              checked={!!cfg.flatPromo?.enabled}
+              onChange={(e) => update({ flatPromo: { price: 99, exceptTypes: ["coach"], ...cfg.flatPromo, enabled: e.target.checked } })}
+            />
+            Flat-fee promo — one price for all paid types
+          </label>
+          <p className="mt-1 text-xs text-slate-500">
+            While on, every paid type is charged this flat price, except the types you exclude (and free $0 types stay free).
+            Use it for a limited-time launch offer.
+          </p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <label className="block text-sm">
+              <span className="label">Flat price ($/yr)</span>
+              <input
+                type="number"
+                step="0.01"
+                className="input"
+                value={cfg.flatPromo?.price ?? 99}
+                onChange={(e) => update({ flatPromo: { enabled: false, exceptTypes: ["coach"], ...cfg.flatPromo, price: Number(e.target.value) } })}
+              />
+            </label>
+            <label className="block text-sm">
+              <span className="label">Excluded types (comma-separated)</span>
+              <input
+                className="input"
+                value={(cfg.flatPromo?.exceptTypes ?? ["coach"]).join(", ")}
+                onChange={(e) => update({ flatPromo: { enabled: false, price: 99, ...cfg.flatPromo, exceptTypes: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) } })}
+                placeholder="coach"
+              />
+            </label>
           </div>
         </div>
       </section>

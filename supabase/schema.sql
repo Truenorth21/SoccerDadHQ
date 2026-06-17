@@ -490,3 +490,52 @@ create or replace view public.vote_tallies as
   select item_id, period, count(*) as votes
   from public.votes
   group by item_id, period;
+
+-- ============================================================
+--  LISTINGS — DB-backed training centers, facilities, tournaments, camps
+--  (added later; see supabase/listings-migration.sql for the standalone migration)
+-- ============================================================
+create table if not exists public.listings (
+  id          text primary key,
+  slug        text not null,
+  kind        text not null check (kind in ('training-center','facility','tournament','camp')),
+  name        text not null,
+  region      text not null,
+  city        text not null,
+  state       text not null default 'FL',
+  zip         text,
+  lat         double precision,
+  lng         double precision,
+  description text,
+  website     text,
+  email       text,
+  phone       text,
+  color       text default '#1a4fa0',
+  tags        text[] default '{}',
+  facts       jsonb default '[]',
+  claimed     boolean default false,
+  claimed_by  uuid references public.profiles(id) on delete set null,
+  verified    boolean default false,
+  featured    boolean default false,
+  plan        text default 'free',
+  created_at  timestamptz not null default now(),
+  unique (kind, slug)
+);
+alter table public.listings enable row level security;
+drop policy if exists "public read listings" on public.listings;
+create policy "public read listings" on public.listings for select using (true);
+
+-- ============================================================
+--  REVENUE LEDGER — manual entries (partner deals, off-site revenue)
+--  (see supabase/revenue-ledger-migration.sql)
+-- ============================================================
+create table if not exists public.revenue_entries (
+  id          uuid primary key default gen_random_uuid(),
+  category    text not null check (category in ('ads','claims','partners','other')),
+  amount      numeric not null check (amount > 0),
+  source      text,
+  note        text,
+  occurred_at date not null default current_date,
+  created_at  timestamptz not null default now()
+);
+alter table public.revenue_entries enable row level security;

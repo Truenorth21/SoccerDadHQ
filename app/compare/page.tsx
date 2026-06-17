@@ -87,9 +87,15 @@ export default async function ComparePage({
                   {items.map((x) => (
                     <td key={x.slug} className="border-t border-slate-100 p-4 text-center">
                       <div className="flex flex-col items-center gap-1">
-                        <span className="font-heading text-2xl font-bold text-amber-700">{x.rating.toFixed(1)}</span>
-                        <Stars value={x.rating} size="sm" />
-                        <span className="text-xs text-slate-400">{x.review_count} reviews</span>
+                        {x.review_count > 0 ? (
+                          <>
+                            <span className="font-heading text-2xl font-bold text-amber-700">{x.rating.toFixed(1)}</span>
+                            <Stars value={x.rating} size="sm" />
+                            <span className="text-xs text-slate-400">{x.review_count} reviews</span>
+                          </>
+                        ) : (
+                          <span className="text-xs font-semibold text-slate-400">Not yet rated</span>
+                        )}
                       </div>
                     </td>
                   ))}

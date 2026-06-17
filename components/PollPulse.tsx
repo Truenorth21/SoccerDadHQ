@@ -45,16 +45,13 @@ export default function PollPulse({ results }: { results: PollResult[] }) {
   const answeredPolls = results.filter((r) => r.realTotal > 0).length;
 
   return (
-    <section className="mt-12">
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="section-title">Poll Pulse · live votes</h2>
-        <span className="text-sm text-slate-500">
-          {totalVotes.toLocaleString()} vote{totalVotes === 1 ? "" : "s"} · {answeredPolls} of {results.length} polls answered
-        </span>
-      </div>
+    <div>
+      <p className="mb-3 text-sm text-slate-500">
+        {totalVotes.toLocaleString()} vote{totalVotes === 1 ? "" : "s"} · {answeredPolls} of {results.length} polls answered
+      </p>
 
       {totalVotes === 0 ? (
-        <p className="rounded-xl bg-white p-6 text-center text-sm text-slate-500 ring-1 ring-slate-100">
+        <p className="rounded-lg bg-slate-50 p-4 text-center text-sm text-slate-500">
           No poll votes recorded yet. Real votes from the Sideline deck show up here (the on-site bars use seeded
           numbers; this panel shows actual votes only).
         </p>
@@ -88,6 +85,6 @@ export default function PollPulse({ results }: { results: PollResult[] }) {
           )}
         </>
       )}
-    </section>
+    </div>
   );
 }

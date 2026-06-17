@@ -18,6 +18,8 @@ export interface Review {
   body: string;
   created_at: string;
   relationship?: string; // "Parent", "Player", "Coach"
+  owner_reply?: string; // the claimed owner's public response
+  owner_reply_at?: string;
 }
 
 export interface Club {
@@ -138,6 +140,7 @@ export interface Tryout {
   club_id: string;
   club_name: string;
   club_slug: string;
+  href?: string; // full profile path (club or school)
   region: RegionKey;
   city: string;
   age_groups: string;
@@ -154,6 +157,7 @@ export interface RankingItem {
   region: RegionKey | "statewide";
   league?: string;
   votes: number;
+  rating?: number; // review rating — tiebreaker when votes are tied (esp. early, at 0 votes)
   trend: "up" | "down" | "flat" | "new";
   href?: string;
   color?: string; // crest/avatar color for the podium + rows

@@ -4,16 +4,12 @@ import { useEffect, useState } from "react";
 
 interface Quote {
   label: string;
-  tier: "claim" | "featured";
-  claimPrice: number;
-  featuredPrice: number;
   base: number;
   discount: number;
   final: number;
   promoOk: boolean;
   promoNote: string | null;
   referralOk: boolean;
-  referralReward: number;
 }
 
 export default function ClaimForm({
@@ -26,15 +22,15 @@ export default function ClaimForm({
   subjectName: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [tier, setTier] = useState<"claim" | "featured">("claim");
   const [form, setForm] = useState({ name: "", role: "Director", email: "", phone: "", message: "" });
   const [promo, setPromo] = useState("");
   const [referral, setReferral] = useState("");
+  const [facilityOK, setFacilityOK] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
-  const payLink = process.env.NEXT_PUBLIC_PAYMENT_LINK;
+  const isFacility = subjectType === "facility";
 
   // Fetch the annual price (and any discount) when the form opens or codes change.
   useEffect(() => {
@@ -43,37 +39,43 @@ export default function ClaimForm({
       fetch("/api/claim/quote", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: subjectType, tier, promo, referral }),
+        body: JSON.stringify({ type: subjectType, tier: "claim", promo, referral }),
       })
         .then((r) => r.json())
         .then(setQuote)
         .catch(() => {});
     }, 200);
     return () => clearTimeout(t);
-  }, [open, subjectType, tier, promo, referral]);
+  }, [open, subjectType, promo, referral]);
+
+  const isFree = quote != null && quote.final <= 0;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("loading");
     try {
-      const res = await fetch("/api/claim", {
+      const res = await fetch("/api/claim/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           subject_type: subjectType,
           subject_slug: subjectSlug,
           subject_name: subjectName,
-          plan: tier,
-          plan_price: quote?.final,
+          plan: "claim",
           promo_code: quote?.promoOk ? promo : "",
           referral_code: quote?.referralOk ? referral : "",
+          facility_public: isFacility ? facilityOK : undefined,
           ...form,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not submit your claim.");
-      setStatus("done");
-      setMessage(data.message);
+      if (!res.ok) throw new Error(data.error || "Could not start your claim.");
+      if (data.url) {
+        window.location.href = data.url; // paid → Stripe Checkout
+        return;
+      }
+      setStatus("done"); // free/comped or manual fallback
+      setMessage(data.message || "Your claim was received.");
     } catch (err: any) {
       setStatus("error");
       setMessage(err.message);
@@ -83,21 +85,8 @@ export default function ClaimForm({
   if (status === "done") {
     return (
       <div className="card border-l-4 border-emerald-400 p-5 text-left">
-        <h3 className="font-heading text-lg font-bold text-navy">✓ Claim request received</h3>
+        <h3 className="font-heading text-lg font-bold text-navy">✓ Claim received</h3>
         <p className="mt-1 text-sm text-slate-600">{message}</p>
-        {quote && (
-          <p className="mt-3 text-sm text-slate-700">
-            {tier === "featured" ? "Featured" : "Claim"} plan: <strong className="text-navy">${quote.final}/yr</strong>
-            {quote.discount > 0 && <span className="text-slate-400"> (was ${quote.base})</span>}
-          </p>
-        )}
-        {payLink ? (
-          <a href={payLink} target="_blank" rel="noopener noreferrer" className="btn-amber mt-3">
-            Pay ${quote?.final ?? ""} to activate →
-          </a>
-        ) : (
-          <p className="mt-3 text-xs text-slate-500">We'll email you a secure payment link to activate your subscription.</p>
-        )}
       </div>
     );
   }
@@ -112,37 +101,12 @@ export default function ClaimForm({
 
   return (
     <form onSubmit={submit} className="space-y-3 text-left">
-      {/* Tier picker — basic Claim vs premium Featured, both annual */}
-      <div className="grid grid-cols-2 gap-2">
-        {([
-          { key: "claim" as const, name: "Claim", price: quote?.claimPrice, blurb: "Manage your profile" },
-          { key: "featured" as const, name: "Featured", price: quote?.featuredPrice, blurb: "★ Stand out + priority" },
-        ]).map((t) => (
-          <button
-            type="button"
-            key={t.key}
-            onClick={() => setTier(t.key)}
-            className={`rounded-lg border p-3 text-left transition ${
-              tier === t.key ? "border-brand-sky bg-sky-50 ring-1 ring-brand-sky" : "border-slate-200 hover:border-slate-300"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="font-heading font-bold text-navy">{t.name}</span>
-              <span className="text-sm font-bold text-brand-blue">{t.price != null ? `$${t.price}` : "—"}<span className="text-xs font-normal text-slate-400">/yr</span></span>
-            </div>
-            <p className="mt-0.5 text-[11px] text-slate-500">{t.blurb}</p>
-          </button>
-        ))}
-      </div>
-
+      {/* Price — one paid Claim plan (free for public facilities) */}
       <div className="rounded-lg bg-navy p-3 text-white">
         <div className="flex items-end justify-between">
-          <span className="text-xs uppercase tracking-wide text-slate-300">
-            {tier === "featured" ? "Featured" : "Claim"}{quote ? ` · ${quote.label}` : ""}
-          </span>
+          <span className="text-xs uppercase tracking-wide text-slate-300">Claim{quote ? ` · ${quote.label}` : ""}</span>
           <span className="font-heading text-2xl font-bold text-brand-amber">
-            ${quote?.final ?? "—"}
-            <span className="text-sm text-slate-300">/yr</span>
+            {isFree ? "Free" : <>${quote?.final ?? "—"}<span className="text-sm text-slate-300">/yr</span></>}
           </span>
         </div>
         {quote && quote.discount > 0 && (
@@ -152,7 +116,11 @@ export default function ClaimForm({
             {quote.referralOk ? " · referral applied" : ""}
           </p>
         )}
-        <p className="mt-1 text-[11px] text-slate-400">Basic listing is free. This is the paid plan to manage the profile.</p>
+        <p className="mt-1 text-[11px] text-slate-400">
+          {isFacility
+            ? "Public facilities are free to claim — just confirm it below."
+            : "Being listed is free. This is the paid plan to manage the profile."}
+        </p>
       </div>
 
       <p className="text-sm text-slate-500">
@@ -169,15 +137,23 @@ export default function ClaimForm({
         </select>
         <input required type="email" className="input" placeholder="Work email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         <input className="input" placeholder="Phone (optional)" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
-        <input className="input" placeholder="Promo code (optional)" value={promo} onChange={(e) => setPromo(e.target.value)} />
-        <input className="input" placeholder="Referral code (optional)" value={referral} onChange={(e) => setReferral(e.target.value)} />
+        {!isFree && <input className="input" placeholder="Promo code (optional)" value={promo} onChange={(e) => setPromo(e.target.value)} />}
+        {!isFree && <input className="input" placeholder="Referral code (optional)" value={referral} onChange={(e) => setReferral(e.target.value)} />}
       </div>
       {promo && quote && !quote.promoOk && <p className="text-xs text-amber-600">That promo code isn't valid.</p>}
+
+      {isFacility && (
+        <label className="flex items-start gap-2 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-brand-sky" checked={facilityOK} onChange={(e) => setFacilityOK(e.target.checked)} />
+          I confirm <strong className="mx-1">{subjectName}</strong> is a public city, county or state-operated facility.
+        </label>
+      )}
+
       <textarea className="input min-h-[70px]" placeholder="Anything that helps us verify you (optional)" value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} />
       {status === "error" && <p className="text-sm text-red-600">{message}</p>}
       <div className="flex gap-2">
-        <button type="submit" disabled={status === "loading"} className="btn-primary flex-1">
-          {status === "loading" ? "Submitting…" : "Submit & continue to payment"}
+        <button type="submit" disabled={status === "loading" || (isFacility && !facilityOK)} className="btn-primary flex-1">
+          {status === "loading" ? "Submitting…" : isFree ? "Claim for free" : "Continue to payment"}
         </button>
         <button type="button" onClick={() => setOpen(false)} className="btn-outline">Cancel</button>
       </div>

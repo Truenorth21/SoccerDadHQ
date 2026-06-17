@@ -388,10 +388,11 @@ export function pollOfTheDayIndex(): number {
   return day % POLLS.length;
 }
 
-/** Deterministic "poll of the week" index — used in the weekly newsletter. */
+/** Deterministic "poll of the week" index — used in the weekly newsletter to
+ *  pick a FUN poll, so it must index FUN_POLLS (not the larger combined deck). */
 export function pollOfTheWeekIndex(): number {
   const week = Math.floor(Date.now() / (7 * 86400000));
-  return week % POLLS.length;
+  return week % FUN_POLLS.length;
 }
 
 /** Deterministic "insight of the week" — cycles the serious polls for the
@@ -399,4 +400,36 @@ export function pollOfTheWeekIndex(): number {
 export function insightOfTheWeekIndex(): number {
   const week = Math.floor(Date.now() / (7 * 86400000));
   return week % INSIGHT_POLLS.length;
+}
+
+/** Real community votes a poll needs before we publish percentages. Below this
+ *  we show a "be the first / N so far" state instead of fabricated bars, so the
+ *  numbers a reader sees are always genuine. (The `base` seeds are ignored for
+ *  public display now — they're kept only for historical reference.) */
+export const POLL_REVEAL_THRESHOLD = 25;
+
+export interface PollTally {
+  options: { label: string; votes: number; pct: number }[];
+  realTotal: number; // real votes only (incl. the viewer's own, if passed)
+  revealed: boolean; // realTotal >= POLL_REVEAL_THRESHOLD
+  topIndex: number;
+}
+
+/** Tally a poll from REAL votes only (no seed). `live` is the {optionIndex: votes}
+ *  map from the poll_results view; pass the viewer's own choice so their vote
+ *  counts immediately. Percentages are 0 until the reveal threshold is met. */
+export function tallyPoll(poll: Poll, live: Record<number, number>, myVote?: number): PollTally {
+  const counts = poll.options.map((_o, i) => (live[i] || 0) + (myVote === i ? 1 : 0));
+  const realTotal = counts.reduce((a, c) => a + c, 0);
+  let topIndex = 0;
+  counts.forEach((c, i) => {
+    if (c > counts[topIndex]) topIndex = i;
+  });
+  const revealed = realTotal >= POLL_REVEAL_THRESHOLD;
+  const options = poll.options.map((o, i) => ({
+    label: o.label,
+    votes: counts[i],
+    pct: revealed && realTotal > 0 ? Math.round((counts[i] / realTotal) * 100) : 0,
+  }));
+  return { options, realTotal, revealed, topIndex };
 }

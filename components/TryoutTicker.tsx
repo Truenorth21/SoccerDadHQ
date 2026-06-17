@@ -13,7 +13,7 @@ export default function TryoutTicker({ tryouts }: { tryouts: Tryout[] }) {
 
   const Item = ({ t }: { t: Tryout }) => (
     <Link
-      href={`/clubs/${t.club_slug}`}
+      href={t.href ?? `/clubs/${t.club_slug}`}
       className="mx-7 inline-flex items-center gap-2 whitespace-nowrap text-sm text-white/90 transition-colors hover:text-white"
     >
       <span aria-hidden>⚽</span>

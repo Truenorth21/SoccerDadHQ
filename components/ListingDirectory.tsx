@@ -1,10 +1,12 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import ListingFilters from "./ListingFilters";
 import ListingCard from "./ListingCard";
+import AddListingCTA from "./AddListingCTA";
 import AdSlot from "./AdSlot";
 import { getListings, KIND_CONFIG, type ListingKind } from "@/lib/listings";
 
-export default function ListingDirectory({
+export default async function ListingDirectory({
   kind,
   searchParams,
 }: {
@@ -15,16 +17,21 @@ export default function ListingDirectory({
   const filters = Object.fromEntries(
     Object.entries(searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v ?? ""])
   );
-  const listings = getListings(kind, filters);
+  const listings = await getListings(kind, filters);
+  // Rating-based sorts appear only once listings have real reviews.
+  const hasRatings = (await getListings(kind, {})).some((l) => l.rating > 0);
 
   return (
     <>
       <section className="border-b border-slate-200 bg-navy py-10 text-white">
-        <div className="container-page">
-          <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Florida {cfg.plural}</h1>
-          <p className="mt-1 text-slate-300">
-            {listings.length} {listings.length === 1 ? cfg.label.toLowerCase() : cfg.plural.toLowerCase()} · {cfg.blurb}
-          </p>
+        <div className="container-page flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Florida {cfg.plural}</h1>
+            <p className="mt-1 text-slate-300">
+              {listings.length} {listings.length === 1 ? cfg.label.toLowerCase() : cfg.plural.toLowerCase()} · {cfg.blurb}
+            </p>
+          </div>
+          <Link href={`/submit?kind=${kind}`} className="btn-amber shrink-0 whitespace-nowrap">+ Add a {cfg.label.toLowerCase()}</Link>
         </div>
       </section>
 
@@ -35,7 +42,7 @@ export default function ListingDirectory({
         <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
           <aside className="lg:sticky lg:top-20 lg:self-start">
             <Suspense fallback={<div className="card h-72 animate-pulse" />}>
-              <ListingFilters kind={kind} />
+              <ListingFilters kind={kind} hasRatings={hasRatings} />
             </Suspense>
             <div className="mt-6 hidden lg:block">
               <AdSlot placement="directory-sidebar" seed={11} />
@@ -46,13 +53,19 @@ export default function ListingDirectory({
               <div className="card p-12 text-center">
                 <p className="font-heading text-xl font-bold text-navy">No {cfg.plural.toLowerCase()} match your filters</p>
                 <p className="mt-1 text-slate-500">Try clearing some filters.</p>
+                <div className="mt-6 text-left">
+                  <AddListingCTA kind={kind} />
+                </div>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {listings.map((l) => (
-                  <ListingCard key={l.id} listing={l} />
-                ))}
-              </div>
+              <>
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {listings.map((l) => (
+                    <ListingCard key={l.id} listing={l} />
+                  ))}
+                </div>
+                <AddListingCTA kind={kind} className="mt-8" />
+              </>
             )}
           </div>
         </div>

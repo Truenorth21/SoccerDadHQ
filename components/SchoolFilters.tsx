@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { REGIONS, GENDERS, FHSAA_CLASSES, SCHOOL_TYPES } from "@/lib/regions";
 
-export default function SchoolFilters() {
+export default function SchoolFilters({ hasRatings = false }: { hasRatings?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -116,23 +116,26 @@ export default function SchoolFilters() {
           </select>
         </div>
 
-        <div>
-          <label className="label">Minimum rating</label>
-          <select className="input" value={get("rating")} onChange={(e) => update({ rating: e.target.value })}>
-            <option value="">Any rating</option>
-            <option value="4.5">4.5+ ★</option>
-            <option value="4">4.0+ ★</option>
-            <option value="3.5">3.5+ ★</option>
-            <option value="3">3.0+ ★</option>
-          </select>
-        </div>
+        {/* Rating filter + rating-based sorts appear once schools have real reviews. */}
+        {hasRatings && (
+          <div>
+            <label className="label">Minimum rating</label>
+            <select className="input" value={get("rating")} onChange={(e) => update({ rating: e.target.value })}>
+              <option value="">Any rating</option>
+              <option value="4.5">4.5+ ★</option>
+              <option value="4">4.0+ ★</option>
+              <option value="3.5">3.5+ ★</option>
+              <option value="3">3.0+ ★</option>
+            </select>
+          </div>
+        )}
         <div>
           <label className="label">Sort by</label>
           <select className="input" value={get("sort")} onChange={(e) => update({ sort: e.target.value })}>
             <option value="name">Name (A–Z)</option>
-            <option value="rating">Highest rated</option>
+            {hasRatings && <option value="rating">Highest rated</option>}
             <option value="titles">Most state titles</option>
-            <option value="reviews">Most reviewed</option>
+            {hasRatings && <option value="reviews">Most reviewed</option>}
             <option value="distance">Nearest (needs ZIP)</option>
           </select>
         </div>

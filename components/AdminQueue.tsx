@@ -42,9 +42,23 @@ const QUEUES: QueueDef[] = [
     empty: "No new listing submissions.",
     title: (r) => `${r.name} (${r.kind})`,
     sub: (r) => `${r.city ?? ""}${r.region ? " · " + r.region : ""} · by ${r.submitter_email ?? "member"}`,
-    body: (r) => [r.website, r.notes].filter(Boolean).join(" · "),
+    body: (r) => {
+      const d = r.details && typeof r.details === "object" ? r.details : {};
+      const parts: string[] = [];
+      const add = (label: string, v: any) => {
+        if (v === undefined || v === null || v === "" || v === false) return;
+        parts.push(`${label}: ${Array.isArray(v) ? v.join(", ") : v === true ? "yes" : v}`);
+      };
+      add("Address", d.address); add("ZIP", d.zip); add("Phone", d.phone); add("Email", d.email);
+      add("Leagues", d.leagues); add("Teams", d.genders); add("Ages", d.age_groups);
+      add("Type", d.type); add("Programs", d.programs); add("Class", d.fhsaa_class); add("District", d.district);
+      add("Private training", d.private_training); add("Tags", d.tags);
+      add("Focus", d.facet_focus); add("Format", d.facet_format);
+      add("Surface", d.facet_surface); add("Level", d.facet_level); add("Kind", d.facet_type);
+      return [r.website, ...parts, r.notes].filter(Boolean).join(" · ");
+    },
     actions: [
-      { label: "Approve", status: "approved", variant: "primary" },
+      { label: "Approve & add to directory", status: "approved", variant: "primary" },
       { label: "Reject", status: "rejected", variant: "outline" },
     ],
   },
@@ -107,6 +121,7 @@ export default function AdminQueue({ data }: { data: Record<string, Row[]> }) {
   const [rows, setRows] = useState<Record<string, Row[]>>(data);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState<{ text: string; href?: string } | null>(null);
 
   const queue = QUEUES.find((q) => q.key === tab)!;
   const list = rows[tab] ?? [];
@@ -124,6 +139,14 @@ export default function AdminQueue({ data }: { data: Record<string, Row[]> }) {
       if (!res.ok) throw new Error(d.error || "Action failed");
       // Remove handled row from the list.
       setRows((prev) => ({ ...prev, [q.key]: (prev[q.key] ?? []).filter((r) => r.id !== row.id) }));
+      // When a submission becomes a live listing, point the admin to finish it.
+      if (d.editHref) {
+        setNotice({ text: `“${row.name}” was added to the directory. Finish its details:`, href: d.editHref });
+      } else if (q.table === "submissions" && payload.status === "approved") {
+        setNotice({ text: `“${row.name}” approved. (This type isn’t a directory listing yet, so nothing was published.)` });
+      } else {
+        setNotice(null);
+      }
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -151,6 +174,17 @@ export default function AdminQueue({ data }: { data: Record<string, Row[]> }) {
       </div>
 
       {error && <p className="mb-4 rounded-lg bg-red-50 px-4 py-2 text-sm text-red-700">{error}</p>}
+
+      {notice && (
+        <p className="mb-4 rounded-lg bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
+          ✓ {notice.text}{" "}
+          {notice.href && (
+            <a href={notice.href} className="font-semibold underline">
+              Open the manager →
+            </a>
+          )}
+        </p>
+      )}
 
       {list.length === 0 ? (
         <p className="rounded-xl bg-white p-8 text-center text-slate-500 ring-1 ring-slate-100">{queue.empty}</p>

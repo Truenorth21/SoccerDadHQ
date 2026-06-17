@@ -36,10 +36,10 @@ function Source({ item }: { item: NewsItem }) {
 export default function HomeNews({ items }: { items: NewsItem[] }) {
   if (items.length === 0) return null;
   const [feature, ...rest] = items;
-  const cards = rest.slice(0, 3);
+  const cards = rest.slice(0, 6);
 
   return (
-    <div>
+    <div className="flex h-full flex-col">
       {/* Featured */}
       <div className="group relative grid overflow-hidden rounded-2xl ring-1 ring-slate-100 transition-shadow hover:shadow-card-hover sm:grid-cols-2">
         <a href={feature.link} target="_blank" rel="noopener noreferrer" aria-label={feature.title} className="absolute inset-0 z-[1]" />

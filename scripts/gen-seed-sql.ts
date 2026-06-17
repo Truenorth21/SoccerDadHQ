@@ -7,7 +7,6 @@
 import { writeFileSync } from "node:fs";
 import { CLUBS, COACHES, TRYOUTS } from "../lib/seed";
 import { SCHOOLS } from "../lib/schools";
-import { RANKINGS } from "../lib/rankings";
 
 function s(v: string | null | undefined): string {
   if (v === null || v === undefined) return "null";
@@ -134,21 +133,8 @@ for (const t of TRYOUTS) {
 }
 lines.push("");
 
-// Rankings
-lines.push("-- Rankings -----------------------------------------------------");
-for (const [category, items] of Object.entries(RANKINGS)) {
-  for (const it of items) {
-    lines.push(
-      `insert into public.rankings (id, category, name, subtitle, region, league, votes, trend, href) values (` +
-        [
-          s(it.id), s(category), s(it.name), s(it.subtitle), s(it.region),
-          s(it.league ?? null), n(it.votes), s(it.trend), s(it.href ?? null),
-        ].join(", ") +
-        `) on conflict (id) do nothing;`
-    );
-  }
-}
-lines.push("");
+// Rankings are no longer seeded — they're derived at runtime from the live
+// directory (DB + seed) and the real monthly community votes in getRankings().
 
 writeFileSync(new URL("../supabase/seed.sql", import.meta.url), lines.join("\n"));
 console.log(`Wrote supabase/seed.sql — ${CLUBS.length} clubs, ${COACHES.length} coaches, ${SCHOOLS.length} schools.`);

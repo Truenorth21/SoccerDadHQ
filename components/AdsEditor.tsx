@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { Ad, AdsConfig, AdPlacement } from "@/lib/ads";
+import { REGIONS } from "@/lib/regions";
 
 const PLACEMENTS: { key: AdPlacement; label: string }[] = [
   { key: "home-banner", label: "Homepage banner" },
@@ -24,6 +25,25 @@ function AdFields({ ad, onChange }: { ad: Ad; onChange: (a: Ad) => void }) {
       <input className="input" placeholder="CTA (e.g. Learn more)" value={ad.cta} onChange={(e) => set("cta", e.target.value)} />
       <input className="input" placeholder="Link URL" value={ad.href} onChange={(e) => set("href", e.target.value)} />
       <input className="input sm:col-span-2" placeholder="Image URL (optional banner)" value={ad.image ?? ""} onChange={(e) => set("image", e.target.value)} />
+      <div>
+        <label className="label">Placement (optional — blank = any slot)</label>
+        <select className="input" value={ad.placement ?? ""} onChange={(e) => onChange({ ...ad, placement: (e.target.value || undefined) as AdPlacement | undefined })}>
+          <option value="">Any slot</option>
+          {PLACEMENTS.map((p) => (
+            <option key={p.key} value={p.key}>{p.label}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="label">Newsletter region (optional — blank = all editions)</label>
+        <select className="input" value={ad.region ?? ""} onChange={(e) => onChange({ ...ad, region: e.target.value || undefined })}>
+          <option value="">All editions</option>
+          <option value="statewide">Statewide edition only</option>
+          {REGIONS.map((r) => (
+            <option key={r.key} value={r.key}>{r.name}</option>
+          ))}
+        </select>
+      </div>
       <div>
         <label className="label">Starts (optional)</label>
         <input type="date" className="input" value={(ad.starts ?? "").slice(0, 10)} onChange={(e) => set("starts", e.target.value)} />

@@ -21,6 +21,14 @@ export default function Image() {
           fontFamily: "sans-serif",
         }}
       >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://soccerdadhq.com/icon.png"
+          width={150}
+          height={150}
+          alt="SoccerDadHQ"
+          style={{ borderRadius: 9999, background: "#fff", marginBottom: 28 }}
+        />
         <div style={{ display: "flex", fontSize: 30, color: "#e8a020", letterSpacing: 4, textTransform: "uppercase" }}>
           Florida Youth Soccer
         </div>

@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { resolveAd, type AdPlacement } from "@/lib/ads";
-import { useAdsConfig } from "./AdsProvider";
-import GoogleAd from "./GoogleAd";
+import { pickSold, pickHouse, type AdPlacement, type Ad } from "@/lib/ads";
+import { useAdsConfig, useAdPlacements } from "./AdsProvider";
+import AdUnit, { type AdSize } from "./AdUnit";
 
-const ADSENSE_CLIENT = process.env.NEXT_PUBLIC_ADSENSE_CLIENT;
-const ADSENSE_SLOT = process.env.NEXT_PUBLIC_ADSENSE_SLOT;
+/** AdSense box size for a given slot variant. */
+function adSenseSize(variant: "banner" | "sidebar" | "infeed" | "leaderboard"): AdSize {
+  if (variant === "sidebar") return "sidebar";
+  if (variant === "infeed") return "rectangle";
+  return "leaderboard"; // banner + leaderboard
+}
 
 function logAdEvent(ad_id: string, placement: string, type: "impression" | "click") {
   try {
@@ -60,13 +64,22 @@ export default function AdSlot({
   seed?: number;
 }) {
   const ads = useAdsConfig();
-  const ad = resolveAd(ads, placement, seed);
+  const placements = useAdPlacements();
+
+  // Waterfall — the slot resolves to exactly ONE ad, by priority:
+  //   1. a sold DIRECT sponsor  →  2. Google AdSense (if enabled for this category)
+  //   3. a sold AFFILIATE ad    →  4. house / self-promo (never blank)
+  const direct = pickSold(ads, placement, "direct", seed);
+  const adsense = placements[placement];
+  const showAdSense = !direct && Boolean(adsense?.enabled && adsense.adsense_slot_id);
+  const ad: Ad = direct ?? pickSold(ads, placement, "affiliate", seed) ?? pickHouse(ads, placement, seed);
+
   const label = ad.affiliate ? "Affiliate" : ad.house ? "Promoted" : "Sponsored";
+  // Tracking fires only for our own creatives; AdSense measures itself.
   const { ref, onClick } = useAdTracking(ad.id, placement);
 
-  // Waterfall: an unsold (house) slot is filled by Google AdSense when configured.
-  if (ad.house && ADSENSE_CLIENT && ADSENSE_SLOT) {
-    return <GoogleAd client={ADSENSE_CLIENT} slot={ADSENSE_SLOT} />;
+  if (showAdSense && adsense) {
+    return <AdUnit slotId={adsense.adsense_slot_id} size={adSenseSize(variant)} />;
   }
 
   // Standard top-of-page leaderboard — clearly marked, hard to miss.
@@ -103,7 +116,7 @@ export default function AdSlot({
             </p>
             <p className="hidden truncate text-sm text-slate-500 sm:block">{ad.body}</p>
           </div>
-          <span className="hidden shrink-0 rounded-lg bg-brand-amber px-4 py-2 font-heading text-sm font-semibold uppercase text-navy sm:inline-block">
+          <span className="hidden shrink-0 rounded-lg bg-brand-sky px-4 py-2 font-heading text-sm font-semibold uppercase text-white transition-colors group-hover:bg-brand-blue sm:inline-block">
             {ad.cta}
           </span>
         </a>
@@ -127,7 +140,7 @@ export default function AdSlot({
           <p className="font-heading text-xs font-semibold uppercase tracking-wider text-white/70">{ad.advertiser}</p>
           <h3 className="mt-1 font-heading text-2xl font-bold uppercase tracking-tight sm:text-3xl">{ad.headline}</h3>
           <p className="mt-2 text-sm text-white/85">{ad.body}</p>
-          <span className="mt-4 inline-flex items-center gap-1 rounded-lg bg-brand-amber px-4 py-2 font-heading text-sm font-semibold uppercase text-navy">
+          <span className="mt-4 inline-flex items-center gap-1 rounded-lg bg-white px-4 py-2 font-heading text-sm font-semibold uppercase text-navy">
             {ad.cta} →
           </span>
         </div>

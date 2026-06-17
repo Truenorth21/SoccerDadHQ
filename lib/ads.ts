@@ -23,6 +23,28 @@ export interface Ad {
   /** flight window (ISO dates) — outside it the ad isn't shown */
   starts?: string;
   ends?: string;
+  /** which slot this paid creative runs in. Undefined = eligible for any slot
+   *  (house/manual). Set from the order so a "homepage banner" only runs there. */
+  placement?: AdPlacement;
+  /** region this creative targets — used for the newsletter so an advertiser can
+   *  sponsor just one region's edition. Undefined/"" = all editions. */
+  region?: string;
+}
+
+/** Map an ad_orders placement (stored as the order key OR its label) to an AdPlacement. */
+export const ORDER_PLACEMENT_TO_AD: Record<string, AdPlacement> = {
+  "home-banner": "home-banner",
+  directory: "directory-sidebar",
+  news: "news-infeed",
+  profile: "profile-sidebar",
+  rankings: "rankings-sidebar",
+  newsletter: "newsletter",
+};
+export function adPlacementFromOrder(stored: string | null | undefined): AdPlacement | undefined {
+  if (!stored) return undefined;
+  if (ORDER_PLACEMENT_TO_AD[stored]) return ORDER_PLACEMENT_TO_AD[stored];
+  const byLabel = AD_RATES.placements.find((p) => p.label === stored);
+  return byLabel ? ORDER_PLACEMENT_TO_AD[byLabel.key] : undefined;
 }
 
 /* Sample paid local-sponsor inventory (the kind of advertisers this site sells to). */
@@ -99,7 +121,7 @@ const HOUSE: Record<AdPlacement, Ad> = {
     id: "house-home",
     advertiser: "SoccerDadHQ",
     headline: "Put your club in front of Florida soccer families",
-    body: "Featured placement, profile upgrades and newsletter sponsorships. Reach thousands of parents weekly.",
+    body: "Featured placement, profile upgrades and newsletter sponsorships in front of Florida soccer families.",
     cta: "Advertise with us",
     href: "/advertise",
     color: "#1a4fa0",
@@ -161,8 +183,8 @@ const HOUSE: Record<AdPlacement, Ad> = {
  *  the conversion drivers (claim, advertise, subscribe) show more often than
  *  the pure content promos. */
 const SELF_PROMOS: { weight: number; ad: Ad }[] = [
-  { weight: 3, ad: { id: "promo-claim", advertiser: "SoccerDadHQ", headline: "Is this your club?", body: "Claim your profile to respond to reviews, post tryouts and showcase commitments.", cta: "Claim & upgrade", href: "/advertise", color: "#1a4fa0", house: true } },
-  { weight: 2, ad: { id: "promo-advertise", advertiser: "SoccerDadHQ", headline: "Advertise to soccer families", body: "Reach thousands of Florida parents weekly with featured placement & sponsorships.", cta: "Advertise with us", href: "/advertise", color: "#0a1628", house: true } },
+  { weight: 3, ad: { id: "promo-claim", advertiser: "SoccerDadHQ", headline: "Is this your profile?", body: "Claim it to respond to reviews, manage your info and showcase commitments.", cta: "Claim & upgrade", href: "/advertise", color: "#1a4fa0", house: true } },
+  { weight: 2, ad: { id: "promo-advertise", advertiser: "SoccerDadHQ", headline: "Advertise to soccer families", body: "Get in front of Florida soccer families with featured placement & sponsorships.", cta: "Advertise with us", href: "/advertise", color: "#0a1628", house: true } },
   { weight: 2, ad: { id: "promo-sideline", advertiser: "The Sideline", headline: "Get the weekly Sideline", body: "Tryout alerts, ranking shifts & recruiting news for your region — free.", cta: "Subscribe free", href: "/#newsletter", color: "#e8a020", house: true } },
   { weight: 1, ad: { id: "promo-rankings", advertiser: "SoccerDadHQ", headline: "Vote in the rankings", body: "Who are Florida's top clubs, coaches and teams? Cast your vote this month.", cta: "See rankings", href: "/rankings", color: "#5a2d82", house: true } },
   { weight: 1, ad: { id: "promo-commits", advertiser: "SoccerDadHQ", headline: "Where do players go?", body: "College, pro & national-team commitments from Florida programs.", cta: "Commitment tracker", href: "/commitments", color: "#1d7a4d", house: true } },
@@ -194,9 +216,17 @@ function isActive(ad: Ad, now: number): boolean {
 /** Deterministic pick so SSR and client agree. `seed` rotates which creative
  *  shows. Sold (active) inventory fills ~70% of slots; the rest — and any
  *  unsold slot — rotates a self-promo so the space is never blank. Pure. */
-export function resolveAd(config: AdsConfig, placement: AdPlacement, seed = 0): Ad {
+export function resolveAd(config: AdsConfig, placement: AdPlacement, seed = 0, region?: string): Ad {
   const now = Date.now();
-  const sold = (config.inventory ?? []).filter((a) => isActive(a, now));
+  // A paid creative only serves in the slot it was bought for; untargeted
+  // creatives (placement undefined) remain eligible everywhere. For the newsletter,
+  // a region-tagged creative only runs in that region's edition (untagged = all).
+  const sold = (config.inventory ?? []).filter(
+    (a) =>
+      isActive(a, now) &&
+      (!a.placement || a.placement === placement) &&
+      (!region || !a.region || a.region === region)
+  );
   const house = config.house?.[placement] ?? HOUSE[placement];
 
   if (sold.length && seed % 10 >= 3) {
@@ -210,6 +240,48 @@ export function resolveAd(config: AdsConfig, placement: AdPlacement, seed = 0): 
 /** Convenience for callers without a config (e.g. emails) — uses code defaults. */
 export function getAd(placement: AdPlacement, seed = 0): Ad {
   return resolveAd(DEFAULT_ADS, placement, seed);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Waterfall resolution (used by <AdSlot>). Every ad space fills by a
+ *  strict priority so it shows exactly ONE ad:
+ *    1. a sold DIRECT sponsor  →  2. Google AdSense (handled in AdSlot)
+ *    3. a sold AFFILIATE ad    →  4. house / self-promo (never blank)
+ * ------------------------------------------------------------------ */
+
+/** Active sold creatives targeting this slot (region-aware), pre-tier-split. */
+function activeSold(config: AdsConfig, placement: AdPlacement, region?: string): Ad[] {
+  const now = Date.now();
+  return (config.inventory ?? []).filter(
+    (a) =>
+      isActive(a, now) &&
+      (!a.placement || a.placement === placement) &&
+      (!region || !a.region || a.region === region)
+  );
+}
+
+/** Pick a sold creative of a given kind, rotating by seed. `direct` = paid
+ *  sponsors (non-affiliate); `affiliate` = monetized referral creatives.
+ *  Null when none target this slot. */
+export function pickSold(
+  config: AdsConfig,
+  placement: AdPlacement,
+  kind: "direct" | "affiliate",
+  seed = 0,
+  region?: string
+): Ad | null {
+  const pool = activeSold(config, placement, region).filter((a) =>
+    kind === "affiliate" ? Boolean(a.affiliate) : !a.affiliate
+  );
+  if (!pool.length) return null;
+  return pool[seed % pool.length];
+}
+
+/** Lowest tier — the slot's house ad + weighted self-promos. Never null. */
+export function pickHouse(config: AdsConfig, placement: AdPlacement, seed = 0): Ad {
+  const house = config.house?.[placement] ?? HOUSE[placement];
+  const fillers = fillerPool(house);
+  return fillers[seed % fillers.length];
 }
 
 /* ------------------------------------------------------------------ *

@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { REGIONS, LEAGUES, GENDERS, AGE_GROUPS } from "@/lib/regions";
 
-export default function ClubFilters() {
+export default function ClubFilters({ hasRatings = false }: { hasRatings?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -134,35 +134,39 @@ export default function ClubFilters() {
           </div>
         </div>
 
-        <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-amber-50 px-3 py-2.5 ring-1 ring-amber-100">
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-slate-50 px-3 py-2.5 ring-1 ring-slate-200">
           <input
             type="checkbox"
-            className="h-4 w-4 rounded accent-brand-amber"
+            className="h-4 w-4 rounded accent-brand-sky"
             checked={get("tryouts") === "1"}
             onChange={(e) => update({ tryouts: e.target.checked ? "1" : "" })}
           />
-          <span className="font-heading text-sm font-semibold uppercase tracking-wide text-amber-800">
+          <span className="font-heading text-sm font-semibold uppercase tracking-wide text-navy">
             Tryouts open only
           </span>
         </label>
 
-        <div>
-          <label className="label">Minimum rating</label>
-          <select className="input" value={get("rating")} onChange={(e) => update({ rating: e.target.value })}>
-            <option value="">Any rating</option>
-            <option value="4.5">4.5+ ★</option>
-            <option value="4">4.0+ ★</option>
-            <option value="3.5">3.5+ ★</option>
-            <option value="3">3.0+ ★</option>
-          </select>
-        </div>
+        {/* Rating filter + rating-based sorts only appear once programs have real
+            parent reviews — until then there's nothing to filter/sort by. */}
+        {hasRatings && (
+          <div>
+            <label className="label">Minimum rating</label>
+            <select className="input" value={get("rating")} onChange={(e) => update({ rating: e.target.value })}>
+              <option value="">Any rating</option>
+              <option value="4.5">4.5+ ★</option>
+              <option value="4">4.0+ ★</option>
+              <option value="3.5">3.5+ ★</option>
+              <option value="3">3.0+ ★</option>
+            </select>
+          </div>
+        )}
 
         <div>
           <label className="label">Sort by</label>
           <select className="input" value={get("sort")} onChange={(e) => update({ sort: e.target.value })}>
             <option value="name">Name (A–Z)</option>
-            <option value="rating">Highest rated</option>
-            <option value="reviews">Most reviewed</option>
+            {hasRatings && <option value="rating">Highest rated</option>}
+            {hasRatings && <option value="reviews">Most reviewed</option>}
             <option value="distance">Nearest (needs ZIP)</option>
           </select>
         </div>

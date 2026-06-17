@@ -19,8 +19,15 @@ const TYPE_LABEL: Record<string, string> = {
 function shell(heading: string, bodyHtml: string): string {
   return `<div style="font-family:Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#0a1628">
   <div style="background:#0a1628;border-radius:14px 14px 0 0;padding:20px 24px">
-    <div style="font-size:20px;font-weight:700;color:#fff">Soccer<span style="color:#2a7de1">Dad</span>HQ</div>
-    <div style="font-size:12px;letter-spacing:1.5px;color:#e8a020;text-transform:uppercase;margin-top:2px">${heading}</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+      <td style="padding-right:10px;vertical-align:middle">
+        <img src="${SITE_URL}/icon.png" width="40" height="40" alt="SoccerDadHQ" style="display:block;width:40px;height:40px;border-radius:50%;background:#fff;border:0" />
+      </td>
+      <td style="vertical-align:middle">
+        <div style="font-size:20px;font-weight:700;color:#fff;line-height:1.1">Soccer<span style="color:#2a7de1">Dad</span>HQ</div>
+        <div style="font-size:12px;letter-spacing:1.5px;color:#e8a020;text-transform:uppercase;margin-top:2px">${heading}</div>
+      </td>
+    </tr></table>
   </div>
   <div style="border:1px solid #e2e8f0;border-top:none;border-radius:0 0 14px 14px;padding:20px 24px;font-size:14px;line-height:1.55">
     ${bodyHtml}

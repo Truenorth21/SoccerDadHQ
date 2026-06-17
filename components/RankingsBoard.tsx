@@ -148,7 +148,11 @@ function PodiumCard({
       </div>
       <div className={`mt-2 flex w-full ${cfg.h} flex-col items-center justify-end rounded-t-xl bg-gradient-to-b ${cfg.grad} pb-2`}>
         <span className="rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-navy shadow-sm">
-          {item.votes} votes
+          {item.votes > 0
+            ? `${item.votes} vote${item.votes === 1 ? "" : "s"}`
+            : item.rating
+              ? `${item.rating.toFixed(1)}★ rating`
+              : "No votes yet"}
         </span>
       </div>
     </>
@@ -204,7 +208,7 @@ export default function RankingsBoard({
       list = list.filter((i) => i.name.toLowerCase().includes(q) || (i.subtitle ?? "").toLowerCase().includes(q));
     }
     return list
-      .sort((a, b) => b.votes - a.votes)
+      .sort((a, b) => b.votes - a.votes || (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name))
       .map((i, idx) => ({ ...i, rank: idx + 1 }));
   }, [data, tab, region, league, gender, level, cls, isSchools, query]);
 
@@ -230,7 +234,8 @@ export default function RankingsBoard({
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-navy px-4 py-3 text-sm text-white">
         <span>
           👍 <strong>Tap “Vote” to recommend a program.</strong> One vote each per person, per month — the board
-          resets on the 1st, so this shows <strong className="text-amber-300">{period}</strong>’s votes.
+          resets on the 1st, so this shows <strong className="text-amber-300">{period}</strong>’s votes. Until votes
+          come in, programs are listed by their parent-review rating.
         </span>
         {supabaseConfigured && !authed && (
           <Link href="/login?next=/rankings" className="btn-amber shrink-0 px-4 py-1.5 text-sm">

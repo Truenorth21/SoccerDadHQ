@@ -22,8 +22,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        heading: ["var(--font-barlow)", "Barlow Condensed", "system-ui", "sans-serif"],
-        body: ["var(--font-dmsans)", "DM Sans", "system-ui", "sans-serif"],
+        heading: ["var(--font-roboto)", "Roboto", "system-ui", "sans-serif"],
+        body: ["var(--font-roboto)", "Roboto", "system-ui", "sans-serif"],
       },
       boxShadow: {
         card: "0 1px 3px rgba(10,22,40,0.08), 0 4px 16px rgba(10,22,40,0.06)",

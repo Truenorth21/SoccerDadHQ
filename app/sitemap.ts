@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { LISTINGS, KIND_CONFIG } from "@/lib/listings";
+import { loadListings, KIND_CONFIG } from "@/lib/listings";
 import { loadClubs, loadSchools, loadCoaches } from "@/lib/data";
 import { SITE_URL } from "@/lib/utils";
 
@@ -7,7 +7,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const CLUBS = await loadClubs();
   const SCHOOLS = await loadSchools();
   const COACHES = await loadCoaches();
-  const staticRoutes = ["", "/clubs", "/schools", "/coaches", "/training-centers", "/facilities", "/tournaments", "/camps", "/commitments", "/rankings", "/news", "/sideline", "/advertise", "/advertise/order", "/partners", "/privacy", "/terms", "/login"].map((path) => ({
+  const staticRoutes = ["", "/clubs", "/schools", "/coaches", "/training-centers", "/facilities", "/tournaments", "/camps", "/commitments", "/rankings", "/news", "/polls", "/sideline", "/advertise", "/advertise/order", "/partners", "/privacy", "/terms", "/login"].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: new Date(Date.UTC(2026, 4, 31)),
     changeFrequency: "daily" as const,
@@ -35,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  const listingRoutes = LISTINGS.map((l) => ({
+  const listingRoutes = (await loadListings()).map((l) => ({
     url: `${SITE_URL}${KIND_CONFIG[l.kind].path}/${l.slug}`,
     lastModified: new Date(Date.UTC(2026, 4, 31)),
     changeFrequency: "weekly" as const,

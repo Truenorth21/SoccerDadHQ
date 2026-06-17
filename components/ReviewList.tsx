@@ -53,6 +53,13 @@ export default function ReviewList({
               );
             })}
           </div>
+
+          {r.owner_reply && (
+            <div className="mt-4 rounded-lg border-l-4 border-brand-sky bg-sky-50/60 p-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-blue">Response from the owner</p>
+              <p className="mt-1 text-sm leading-relaxed text-slate-700">{r.owner_reply}</p>
+            </div>
+          )}
         </li>
       ))}
     </ul>

@@ -1,5 +1,6 @@
 import type { RegionKey } from "./regions";
 import type { Review } from "./types";
+import { publicClient } from "./supabase/public";
 
 /* ------------------------------------------------------------------ *
  *  Bespoke directory sections for the "extra" entity types:
@@ -288,13 +289,15 @@ function buildListing(kind: ListingKind, raw: Raw, idx: number): Listing {
   const slug = slugify(raw.name);
   const r = rng(kind + ":" + slug);
   const cfg = KIND_CONFIG[kind];
-  const reviewCount = 3 + Math.floor(r() * 5);
-  const reviews = buildReviews(slug, cfg.reviewCats, reviewCount);
+  // Honest launch: listings start unrated (no fabricated reviews/stars).
+  void (3 + Math.floor(r() * 5));
+  const reviewCount = 0;
+  const reviews: Review[] = [];
   const scores: Record<string, number> = {};
   cfg.reviewCats.forEach((c) => {
-    scores[c.key] = Math.round((reviews.reduce((a, rv) => a + (rv.scores as unknown as Record<string, number>)[c.key], 0) / reviews.length) * 10) / 10;
+    scores[c.key] = 0;
   });
-  const rating = Math.round((reviews.reduce((a, rv) => a + rv.rating, 0) / reviews.length) * 10) / 10;
+  const rating = 0;
   const planRoll = r();
   const plan: Listing["plan"] = planRoll > 0.82 ? "featured" : planRoll > 0.6 ? "pro" : "free";
   const { facts, tags } = buildFactsAndTags(kind, r);
@@ -310,12 +313,13 @@ function buildListing(kind: ListingKind, raw: Raw, idx: number): Listing {
     lat: raw.lat,
     lng: raw.lng,
     description: `${raw.name} is a ${cfg.label.toLowerCase()} based in ${raw.city}, Florida. ${cfg.blurb} It serves youth soccer families across the ${raw.region.replace(/-/g, " ")} area with a focus on quality, development and a positive experience.`,
-    website: `https://www.${slug.replace(/-/g, "")}.com`,
-    email: `info@${slug.replace(/-/g, "")}.com`,
-    phone: `(${pick(["305", "561", "239", "813", "407", "321", "904", "352", "850"], r)}) ${100 + Math.floor(r() * 899)}-${1000 + Math.floor(r() * 8999)}`,
+    // Unclaimed: no fabricated contact (these were auto-generated placeholders).
+    website: undefined,
+    email: undefined,
+    phone: undefined,
     color: COLORS[idx % COLORS.length],
-    claimed: r() > 0.6,
-    verified: r() > 0.5,
+    claimed: false, // unclaimed until a real owner claims the profile
+    verified: false, // not "verified" until we've actually verified it
     featured: plan === "featured",
     plan,
     rating,
@@ -331,8 +335,92 @@ export const LISTINGS: Listing[] = (Object.keys(RAW) as ListingKind[]).flatMap((
   RAW[kind].map((raw, i) => buildListing(kind, raw, i))
 );
 
-export function getListings(kind: ListingKind, filters: { q?: string; region?: string; facet?: string; sort?: string } = {}): Listing[] {
-  let res = LISTINGS.filter((l) => l.kind === kind);
+/** Map a Supabase listings row to a Listing (ratings/reviews fold in separately). */
+function dbRowToListing(r: Record<string, any>): Listing {
+  return {
+    id: String(r.id),
+    slug: r.slug,
+    kind: r.kind as ListingKind,
+    name: r.name,
+    region: r.region as RegionKey,
+    city: r.city ?? "",
+    zip: r.zip ?? "",
+    lat: r.lat ?? 0,
+    lng: r.lng ?? 0,
+    description: r.description ?? "",
+    website: r.website ?? undefined,
+    email: r.email ?? undefined,
+    phone: r.phone ?? undefined,
+    color: r.color ?? "#1a4fa0",
+    claimed: !!r.claimed,
+    verified: !!r.verified,
+    featured: !!r.featured,
+    plan: (r.plan ?? "free") as Listing["plan"],
+    rating: 0,
+    review_count: 0,
+    scores: {},
+    reviews: [],
+    facts: Array.isArray(r.facts) ? r.facts : [],
+    tags: Array.isArray(r.tags) ? r.tags : [],
+  };
+}
+
+/** Real review aggregates per listing subject_id (cookieless, cache-capped). */
+async function listingReviewAggregates(): Promise<Record<string, { count: number; rating: number; scores: Record<string, number> }>> {
+  const supabase = publicClient();
+  if (!supabase) return {};
+  try {
+    const { data, error } = await supabase
+      .from("reviews")
+      .select("subject_id, overall_rating, scores")
+      .in("subject_type", ["training-center", "facility", "tournament", "camp"]);
+    if (error || !data) return {};
+    const acc: Record<string, { sum: number; count: number; scoreSums: Record<string, number> }> = {};
+    for (const r of data as { subject_id: string; overall_rating: number; scores: Record<string, number> | null }[]) {
+      const a = (acc[r.subject_id] ??= { sum: 0, count: 0, scoreSums: {} });
+      a.sum += Number(r.overall_rating);
+      a.count += 1;
+      for (const [k, v] of Object.entries(r.scores ?? {})) a.scoreSums[k] = (a.scoreSums[k] ?? 0) + Number(v);
+    }
+    const out: Record<string, { count: number; rating: number; scores: Record<string, number> }> = {};
+    for (const [id, a] of Object.entries(acc)) {
+      const scores: Record<string, number> = {};
+      for (const [k, s] of Object.entries(a.scoreSums)) scores[k] = Math.round((s / a.count) * 10) / 10;
+      out[id] = { count: a.count, rating: Math.round((a.sum / a.count) * 10) / 10, scores };
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+/** All listings = seed + real DB listings, merged by kind+slug (DB wins), with real
+ *  review ratings folded in. Falls back to seed when Supabase is unconfigured/absent. */
+export async function loadListings(): Promise<Listing[]> {
+  const supabase = publicClient();
+  if (!supabase) return LISTINGS;
+  try {
+    const { data, error } = await supabase.from("listings").select("*").order("slug");
+    const byKey = new Map<string, Listing>();
+    for (const l of LISTINGS) byKey.set(`${l.kind}:${l.slug}`, l);
+    if (!error && data) for (const r of data as Record<string, any>[]) byKey.set(`${r.kind}:${r.slug}`, dbRowToListing(r));
+    const merged = Array.from(byKey.values());
+    const agg = await listingReviewAggregates();
+    return merged.map((l) => {
+      const a = agg[l.id];
+      if (!a || a.count === 0) return l;
+      return { ...l, rating: a.rating, review_count: a.count, scores: { ...l.scores, ...a.scores } };
+    });
+  } catch {
+    return LISTINGS;
+  }
+}
+
+export async function getListings(
+  kind: ListingKind,
+  filters: { q?: string; region?: string; facet?: string; sort?: string } = {}
+): Promise<Listing[]> {
+  let res = (await loadListings()).filter((l) => l.kind === kind);
   if (filters.q) {
     const q = filters.q.toLowerCase();
     res = res.filter((l) => l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.tags.join(" ").toLowerCase().includes(q));
@@ -345,10 +433,25 @@ export function getListings(kind: ListingKind, filters: { q?: string; region?: s
   return [...res.filter((l) => l.featured), ...res.filter((l) => !l.featured)];
 }
 
-export function getListingBySlug(kind: ListingKind, slug: string): Listing | undefined {
-  return LISTINGS.find((l) => l.kind === kind && l.slug === slug);
+const LISTING_OVERRIDE_FIELDS = ["description", "website", "email", "phone", "tags"] as const;
+
+export async function getListingBySlug(kind: ListingKind, slug: string): Promise<Listing | undefined> {
+  const listing = (await loadListings()).find((l) => l.kind === kind && l.slug === slug);
+  if (!listing) return undefined;
+  // Merge the owner's saved edits (whitelisted fields) on top.
+  const supabase = publicClient();
+  if (!supabase) return listing;
+  try {
+    const { data } = await supabase.from("profile_overrides").select("data").eq("subject_type", kind).eq("slug", slug).maybeSingle();
+    const ov = ((data as { data?: Record<string, unknown> } | null)?.data) ?? {};
+    const patch: Record<string, unknown> = {};
+    for (const k of LISTING_OVERRIDE_FIELDS) if (ov[k] !== undefined && ov[k] !== null) patch[k] = ov[k];
+    return { ...listing, ...patch };
+  } catch {
+    return listing;
+  }
 }
 
-export function getNearbyListings(l: Listing, limit = 4): Listing[] {
-  return LISTINGS.filter((x) => x.kind === l.kind && x.id !== l.id && x.region === l.region).slice(0, limit);
+export async function getNearbyListings(l: Listing, limit = 4): Promise<Listing[]> {
+  return (await loadListings()).filter((x) => x.kind === l.kind && x.id !== l.id && x.region === l.region).slice(0, limit);
 }

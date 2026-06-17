@@ -50,18 +50,39 @@ export async function GET(request: Request) {
     groups.get(key)!.push(s.email);
   }
 
-  const sent: { region: string; recipients: number; delivered: number; subject: string }[] = [];
+  // Per-run send cap so a single cron invocation can't blow past the email
+  // provider's rate/volume limits (Resend) or the function's 300s budget.
+  // Tune via NEWSLETTER_MAX_PER_RUN; pacing keeps us well under Resend's
+  // default rate limit. The full Broadcasts/Audiences migration replaces this
+  // hand-rolled fan-out once the list is large enough to warrant it.
+  const MAX_PER_RUN = Math.max(1, Number(process.env.NEWSLETTER_MAX_PER_RUN) || 2000);
+  const PACE_EVERY = 8; // brief pause every N sends to respect rate limits
+  const PACE_MS = 1100;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  const sent: { region: string; recipients: number; delivered: number; skipped: number; subject: string }[] = [];
+  let totalSendAttempts = 0;
+  let capped = false;
+
   for (const [region, emails] of Array.from(groups.entries())) {
     const digest = await buildRegionDigest(region === "statewide" ? null : (region as RegionKey));
     // Build once per region, then fan out to each subscriber.
     let delivered = 0;
+    let skipped = 0;
     if (isEmailConfigured) {
       for (const email of emails) {
+        if (totalSendAttempts >= MAX_PER_RUN) {
+          capped = true;
+          skipped++;
+          continue;
+        }
         const r = await sendBuiltDigest(email, digest);
         if (r.sent) delivered++;
+        totalSendAttempts++;
+        if (totalSendAttempts % PACE_EVERY === 0) await sleep(PACE_MS);
       }
     }
-    sent.push({ region, recipients: emails.length, delivered, subject: digest.subject });
+    sent.push({ region, recipients: emails.length, delivered, skipped, subject: digest.subject });
   }
 
   return NextResponse.json({
@@ -70,6 +91,9 @@ export async function GET(request: Request) {
     editions: sent.length,
     totalRecipients: sent.reduce((a, s) => a + s.recipients, 0),
     totalDelivered: sent.reduce((a, s) => a + s.delivered, 0),
+    capped,
+    cap: MAX_PER_RUN,
+    skippedForCap: sent.reduce((a, s) => a + s.skipped, 0),
     sent,
   });
 }

@@ -11,24 +11,30 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import AdSlot from "@/components/AdSlot";
 import ShareButtons from "@/components/ShareButtons";
 import RankingVote from "@/components/RankingVote";
-import ClaimForm from "@/components/ClaimForm";
-import { getCoachBySlug, getSupabaseReviews, getClubBySlug } from "@/lib/data";
-import { COACHES, slugify } from "@/lib/seed";
-// COACHES used by generateStaticParams
+import RankBadgeShare from "@/components/RankBadgeShare";
+import { getRankFor } from "@/lib/rankings";
+import ClaimPanel, { OwnerChip } from "@/components/ClaimPanel";
+import TryoutAlertSignup from "@/components/TryoutAlertSignup";
+import { getClaimStatus, resolveTier } from "@/lib/claims";
+import { getCoachBySlug, getSupabaseReviews, getClubBySlug, loadCoaches } from "@/lib/data";
+import { getLogo } from "@/lib/logos";
+import { slugify } from "@/lib/seed";
 import { COACH_REVIEW_CATEGORIES, regionName } from "@/lib/regions";
 import { SITE_URL } from "@/lib/utils";
 
 export const revalidate = 3600;
 
-export function generateStaticParams() {
-  return COACHES.map((c) => ({ slug: c.slug }));
+// Pre-render real imported coaches too (seed + DB), not just seed.
+export async function generateStaticParams() {
+  return (await loadCoaches()).map((c) => ({ slug: c.slug }));
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const coach = await getCoachBySlug(params.slug);
   if (!coach) return { title: "Coach not found" };
   const title = `${coach.name} — ${coach.title}, ${coach.club_name}`;
-  const description = `${coach.name}, ${coach.title} at ${coach.club_name} (${coach.city}, FL). ${coach.rating.toFixed(1)}★ from ${coach.review_count} reviews. ${coach.specialties.join(", ")}.`;
+  const ratingBit = coach.review_count > 0 ? `${coach.rating.toFixed(1)}★ from ${coach.review_count} reviews. ` : "";
+  const description = `${coach.name}, ${coach.title} at ${coach.club_name} (${coach.city}, FL). ${ratingBit}${coach.specialties.join(", ")}.`;
   return {
     title,
     description,
@@ -44,6 +50,9 @@ export default async function CoachProfile({ params }: { params: { slug: string 
   const extraReviews = await getSupabaseReviews("coach", coach.id);
   const reviews = [...extraReviews, ...coach.reviews];
   const rankingPeriod = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const rankInfo = await getRankFor("coaches", coach.id);
+  const tier = resolveTier(await getClaimStatus("coach", coach.slug));
+  const photo = await getLogo("coach", coach.slug);
   const club = coach.club_name ? await getClubBySlug(slugify(coach.club_name)) : undefined;
 
   const jsonLd = {
@@ -55,13 +64,18 @@ export default async function CoachProfile({ params }: { params: { slug: string 
     url: `${SITE_URL}/coaches/${coach.slug}`,
     worksFor: { "@type": "SportsTeam", name: coach.club_name },
     address: { "@type": "PostalAddress", addressLocality: coach.city, addressRegion: "FL", addressCountry: "US" },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: coach.rating.toFixed(1),
-      reviewCount: coach.review_count,
-      bestRating: "5",
-      worstRating: "1",
-    },
+    // Only advertise an aggregate rating when there are real reviews (Google policy).
+    ...(reviews.length > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: coach.rating.toFixed(1),
+            reviewCount: reviews.length,
+            bestRating: "5",
+            worstRating: "1",
+          },
+        }
+      : {}),
   };
 
   return (
@@ -75,12 +89,20 @@ export default async function CoachProfile({ params }: { params: { slug: string 
         <div className="container-page">
           <div className="relative -mt-14 flex flex-col gap-4 sm:-mt-16 sm:flex-row sm:items-end">
             <div className="rounded-full bg-white p-1.5 shadow-card-hover">
-              <Crest name={coach.name} color={coach.photo_color} size="xl" rounded="full" />
+              {photo ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photo} alt={coach.name} className="h-24 w-24 rounded-full object-cover sm:h-28 sm:w-28" />
+              ) : (
+                <Crest name={coach.name} color={coach.photo_color} size="xl" rounded="full" />
+              )}
             </div>
             <div className="flex-1 pb-2">
-              <h1 className="font-heading text-3xl font-bold uppercase tracking-tight text-navy sm:text-4xl">
-                {coach.name}
-              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="font-heading text-3xl font-bold uppercase tracking-tight text-navy sm:text-4xl">
+                  {coach.name}
+                </h1>
+                <OwnerChip tier={tier} />
+              </div>
               <p className="mt-1 text-slate-600">
                 {coach.title} ·{" "}
                 {club ? (
@@ -174,8 +196,22 @@ export default async function CoachProfile({ params }: { params: { slug: string 
           </div>
 
           <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
-            <RankingVote itemId={coach.id} itemName={coach.name} period={rankingPeriod} />
-            <ContactForm recipient={coach.name} />
+            {rankInfo && (
+              <RankBadgeShare
+                name={coach.name}
+                profileUrl={`${SITE_URL}/coaches/${coach.slug}`}
+                period={rankingPeriod}
+                categoryLabel="Coaches"
+                regionName={regionName(coach.region)}
+                rank={rankInfo.rank}
+                regionRank={rankInfo.regionRank}
+                regionTotal={rankInfo.regionTotal}
+                votes={rankInfo.votes}
+              />
+            )}
+            <RankingVote itemId={coach.id} itemName={coach.name} period={rankingPeriod} category="coaches" profileUrl={`${SITE_URL}/coaches/${coach.slug}`} />
+            <ContactForm recipient={coach.name} subjectType="coach" subjectSlug={coach.slug} subjectName={coach.name} />
+            <TryoutAlertSignup region={coach.region} regionName={regionName(coach.region)} />
             {club && (
               <div className="card p-5">
                 <h3 className="mb-2 font-heading text-lg font-bold uppercase text-navy">Club</h3>
@@ -189,15 +225,9 @@ export default async function CoachProfile({ params }: { params: { slug: string 
               </div>
             )}
 
-            <div className="card border-2 border-dashed border-slate-200 p-5 text-center">
-              <h3 className="font-heading text-lg font-bold text-navy">Is this you?</h3>
-              <p className="mt-1 text-sm text-slate-500">Claim your coach profile to manage your bio, respond to reviews and list private training.</p>
-              <div className="mt-3">
-                <ClaimForm subjectType="coach" subjectSlug={coach.slug} subjectName={coach.name} />
-              </div>
-            </div>
+            <ClaimPanel tier={tier} subjectType="coach" slug={coach.slug} name={coach.name} label="coach profile" perk="list private training" />
 
-            {!coach.featured && <AdSlot placement="profile-sidebar" seed={coach.name.length} />}
+            {tier === "unclaimed" && <AdSlot placement="profile-sidebar" seed={coach.name.length} />}
           </div>
         </div>
       </div>

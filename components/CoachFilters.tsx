@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
 import { REGIONS, GENDERS, AGE_GROUPS } from "@/lib/regions";
 
-export default function CoachFilters() {
+export default function CoachFilters({ hasRatings = false }: { hasRatings?: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -84,16 +84,19 @@ export default function CoachFilters() {
             Private training only
           </span>
         </label>
-        <div>
-          <label className="label">Minimum rating</label>
-          <select className="input" value={get("rating")} onChange={(e) => update({ rating: e.target.value })}>
-            <option value="">Any rating</option>
-            <option value="4.5">4.5+ ★</option>
-            <option value="4">4.0+ ★</option>
-            <option value="3.5">3.5+ ★</option>
-            <option value="3">3.0+ ★</option>
-          </select>
-        </div>
+        {/* Rating filter appears once coaches have real reviews. */}
+        {hasRatings && (
+          <div>
+            <label className="label">Minimum rating</label>
+            <select className="input" value={get("rating")} onChange={(e) => update({ rating: e.target.value })}>
+              <option value="">Any rating</option>
+              <option value="4.5">4.5+ ★</option>
+              <option value="4">4.0+ ★</option>
+              <option value="3.5">3.5+ ★</option>
+              <option value="3">3.0+ ★</option>
+            </select>
+          </div>
+        )}
       </div>
       </div>
     </div>

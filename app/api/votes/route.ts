@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { getRankFor } from "@/lib/rankings";
 
 export async function POST(request: Request) {
-  let body: { item_id?: string; item_name?: string };
+  let body: { item_id?: string; item_name?: string; category?: string };
   try {
     body = await request.json();
   } catch {
@@ -45,5 +46,19 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ message: "Vote counted!" });
+  // Compute the item's new standing from FRESH tallies (the just-cast vote is
+  // included) so the voter immediately sees the impact they made.
+  let rank = null;
+  if (body.category) {
+    try {
+      const { data: tdata } = await supabase.from("vote_tallies").select("item_id, votes").eq("period", period);
+      const tallies: Record<string, number> = {};
+      for (const r of (tdata ?? []) as { item_id: string; votes: number }[]) tallies[r.item_id] = Number(r.votes);
+      rank = await getRankFor(body.category, body.item_id, { tallies, prefix: body.category === "schools" });
+    } catch {
+      /* non-fatal — the vote still counted */
+    }
+  }
+
+  return NextResponse.json({ message: "Vote counted!", rank });
 }

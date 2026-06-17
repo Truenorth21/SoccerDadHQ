@@ -174,11 +174,12 @@ function avgSchoolScores(reviews: Review[]): SchoolReviewScores {
 function buildSchool(raw: RawSchool, idx: number): School {
   const slug = slugifySchool(raw.name);
   const r = rng(slug);
-  const reviewCount = 3 + Math.floor(r() * 5);
-  const reviews = schoolReviews(slug, reviewCount);
+  // Honest launch: schools start unrated (no fabricated reviews/stars).
+  void (3 + Math.floor(r() * 5));
+  const reviewCount = 0;
+  const reviews: Review[] = [];
   const scores = avgSchoolScores(reviews);
-  const rating =
-    Math.round((reviews.reduce((a, rv) => a + rv.rating, 0) / reviews.length) * 10) / 10;
+  const rating = 0;
 
   const programs = r() > 0.92 ? ["Boys"] : r() > 0.85 ? ["Girls"] : ["Boys", "Girls"];
   const lastTitle = raw.stateTitles > 0 ? 2009 + Math.floor(r() * 16) : undefined;
@@ -209,7 +210,7 @@ function buildSchool(raw: RawSchool, idx: number): School {
     district_titles: raw.stateTitles * 2 + Math.floor(r() * 6),
     enrollment: 700 + Math.floor(r() * 2600),
     description: `${raw.name} (${raw.mascot}) is a${raw.type === "Private" ? " private" : " public"} ${raw.cls} high school in ${raw.city}, Florida, with ${programs.join(" and ")} soccer competing under the FHSAA. ${raw.stateTitles > 0 ? `The program has captured ${raw.stateTitles} state championship${raw.stateTitles === 1 ? "" : "s"} and is a perennial contender in its district.` : "The program is a competitive member of its district and a steady developer of college-bound players."} ${raw.name} blends a demanding academic environment with a serious commitment to soccer.`,
-    website: `https://www.${slug.replace(/-/g, "")}.org`,
+    website: undefined, // unclaimed: no fabricated website (was an auto-generated placeholder)
     featured: plan === "featured",
     plan,
     rating,

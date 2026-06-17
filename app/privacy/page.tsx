@@ -26,7 +26,7 @@ export default function PrivacyPage() {
           <li><strong>Account info</strong> — email address (and name/avatar if you sign in with Google) when you create an account.</li>
           <li><strong>Content you submit</strong> — reviews, ratings, votes, commitment announcements, claim and inquiry forms.</li>
           <li><strong>Newsletter</strong> — your email and chosen region when you subscribe to The Sideline.</li>
-          <li><strong>Usage data</strong> — standard server logs and, if enabled, privacy-friendly analytics (pages viewed, device type).</li>
+          <li><strong>Usage &amp; analytics</strong> — first-party analytics to understand traffic: pages viewed, the referring site or campaign tag (UTM) that brought you here, and your approximate location (city/state) derived from your network. We don&rsquo;t store your IP address or use third-party tracking pixels for this.</li>
         </ul>
 
         <h2>How we use it</h2>

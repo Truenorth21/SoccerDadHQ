@@ -12,26 +12,31 @@ import MapEmbed from "@/components/MapEmbed";
 import AdSlot from "@/components/AdSlot";
 import LogoManager from "@/components/LogoManager";
 import ShareButtons from "@/components/ShareButtons";
-import ClaimForm from "@/components/ClaimForm";
+import ClaimPanel, { OwnerChip } from "@/components/ClaimPanel";
+import TryoutAlertSignup from "@/components/TryoutAlertSignup";
+import { getClaimStatus, resolveTier } from "@/lib/claims";
 import { getLogo } from "@/lib/logos";
-import { getSchoolBySlug, getNearbySchools, getSupabaseReviews, getCommitmentsForSchool } from "@/lib/data";
+import { getSchoolBySlug, getNearbySchools, getSupabaseReviews, getCommitmentsForSchool, loadSchools } from "@/lib/data";
 import CommitmentCard from "@/components/CommitmentCard";
 import CommitmentForm from "@/components/CommitmentForm";
-import { SCHOOLS } from "@/lib/schools";
+import RankBadgeShare from "@/components/RankBadgeShare";
+import { getRankFor } from "@/lib/rankings";
 import { SCHOOL_REVIEW_CATEGORIES, regionName } from "@/lib/regions";
 import { SITE_URL } from "@/lib/utils";
 
 export const revalidate = 3600;
 
-export function generateStaticParams() {
-  return SCHOOLS.map((s) => ({ slug: s.slug }));
+// Pre-render real imported schools too (seed + DB), not just seed.
+export async function generateStaticParams() {
+  return (await loadSchools()).map((s) => ({ slug: s.slug }));
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const school = await getSchoolBySlug(params.slug);
   if (!school) return { title: "School not found" };
   const title = `${school.name} Soccer — Reviews & Program Info`;
-  const description = `${school.name} (${school.mascot}) ${school.fhsaa_class} ${school.type.toLowerCase()} high school soccer in ${school.city}, FL. ${school.rating.toFixed(1)}★ from ${school.review_count} reviews. ${school.state_titles} state title${school.state_titles === 1 ? "" : "s"}.`;
+  const ratingBit = school.review_count > 0 ? `${school.rating.toFixed(1)}★ from ${school.review_count} reviews. ` : "";
+  const description = `${school.name} (${school.mascot}) ${school.fhsaa_class} ${school.type.toLowerCase()} high school soccer in ${school.city}, FL. ${ratingBit}${school.state_titles} state title${school.state_titles === 1 ? "" : "s"}.`;
   return {
     title,
     description,
@@ -48,6 +53,9 @@ export default async function SchoolProfile({ params }: { params: { slug: string
   const reviews = [...extraReviews, ...school.reviews];
   const commitments = getCommitmentsForSchool(school.id);
   const nearby = await getNearbySchools(school, 4);
+  const rankingPeriod = new Date().toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const rankInfo = await getRankFor("schools", school.id, { prefix: true });
+  const tier = resolveTier(await getClaimStatus("school", school.slug));
   const logo = await getLogo("school", school.slug);
 
   const jsonLd = {
@@ -64,13 +72,18 @@ export default async function SchoolProfile({ params }: { params: { slug: string
       addressCountry: "US",
     },
     geo: { "@type": "GeoCoordinates", latitude: school.lat, longitude: school.lng },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: school.rating.toFixed(1),
-      reviewCount: school.review_count,
-      bestRating: "5",
-      worstRating: "1",
-    },
+    // Only advertise an aggregate rating when there are real reviews (Google policy).
+    ...(reviews.length > 0
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: school.rating.toFixed(1),
+            reviewCount: reviews.length,
+            bestRating: "5",
+            worstRating: "1",
+          },
+        }
+      : {}),
   };
 
   return (
@@ -98,6 +111,8 @@ export default async function SchoolProfile({ params }: { params: { slug: string
                 </h1>
                 <span className="chip-sky">{school.fhsaa_class}</span>
                 <span className="chip">{school.type}</span>
+                {(school as { tryouts_open?: boolean }).tryouts_open && <span className="chip-amber">Tryouts open</span>}
+                <OwnerChip tier={tier} />
               </div>
               <p className="mt-1 text-slate-600">
                 {school.mascot} · {school.city}, FL · {regionName(school.region)}
@@ -124,6 +139,22 @@ export default async function SchoolProfile({ params }: { params: { slug: string
       <div className="container-page py-10">
         <div className="grid gap-10 lg:grid-cols-3">
           <div className="space-y-10 lg:col-span-2">
+            {/* Tryouts — owner-managed */}
+            {(school as { tryouts_open?: boolean }).tryouts_open && (
+              <div className="card border-l-4 border-brand-amber p-4">
+                <h3 className="label text-amber-700">Tryouts</h3>
+                {(school as { next_tryout_date?: string }).next_tryout_date && (
+                  <p className="text-sm font-semibold text-navy">
+                    Next date:{" "}
+                    {new Date(`${(school as { next_tryout_date?: string }).next_tryout_date}T00:00:00`).toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric", year: "numeric" })}
+                  </p>
+                )}
+                {(school as { tryout_note?: string }).tryout_note && (
+                  <p className="mt-1 text-sm text-slate-700">{(school as { tryout_note?: string }).tryout_note}</p>
+                )}
+              </div>
+            )}
+
             {/* Quick stats */}
             <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
@@ -175,15 +206,15 @@ export default async function SchoolProfile({ params }: { params: { slug: string
               </div>
             </section>
 
-            {/* Commitments — a Pro/Featured profile benefit */}
+            {/* Commitments — a Featured profile benefit */}
             <section>
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="section-title">College &amp; Pro Commitments</h2>
-                {school.plan !== "free" && (
+                {tier !== "unclaimed" && (
                   <CommitmentForm subjectType="school" subjectSlug={school.slug} subjectName={school.name} />
                 )}
               </div>
-              {school.plan === "free" ? (
+              {tier === "unclaimed" ? (
                 <div className="card border-2 border-dashed border-slate-200 p-6 text-center">
                   <p className="font-heading text-lg font-bold text-navy">Showcase where your players go</p>
                   <p className="mt-1 text-sm text-slate-500">
@@ -230,6 +261,20 @@ export default async function SchoolProfile({ params }: { params: { slug: string
 
           {/* Sidebar */}
           <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+            {rankInfo && (
+              <RankBadgeShare
+                name={school.name}
+                profileUrl={`${SITE_URL}/schools/${school.slug}`}
+                period={rankingPeriod}
+                categoryLabel="Schools"
+                regionName={regionName(school.region)}
+                rank={rankInfo.rank}
+                regionRank={rankInfo.regionRank}
+                regionTotal={rankInfo.regionTotal}
+                votes={rankInfo.votes}
+                programLabel={rankInfo.programLabel}
+              />
+            )}
             <div className="card p-5">
               <h3 className="mb-3 font-heading text-lg font-bold uppercase text-navy">Details</h3>
               <ul className="space-y-2.5 text-sm">
@@ -245,15 +290,11 @@ export default async function SchoolProfile({ params }: { params: { slug: string
 
             <LogoManager subjectType="school" slug={school.slug} currentLogo={logo} />
 
-            <div className="card border-2 border-dashed border-slate-200 p-5 text-center">
-              <h3 className="font-heading text-lg font-bold text-navy">Is this your program?</h3>
-              <p className="mt-1 text-sm text-slate-500">Claim it to respond to reviews, post results and showcase commitments.</p>
-              <div className="mt-3">
-                <ClaimForm subjectType="school" subjectSlug={school.slug} subjectName={school.name} />
-              </div>
-            </div>
+            <ClaimPanel tier={tier} subjectType="school" slug={school.slug} name={school.name} label="program" perk="post results" />
 
-            {!school.featured && <AdSlot placement="profile-sidebar" seed={school.name.length} />}
+            <TryoutAlertSignup region={school.region} regionName={regionName(school.region)} />
+
+            {tier === "unclaimed" && <AdSlot placement="profile-sidebar" seed={school.name.length} />}
           </div>
         </div>
 

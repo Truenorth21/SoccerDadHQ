@@ -8,12 +8,7 @@ import type { Club } from "@/lib/types";
 
 export default function ClubCard({ club }: { club: Club & { distance?: number } }) {
   return (
-    <div className={`card card-hover group relative flex flex-col p-4 ${club.featured ? "ring-1 ring-amber-300 bg-amber-50/60" : ""}`}>
-      {club.featured && (
-        <span className="absolute -top-2 left-3 z-[2] rounded-full bg-navy px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-300 shadow-sm">
-          ★ Featured
-        </span>
-      )}
+    <div className="card card-hover group relative flex flex-col p-4">
       <Link href={`/clubs/${club.slug}`} className="absolute inset-0 z-[1]" aria-label={club.name} />
       <div className="absolute right-3 top-3 z-[2] flex gap-1.5">
         <CompareButton item={{ type: "club", slug: club.slug, name: club.name }} />
@@ -30,11 +25,6 @@ export default function ClubCard({ club }: { club: Club & { distance?: number } 
             <h3 className="truncate font-heading text-lg font-bold leading-tight text-navy group-hover:text-brand-sky">
               {club.name}
             </h3>
-            {club.verified && (
-              <svg className="h-4 w-4 shrink-0 text-brand-sky" viewBox="0 0 20 20" fill="currentColor" aria-label="Verified">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-9.3a1 1 0 00-1.4-1.4L9 10.6 7.7 9.3a1 1 0 00-1.4 1.4l2 2a1 1 0 001.4 0l4-4z" clipRule="evenodd" />
-              </svg>
-            )}
           </div>
           <p className="truncate text-sm text-slate-500">
             {club.city}, FL · {regionName(club.region)}

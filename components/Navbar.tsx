@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import Logo from "./Logo";
+import SignOutButton from "./SignOutButton";
 import { createClient } from "@/lib/supabase/client";
 
 type Hit = { name: string; slug: string; sub: string };
@@ -123,18 +124,27 @@ function SearchBox({ onSubmitted }: { onSubmitted?: () => void }) {
 }
 
 const LINKS = [
+  { href: "/news", label: "News" },
   { href: "/clubs", label: "Clubs" },
   { href: "/schools", label: "Schools" },
   { href: "/coaches", label: "Coaches" },
-  { href: "/commitments", label: "Commits" },
   { href: "/rankings", label: "Rankings" },
-  { href: "/news", label: "News" },
+  { href: "/commitments", label: "Commits" },
+];
+
+// Secondary directories — under a "More" dropdown to keep the core nav clean.
+const MORE_LINKS = [
+  { href: "/training-centers", label: "Training Centers" },
+  { href: "/facilities", label: "Facilities" },
+  { href: "/tournaments", label: "Tournaments" },
+  { href: "/camps", label: "Camps" },
 ];
 
 export default function Navbar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     setOpen(false);
@@ -143,9 +153,20 @@ export default function Navbar() {
   useEffect(() => {
     const supabase = createClient();
     if (!supabase) return;
-    supabase.auth.getUser().then(({ data }) => setEmail(data.user?.email ?? null));
+    // Resolve the signed-in user + whether they're an admin (so we can show a
+    // direct "Admin" shortcut instead of making them dig through the dashboard).
+    const resolve = async (uid: string | undefined, mail: string | null) => {
+      setEmail(mail);
+      if (!uid) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data: p } = await supabase.from("profiles").select("role").eq("id", uid).single();
+      setIsAdmin((p as { role?: string } | null)?.role === "admin");
+    };
+    supabase.auth.getUser().then(({ data }) => resolve(data.user?.id, data.user?.email ?? null));
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) =>
-      setEmail(session?.user?.email ?? null)
+      resolve(session?.user?.id, session?.user?.email ?? null)
     );
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -170,17 +191,74 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          {/* "More" dropdown — links are always in the DOM (CSS-revealed), so they
+              stay crawlable for SEO; revealed on hover and keyboard focus. */}
+          <div className="group relative">
+            <button
+              className={`inline-flex items-center gap-1 rounded-lg px-3 py-2 font-heading text-base font-semibold uppercase tracking-wide transition-colors ${
+                MORE_LINKS.some((l) => pathname.startsWith(l.href)) ? "text-brand-sky" : "text-navy hover:bg-slate-100"
+              }`}
+              aria-haspopup="true"
+            >
+              More
+              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 8l5 5 5-5" />
+              </svg>
+            </button>
+            <div className="invisible absolute left-0 top-full z-50 w-52 rounded-xl border border-slate-200 bg-white p-1 opacity-0 shadow-card-hover transition-all duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+              {MORE_LINKS.map((l) => (
+                <Link
+                  key={l.href}
+                  href={l.href}
+                  className={`block rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-slate-100 ${
+                    pathname.startsWith(l.href) ? "text-brand-sky" : "text-navy"
+                  }`}
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="hidden min-w-0 flex-1 justify-end lg:flex lg:max-w-xs">
           <SearchBox />
         </div>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden shrink-0 items-center gap-2 md:flex">
           {email ? (
-            <Link href="/dashboard" className="btn-navy text-sm">
-              Dashboard
-            </Link>
+            // One compact account menu (keeps the nav from overcrowding). Links are
+            // CSS-revealed on hover/focus.
+            <div className="group relative">
+              <button
+                className="inline-flex items-center gap-1.5 rounded-lg bg-navy px-3 py-2 font-heading text-sm font-semibold uppercase tracking-wide text-white hover:bg-navy-700"
+                aria-haspopup="true"
+              >
+                <span className="grid h-5 w-5 place-items-center rounded-full bg-white/20 text-[11px] font-bold">
+                  {(email[0] ?? "?").toUpperCase()}
+                </span>
+                Account
+                <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 8l5 5 5-5" />
+                </svg>
+              </button>
+              <div className="invisible absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1 opacity-0 shadow-card-hover transition-all duration-150 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
+                {isAdmin && (
+                  <Link href="/admin" className="block rounded-lg px-3 py-2 text-sm font-semibold text-amber-700 hover:bg-amber-50">
+                    ⚙ Admin / Moderation
+                  </Link>
+                )}
+                <Link href="/dashboard" className="block rounded-lg px-3 py-2 text-sm font-semibold text-navy hover:bg-slate-100">
+                  My Dashboard
+                </Link>
+                <form action="/auth/signout" method="post">
+                  <button type="submit" className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-navy hover:bg-slate-100">
+                    Sign out
+                  </button>
+                </form>
+              </div>
+            </div>
           ) : (
             <>
               <Link href="/login" className="btn-outline text-sm">
@@ -224,22 +302,40 @@ export default function Navbar() {
                 {l.label}
               </Link>
             ))}
-            <div className="mt-2 flex gap-2">
-              {email ? (
-                <Link href="/dashboard" className="btn-navy flex-1 text-sm">
-                  Dashboard
+            <p className="mt-2 px-3 font-heading text-xs font-bold uppercase tracking-wide text-slate-400">More directories</p>
+            {MORE_LINKS.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className="rounded-lg px-3 py-2.5 font-heading text-lg font-semibold uppercase tracking-wide text-navy hover:bg-slate-100"
+              >
+                {l.label}
+              </Link>
+            ))}
+            {email ? (
+              <div className="mt-2 space-y-2">
+                <div className="flex gap-2">
+                  {isAdmin && (
+                    <Link href="/admin" className="btn-amber flex-1 text-sm">
+                      Admin
+                    </Link>
+                  )}
+                  <Link href="/dashboard" className="btn-navy flex-1 text-sm">
+                    Dashboard
+                  </Link>
+                </div>
+                <SignOutButton full />
+              </div>
+            ) : (
+              <div className="mt-2 flex gap-2">
+                <Link href="/login" className="btn-outline flex-1 text-sm">
+                  Log in
                 </Link>
-              ) : (
-                <>
-                  <Link href="/login" className="btn-outline flex-1 text-sm">
-                    Log in
-                  </Link>
-                  <Link href="/login?mode=signup" className="btn-primary flex-1 text-sm">
-                    Sign up
-                  </Link>
-                </>
-              )}
-            </div>
+                <Link href="/login?mode=signup" className="btn-primary flex-1 text-sm">
+                  Sign up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       )}
