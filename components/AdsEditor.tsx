@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Ad, AdsConfig, AdPlacement } from "@/lib/ads";
 import { REGIONS } from "@/lib/regions";
 
@@ -17,6 +17,28 @@ const COLORS = ["#1a4fa0", "#0a1628", "#2a7de1", "#1d7a4d", "#9b2d2d", "#5a2d82"
 
 function AdFields({ ad, onChange }: { ad: Ad; onChange: (a: Ad) => void }) {
   const set = (k: keyof Ad, v: string) => onChange({ ...ad, [k]: v });
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadErr, setUploadErr] = useState("");
+
+  // Upload artwork to the ad-creatives bucket and drop the public URL into `image`.
+  async function uploadImage(file: File) {
+    setUploadErr("");
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/ad-upload", { method: "POST", body: fd });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Upload failed.");
+      onChange({ ...ad, image: d.url });
+    } catch (e: any) {
+      setUploadErr(e.message ?? "Upload failed.");
+    } finally {
+      setUploading(false);
+    }
+  }
+
   return (
     <div className="grid gap-2 sm:grid-cols-2">
       <input className="input" placeholder="Advertiser" value={ad.advertiser} onChange={(e) => set("advertiser", e.target.value)} />
@@ -24,7 +46,41 @@ function AdFields({ ad, onChange }: { ad: Ad; onChange: (a: Ad) => void }) {
       <input className="input sm:col-span-2" placeholder="Body" value={ad.body} onChange={(e) => set("body", e.target.value)} />
       <input className="input" placeholder="CTA (e.g. Learn more)" value={ad.cta} onChange={(e) => set("cta", e.target.value)} />
       <input className="input" placeholder="Link URL" value={ad.href} onChange={(e) => set("href", e.target.value)} />
-      <input className="input sm:col-span-2" placeholder="Image URL (optional banner)" value={ad.image ?? ""} onChange={(e) => set("image", e.target.value)} />
+      <div className="sm:col-span-2">
+        <label className="label">Ad image (optional banner) — paste a URL or upload</label>
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            className="input min-w-[200px] flex-1"
+            placeholder="Image URL"
+            value={ad.image ?? ""}
+            onChange={(e) => set("image", e.target.value)}
+          />
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/png,image/jpeg,image/gif,image/webp"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) uploadImage(file);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            className="btn-outline whitespace-nowrap text-sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? "Uploading…" : "Upload image"}
+          </button>
+          {ad.image && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={ad.image} alt="" className="h-9 w-14 shrink-0 rounded object-cover ring-1 ring-slate-200" />
+          )}
+        </div>
+        {uploadErr && <p className="mt-1 text-xs text-red-600">{uploadErr}</p>}
+      </div>
       <div>
         <label className="label">Placement (optional — blank = any slot)</label>
         <select className="input" value={ad.placement ?? ""} onChange={(e) => onChange({ ...ad, placement: (e.target.value || undefined) as AdPlacement | undefined })}>
