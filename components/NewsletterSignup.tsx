@@ -5,6 +5,7 @@ import { useState } from "react";
 export default function NewsletterSignup({ compact = false }: { compact?: boolean }) {
   const [email, setEmail] = useState("");
   const [region, setRegion] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -15,7 +16,7 @@ export default function NewsletterSignup({ compact = false }: { compact?: boolea
       const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, region }),
+        body: JSON.stringify({ email, region, age_confirmed: ageConfirmed }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
@@ -37,7 +38,7 @@ export default function NewsletterSignup({ compact = false }: { compact?: boolea
   }
 
   return (
-    <form onSubmit={submit} className={compact ? "space-y-2" : "flex flex-col gap-3 sm:flex-row"}>
+    <form onSubmit={submit} className={compact ? "space-y-2" : "flex flex-col gap-3 sm:flex-row sm:flex-wrap"}>
       <input
         type="email"
         required
@@ -63,6 +64,10 @@ export default function NewsletterSignup({ compact = false }: { compact?: boolea
       <button type="submit" disabled={status === "loading"} className={compact ? "btn-amber w-full text-sm" : "btn-amber"}>
         {status === "loading" ? "Joining…" : "Subscribe"}
       </button>
+      <label className={compact ? "flex items-start gap-2 text-xs text-slate-400" : "flex w-full items-start gap-2 text-xs text-slate-500"}>
+        <input type="checkbox" required checked={ageConfirmed} onChange={(e) => setAgeConfirmed(e.target.checked)} className="mt-0.5" />
+        <span>I confirm I am at least 13 and agree to the <a href="/privacy" className="underline">Privacy Policy</a>.</span>
+      </label>
       {status === "error" && (
         <p className="text-xs text-red-400">{message}</p>
       )}

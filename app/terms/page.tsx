@@ -9,13 +9,9 @@ export default function TermsPage() {
   return (
     <div className="container-page max-w-3xl py-12">
       <h1 className="font-heading text-4xl font-bold uppercase tracking-tight text-navy">Terms of Service</h1>
-      <p className="mt-2 text-sm text-slate-500">Last updated: June 2026</p>
+      <p className="mt-2 text-sm text-slate-500">Last updated: July 3, 2026</p>
 
       <div className="prose mt-8 space-y-6 text-slate-700 [&_h2]:font-heading [&_h2]:text-xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:text-navy [&_h2]:mt-8 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_a]:text-brand-blue">
-        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-100">
-          This is a starting-point template, not legal advice. Have it reviewed by an attorney before launch.
-        </p>
-
         <p>By using SoccerDadHQ.com you agree to these terms.</p>
 
         <h2>Directory data &amp; accuracy</h2>
@@ -37,14 +33,21 @@ export default function TermsPage() {
           You&rsquo;re responsible for activity under your account and for keeping your login secure. Don&rsquo;t
           impersonate others or create accounts to manipulate reviews or rankings.
         </p>
+        <p>
+          You must be at least 13 years old to create an account or submit information. This service is designed
+          for parents, guardians and other adults in the soccer community, not children under 13.
+        </p>
 
         <h2>Reviews &amp; community content</h2>
         <ul>
           <li>Reviews must reflect genuine, first-hand experience. One review per program, per person.</li>
-          <li>No defamation, harassment, hate speech, personal attacks on minors, or private personal information.</li>
+          <li>Focus on soccer experience, communication, training, organization, cost and facilities.</li>
+          <li>No defamation, harassment, hate speech, threats, personal attacks, doxxing, phone numbers, addresses or other private information.</li>
+          <li>Do not identify or discuss a minor by full name. Do not publish accusations of crime, abuse or misconduct; report urgent safety concerns to the appropriate authorities.</li>
           <li>No fake, incentivized, or competitor-sabotage reviews; no vote manipulation.</li>
           <li>You grant us a license to display and distribute content you post. You retain ownership.</li>
           <li>We may edit, remove, or decline to publish content that violates these terms.</li>
+          <li>Use the report link beside a review or email <a href="mailto:reviews@soccerdadhq.com">reviews@soccerdadhq.com</a> to request moderation.</li>
         </ul>
 
         <h2>Claiming a profile</h2>

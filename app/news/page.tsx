@@ -22,8 +22,8 @@ export default async function NewsPage() {
             Soccer News
           </h1>
           <p className="mt-1 max-w-2xl text-slate-300">
-            ECNL, MLS NEXT, Girls Academy, recruiting and tournaments — aggregated from across the
-            web and linked back to the original source.
+            Original parent-focused context for the ECNL, MLS NEXT, Girls Academy, recruiting and
+            tournament stories that matter to Florida families. Every story links to its original source.
           </p>
         </div>
       </section>

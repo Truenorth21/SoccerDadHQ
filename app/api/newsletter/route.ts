@@ -6,7 +6,7 @@ import { isEmailConfigured } from "@/lib/email";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
-  let body: { email?: string; region?: string };
+  let body: { email?: string; region?: string; age_confirmed?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -18,6 +18,9 @@ export async function POST(request: Request) {
 
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+  }
+  if (body.age_confirmed !== true) {
+    return NextResponse.json({ error: "You must confirm that you are at least 13." }, { status: 400 });
   }
 
   const welcome = "Welcome to The Sideline! ⚽ Check your inbox — your first issue lands this week.";

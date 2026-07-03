@@ -14,6 +14,7 @@ export default function LoginForm() {
   );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "error" | "check-email">("idle");
   const [message, setMessage] = useState("");
 
@@ -32,10 +33,14 @@ export default function LoginForm() {
     setMessage("");
     try {
       if (mode === "signup") {
+        if (!ageConfirmed) throw new Error("You must confirm that you are at least 13.");
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+          options: {
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: { age_13_confirmed: true },
+          },
         });
         if (error) throw error;
         setStatus("check-email");
@@ -98,6 +103,7 @@ export default function LoginForm() {
         <>
           <button
             onClick={googleAuth}
+            disabled={mode === "signup" && !ageConfirmed}
             className="btn-outline mt-5 w-full"
             type="button"
           >
@@ -109,6 +115,12 @@ export default function LoginForm() {
             </svg>
             Continue with Google
           </button>
+          {mode === "signup" && (
+            <label className="mt-3 flex items-start gap-2 text-xs text-slate-600">
+              <input type="checkbox" required checked={ageConfirmed} onChange={(e) => setAgeConfirmed(e.target.checked)} className="mt-0.5" />
+              <span>I confirm I am at least 13 before continuing with Google.</span>
+            </label>
+          )}
 
           <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-wider text-slate-400">
             <span className="h-px flex-1 bg-slate-200" /> or <span className="h-px flex-1 bg-slate-200" />
@@ -121,6 +133,12 @@ export default function LoginForm() {
           <label className="label">Email</label>
           <input type="email" required className="input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@email.com" />
         </div>
+        {mode === "signup" && (
+          <label className="flex items-start gap-2 text-xs text-slate-600">
+            <input type="checkbox" required checked={ageConfirmed} onChange={(e) => setAgeConfirmed(e.target.checked)} className="mt-0.5" />
+            <span>I confirm I am at least 13 and agree to the <Link href="/terms" className="text-brand-blue hover:underline">Terms</Link> and <Link href="/privacy" className="text-brand-blue hover:underline">Privacy Policy</Link>.</span>
+          </label>
+        )}
         <div>
           <label className="label">Password</label>
           <input type="password" required minLength={6} className="input" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />

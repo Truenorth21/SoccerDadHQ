@@ -13,6 +13,7 @@ import { getNews } from "@/lib/news";
 import { getRankings } from "@/lib/rankings";
 import { REGIONS } from "@/lib/regions";
 import type { RankingItem } from "@/lib/types";
+import WelcomeGuide from "@/components/WelcomeGuide";
 
 export const revalidate = 1800;
 
@@ -62,6 +63,20 @@ export default async function HomePage() {
               Directories, real parent reviews, community rankings and the news that matters —
               for every Florida youth soccer family, from Miami to the Panhandle.
             </p>
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <Link href="/login?next=/dashboard" className="btn-amber">
+                Join free
+              </Link>
+              <Link
+                href="/clubs"
+                className="rounded-lg border border-white/30 px-5 py-2.5 font-heading font-bold uppercase tracking-wide text-white transition hover:bg-white/10"
+              >
+                Browse clubs
+              </Link>
+              <span className="basis-full text-sm text-slate-300 sm:basis-auto">
+                Save favorites, vote in rankings and write reviews.
+              </span>
+            </div>
             <div className="mt-6 max-w-2xl">
               <HeroSearch />
             </div>
@@ -231,6 +246,7 @@ export default async function HomePage() {
           </div>
         </section>
       </div>
+      <WelcomeGuide />
     </>
   );
 }

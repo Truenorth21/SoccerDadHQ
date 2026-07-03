@@ -62,6 +62,10 @@ export default async function RankingsPage() {
       </section>
 
       <div className="container-page py-8">
+        <p className="mb-6 rounded-lg bg-sky-50 px-4 py-3 text-sm text-slate-700 ring-1 ring-sky-100">
+          <strong>Independent community rankings.</strong> SoccerDadHQ is not affiliated with or endorsed by any
+          listed league, club, school or coach. Rankings reflect community activity, not official standings.
+        </p>
         <div className="mb-6">
           <AdSlot placement="rankings-sidebar" variant="leaderboard" seed={2} />
         </div>

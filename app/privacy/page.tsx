@@ -9,13 +9,9 @@ export default function PrivacyPage() {
   return (
     <div className="container-page max-w-3xl py-12">
       <h1 className="font-heading text-4xl font-bold uppercase tracking-tight text-navy">Privacy Policy</h1>
-      <p className="mt-2 text-sm text-slate-500">Last updated: June 2026</p>
+      <p className="mt-2 text-sm text-slate-500">Last updated: July 3, 2026</p>
 
       <div className="prose mt-8 space-y-6 text-slate-700 [&_h2]:font-heading [&_h2]:text-xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:text-navy [&_h2]:mt-8 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_a]:text-brand-blue">
-        <p className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800 ring-1 ring-amber-100">
-          This is a starting-point template, not legal advice. Have it reviewed by an attorney before launch.
-        </p>
-
         <p>
           SoccerDadHQ (&ldquo;we,&rdquo; &ldquo;us&rdquo;) operates SoccerDadHQ.com. This policy explains what
           we collect and how we use it.
@@ -46,10 +42,24 @@ export default function PrivacyPage() {
 
         <h2>Advertising &amp; affiliate links</h2>
         <p>
-          Some pages show ads, which may include <strong>Google AdSense</strong>. AdSense and its partners use
-          cookies to serve and measure ads; manage this in Google&rsquo;s Ads Settings. Some links are
+          Some pages show ads, which may include <strong>Google AdSense</strong>. Third-party vendors, including
+          Google, use cookies, web beacons, IP addresses and other identifiers to serve and measure ads. Google
+          and its partners may use advertising cookies to show ads based on a visitor&rsquo;s prior visits to this
+          site and other sites. Learn{" "}
+          <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">
+            how Google uses data on partner sites
+          </a>
+          {" "}and manage or opt out of personalized advertising in{" "}
+          <a href="https://adssettings.google.com/" target="_blank" rel="noopener noreferrer">
+            Google Ads Settings
+          </a>.
+          {" "}Some links are
           <strong> affiliate links</strong> (labeled &ldquo;Affiliate&rdquo;) — if you buy through them we may earn
           a commission at no extra cost to you. Directly-sold ads are labeled &ldquo;Sponsored.&rdquo;
+        </p>
+        <p>
+          We do not knowingly use personalized advertising for children under 13 or on content we designate as
+          child-directed.
         </p>
 
         <h2>Cookies</h2>
@@ -66,8 +76,10 @@ export default function PrivacyPage() {
 
         <h2>Children</h2>
         <p>
-          The site is intended for parents, coaches and adult community members. Accounts are not intended for
-          children under 13.
+          SoccerDadHQ covers youth sports but is intended for adults, parents, guardians, coaches, schools, clubs
+          and organizations. Children under 13 may not create accounts, subscribe, vote, write reviews, submit
+          listings or provide personal information. We do not knowingly collect personal information from
+          children under 13. If you believe a child submitted personal information, email us so we can delete it.
         </p>
 
         <h2>Contact</h2>

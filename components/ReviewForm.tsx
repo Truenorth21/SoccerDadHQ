@@ -44,6 +44,8 @@ export default function ReviewForm({
   const [relationship, setRelationship] = useState("Parent");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [rulesAccepted, setRulesAccepted] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
 
@@ -73,6 +75,8 @@ export default function ReviewForm({
           body,
           scores,
           overall_rating: overall,
+          age_confirmed: ageConfirmed,
+          rules_accepted: rulesAccepted,
         }),
       });
       const data = await res.json();
@@ -112,9 +116,14 @@ export default function ReviewForm({
 
   if (!open) {
     return (
-      <button onClick={() => setOpen(true)} className="btn-primary w-full sm:w-auto">
-        Write a review
-      </button>
+      <div className="space-y-2">
+        <button onClick={() => setOpen(true)} className="btn-primary w-full sm:w-auto">
+          Write a review
+        </button>
+        <p className="text-xs text-slate-500">
+          Independent listing — SoccerDadHQ is not affiliated with or endorsed by this program, school or coach.
+        </p>
+      </div>
     );
   }
 
@@ -169,7 +178,21 @@ export default function ReviewForm({
 
       <div>
         <label className="label">Your review</label>
-        <textarea className="input min-h-[120px]" required value={body} onChange={(e) => setBody(e.target.value)} placeholder="What was your experience? Be specific and fair." />
+        <textarea className="input min-h-[120px]" required maxLength={2000} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Focus on your first-hand soccer experience, communication, training, organization, cost or facilities." />
+      </div>
+
+      <div className="space-y-2 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+        <label className="flex items-start gap-2">
+          <input type="checkbox" required checked={ageConfirmed} onChange={(e) => setAgeConfirmed(e.target.checked)} className="mt-1" />
+          <span>I confirm that I am at least 13 years old.</span>
+        </label>
+        <label className="flex items-start gap-2">
+          <input type="checkbox" required checked={rulesAccepted} onChange={(e) => setRulesAccepted(e.target.checked)} className="mt-1" />
+          <span>
+            I agree to the <Link href="/terms" className="text-brand-blue hover:underline">review rules</Link>: no
+            personal attacks, private information, named minors or unsupported allegations.
+          </span>
+        </label>
       </div>
 
       {status === "error" && <p className="text-sm text-red-600">{message}</p>}

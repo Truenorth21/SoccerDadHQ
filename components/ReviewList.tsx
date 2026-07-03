@@ -60,6 +60,14 @@ export default function ReviewList({
               <p className="mt-1 text-sm leading-relaxed text-slate-700">{r.owner_reply}</p>
             </div>
           )}
+          <div className="mt-3 text-right">
+            <a
+              href={`mailto:reviews@soccerdadhq.com?subject=${encodeURIComponent(`Review report: ${r.id}`)}&body=${encodeURIComponent(`Please review this content for a possible policy violation.\n\nReview ID: ${r.id}\nTitle: ${r.title}`)}`}
+              className="text-xs text-slate-400 hover:text-red-600 hover:underline"
+            >
+              Report this review
+            </a>
+          </div>
         </li>
       ))}
     </ul>

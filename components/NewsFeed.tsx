@@ -52,6 +52,16 @@ function Tag({ cat }: { cat: string }) {
   );
 }
 
+function editorialContext(item: NewsItem) {
+  if (item.region) return `Why it matters locally: this story may affect families and programs in ${regionName(item.region)}.`;
+  if (item.category === "Recruiting") return "Parent lens: check eligibility, timing and the original source before making recruiting decisions.";
+  if (item.category === "High School") return "Florida family lens: confirm schedules, classifications and participation details with the school or FHSAA.";
+  if (["ECNL", "MLS NEXT", "Girls Academy"].includes(item.category)) {
+    return "Parent lens: useful context for families comparing pathways, showcases and national competition.";
+  }
+  return "SoccerDadHQ context: selected for its relevance to Florida youth-soccer families; verify details with the original publisher.";
+}
+
 export default function NewsFeed({ items }: { items: NewsItem[] }) {
   const [cat, setCat] = useState<string>("All");
   const [region, setRegion] = useState<string>("");
@@ -182,6 +192,10 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
                   {item.title}
                 </h3>
                 <p className="mt-2 line-clamp-3 flex-1 text-sm text-slate-600">{item.excerpt}</p>
+                <p className="mt-3 rounded-lg bg-sky-50 px-3 py-2 text-xs leading-relaxed text-brand-blue">
+                  <strong>Why parents should care:</strong>{" "}
+                  {editorialContext(item).replace(/^Why it matters locally: |^Parent lens: |^Florida family lens: |^SoccerDadHQ context: /, "")}
+                </p>
                 <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
                   <span className="text-xs font-semibold text-slate-500">via {item.source}</span>
                   <span className="relative z-[2]">
