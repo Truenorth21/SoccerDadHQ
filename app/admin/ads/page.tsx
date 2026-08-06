@@ -43,8 +43,8 @@ export default async function AdminAdsPage() {
             <Link href="/admin" className="hover:text-white">Admin</Link> <span className="text-slate-600">/</span>{" "}
             <span className="text-white">Ads</span>
           </nav>
-          <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Ad Inventory &amp; House Ads</h1>
-          <p className="mt-1 text-slate-300">Manage paid sponsor ads and your house promos. Changes go live across every ad slot.</p>
+          <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Affiliate Products &amp; Ad Inventory</h1>
+          <p className="mt-1 text-slate-300">Manage affiliate products, AdSense fallback, paid sponsor ads and house promos. Changes go live across every ad slot.</p>
         </div>
       </section>
       <div className="container-page py-8">
@@ -53,9 +53,9 @@ export default async function AdminAdsPage() {
         <section className="mt-12">
           <h2 className="section-title mb-1">Google AdSense — fallback fill</h2>
           <p className="mb-4 text-sm text-slate-500">
-            Each ad space follows a waterfall: a <strong>sold sponsor above shows first</strong>; if none is
-            sold for that slot, <strong>Google AdSense</strong> fills it; affiliate &amp; house promos are the last
-            resort. Paste an AdSense ad-unit slot ID and enable a category to turn on that fallback. One
+            Each ad space follows a waterfall: <strong>affiliate products show first</strong>, then{" "}
+            <strong>Google AdSense</strong>, then direct paid sponsors, then house promos. Paste an AdSense
+            ad-unit slot ID and enable a category to turn on that fallback. One
             row per ad-slot category covers every position in it. Needs the <code>ad_placements</code> table
             (see <code>supabase/adsense-placements-migration.sql</code>).
           </p>

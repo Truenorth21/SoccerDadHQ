@@ -67,14 +67,15 @@ export default function AdSlot({
   const placements = useAdPlacements();
 
   // Waterfall — the slot resolves to exactly ONE ad, by priority:
-  //   1. a sold DIRECT sponsor  →  2. Google AdSense (if enabled for this category)
-  //   3. a sold AFFILIATE ad    →  4. house / self-promo (never blank)
+  //   1. a sold AFFILIATE ad    →  2. Google AdSense (if enabled for this category)
+  //   3. a sold DIRECT sponsor  →  4. house / self-promo (never blank)
+  const affiliate = pickSold(ads, placement, "affiliate", seed);
   const direct = pickSold(ads, placement, "direct", seed);
   const adsense = placements[placement];
-  const showAdSense = !direct && Boolean(adsense?.enabled && adsense.adsense_slot_id);
-  const ad: Ad = direct ?? pickSold(ads, placement, "affiliate", seed) ?? pickHouse(ads, placement, seed);
+  const showAdSense = !affiliate && Boolean(adsense?.enabled && adsense.adsense_slot_id);
+  const ad: Ad = affiliate ?? direct ?? pickHouse(ads, placement, seed);
 
-  const label = ad.affiliate ? "Affiliate" : ad.house ? "Promoted" : "Sponsored";
+  const label = ad.affiliate ? `${ad.affiliateNetwork ?? "Affiliate"} affiliate` : ad.house ? "Promoted" : "Sponsored";
   // Tracking fires only for our own creatives; AdSense measures itself.
   const { ref, onClick } = useAdTracking(ad.id, placement);
 

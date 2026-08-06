@@ -15,11 +15,14 @@ const PLACEMENTS: { key: AdPlacement; label: string }[] = [
 
 const COLORS = ["#1a4fa0", "#0a1628", "#2a7de1", "#1d7a4d", "#9b2d2d", "#5a2d82", "#e8a020", "#b8860b"];
 
-function AdFields({ ad, onChange }: { ad: Ad; onChange: (a: Ad) => void }) {
+type AdFieldMode = "affiliate" | "sponsor" | "house";
+
+function AdFields({ ad, mode, onChange }: { ad: Ad; mode: AdFieldMode; onChange: (a: Ad) => void }) {
   const set = (k: keyof Ad, v: string) => onChange({ ...ad, [k]: v });
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadErr, setUploadErr] = useState("");
+  const isAffiliate = mode === "affiliate";
 
   // Upload artwork to the ad-creatives bucket and drop the public URL into `image`.
   async function uploadImage(file: File) {
@@ -41,13 +44,37 @@ function AdFields({ ad, onChange }: { ad: Ad; onChange: (a: Ad) => void }) {
 
   return (
     <div className="grid gap-2 sm:grid-cols-2">
-      <input className="input" placeholder="Advertiser" value={ad.advertiser} onChange={(e) => set("advertiser", e.target.value)} />
-      <input className="input" placeholder="Headline" value={ad.headline} onChange={(e) => set("headline", e.target.value)} />
-      <input className="input sm:col-span-2" placeholder="Body" value={ad.body} onChange={(e) => set("body", e.target.value)} />
-      <input className="input" placeholder="CTA (e.g. Learn more)" value={ad.cta} onChange={(e) => set("cta", e.target.value)} />
-      <input className="input" placeholder="Link URL" value={ad.href} onChange={(e) => set("href", e.target.value)} />
+      {isAffiliate && (
+        <div>
+          <label className="label">Affiliate network</label>
+          <select
+            className="input"
+            value={ad.affiliateNetwork ?? "Amazon"}
+            onChange={(e) => onChange({ ...ad, affiliate: true, affiliateNetwork: e.target.value as Ad["affiliateNetwork"] })}
+          >
+            <option value="Amazon">Amazon</option>
+            <option value="ClickBank">ClickBank</option>
+            <option value="Other">Other affiliate</option>
+          </select>
+        </div>
+      )}
+      <input
+        className="input"
+        placeholder={isAffiliate ? "Product source / brand" : "Advertiser"}
+        value={ad.advertiser}
+        onChange={(e) => set("advertiser", e.target.value)}
+      />
+      <input
+        className={`input ${isAffiliate ? "sm:col-span-2" : ""}`}
+        placeholder={isAffiliate ? "Product name" : "Headline"}
+        value={ad.headline}
+        onChange={(e) => set("headline", e.target.value)}
+      />
+      <input className="input sm:col-span-2" placeholder={isAffiliate ? "Short product note" : "Body"} value={ad.body} onChange={(e) => set("body", e.target.value)} />
+      <input className="input" placeholder={isAffiliate ? "CTA (e.g. View on Amazon)" : "CTA (e.g. Learn more)"} value={ad.cta} onChange={(e) => set("cta", e.target.value)} />
+      <input className="input" placeholder={isAffiliate ? "Amazon referral link or ClickBank hoplink" : "Link URL"} value={ad.href} onChange={(e) => set("href", e.target.value)} />
       <div className="sm:col-span-2">
-        <label className="label">Ad image (optional banner) — paste a URL or upload</label>
+        <label className="label">{isAffiliate ? "Product image - paste a URL or upload" : "Ad image (optional banner) - paste a URL or upload"}</label>
         <div className="flex flex-wrap items-center gap-2">
           <input
             className="input min-w-[200px] flex-1"
@@ -108,10 +135,6 @@ function AdFields({ ad, onChange }: { ad: Ad; onChange: (a: Ad) => void }) {
         <label className="label">Ends (optional)</label>
         <input type="date" className="input" value={(ad.ends ?? "").slice(0, 10)} onChange={(e) => set("ends", e.target.value)} />
       </div>
-      <label className="flex items-center gap-2 text-sm text-slate-600 sm:col-span-2">
-        <input type="checkbox" className="h-4 w-4 rounded accent-brand-sky" checked={!!ad.affiliate} onChange={(e) => onChange({ ...ad, affiliate: e.target.checked })} />
-        Affiliate link (shows an &ldquo;Affiliate&rdquo; label)
-      </label>
       <div className="flex items-center gap-2 sm:col-span-2">
         <span className="label mb-0">Color</span>
         {COLORS.map((c) => (
@@ -133,6 +156,8 @@ export default function AdsEditor({ initial }: { initial: AdsConfig }) {
   const [cfg, setCfg] = useState<AdsConfig>(initial);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [message, setMessage] = useState("");
+  const affiliateInventory = cfg.inventory.map((ad, index) => ({ ad, index })).filter(({ ad }) => ad.affiliate);
+  const sponsorInventory = cfg.inventory.map((ad, index) => ({ ad, index })).filter(({ ad }) => !ad.affiliate);
 
   function setInv(i: number, ad: Ad) {
     const inventory = [...cfg.inventory];
@@ -140,11 +165,32 @@ export default function AdsEditor({ initial }: { initial: AdsConfig }) {
     setCfg({ ...cfg, inventory });
     setStatus("idle");
   }
-  function addInv() {
+  function addAffiliate() {
     setCfg({
       ...cfg,
-      inventory: [...cfg.inventory, { id: `inv-${cfg.inventory.length + 1}`, advertiser: "", headline: "", body: "", cta: "Learn more", href: "/advertise", color: COLORS[0] }],
+      inventory: [
+        ...cfg.inventory,
+        {
+          id: `affiliate-${cfg.inventory.length + 1}`,
+          advertiser: "Amazon",
+          headline: "",
+          body: "",
+          cta: "View on Amazon",
+          href: "",
+          color: COLORS[6],
+          affiliate: true,
+          affiliateNetwork: "Amazon",
+        },
+      ],
     });
+    setStatus("idle");
+  }
+  function addSponsor() {
+    setCfg({
+      ...cfg,
+      inventory: [...cfg.inventory, { id: `sponsor-${cfg.inventory.length + 1}`, advertiser: "", headline: "", body: "", cta: "Learn more", href: "/advertise", color: COLORS[0] }],
+    });
+    setStatus("idle");
   }
   function removeInv(i: number) {
     setCfg({ ...cfg, inventory: cfg.inventory.filter((_, idx) => idx !== i) });
@@ -174,23 +220,55 @@ export default function AdsEditor({ initial }: { initial: AdsConfig }) {
 
   return (
     <div className="space-y-10">
+      {/* Affiliate products */}
+      <section>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="section-title">Affiliate products</h2>
+          <button onClick={addAffiliate} className="btn-outline text-sm">+ Add affiliate product</button>
+        </div>
+        <p className="mb-4 text-sm text-slate-500">
+          Amazon products and ClickBank offers live here. These product image and referral link cards show before Google AdSense and paid sponsors.
+        </p>
+        <div className="space-y-3">
+          {affiliateInventory.length ? affiliateInventory.map(({ ad, index }, itemIndex) => (
+            <div key={ad.id || index} className="card p-4 ring-1 ring-amber-100">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="font-heading text-sm font-bold uppercase text-slate-500">Affiliate product {itemIndex + 1}</span>
+                <button onClick={() => removeInv(index)} className="text-xs font-semibold text-red-500 hover:underline">Remove</button>
+              </div>
+              <AdFields ad={ad} mode="affiliate" onChange={(a) => setInv(index, { ...a, affiliate: true, affiliateNetwork: a.affiliateNetwork ?? "Amazon" })} />
+            </div>
+          )) : (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">
+              No affiliate products yet. Add an Amazon product or ClickBank offer here.
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Sponsor inventory */}
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="section-title">Sponsor inventory</h2>
-          <button onClick={addInv} className="btn-outline text-sm">+ Add sponsor</button>
+          <button onClick={addSponsor} className="btn-outline text-sm">+ Add sponsor</button>
         </div>
-        <p className="mb-4 text-sm text-slate-500">Paid ads shown across slots. ~70% of impressions show these; the rest show the house ad for that slot.</p>
+        <p className="mb-4 text-sm text-slate-500">
+          Direct paid sponsors live here. These show after affiliate products and Google AdSense.
+        </p>
         <div className="space-y-3">
-          {cfg.inventory.map((ad, i) => (
-            <div key={i} className="card p-4">
+          {sponsorInventory.length ? sponsorInventory.map(({ ad, index }, itemIndex) => (
+            <div key={ad.id || index} className="card p-4">
               <div className="mb-2 flex items-center justify-between">
-                <span className="font-heading text-sm font-bold uppercase text-slate-500">Sponsor {i + 1}</span>
-                <button onClick={() => removeInv(i)} className="text-xs font-semibold text-red-500 hover:underline">Remove</button>
+                <span className="font-heading text-sm font-bold uppercase text-slate-500">Sponsor {itemIndex + 1}</span>
+                <button onClick={() => removeInv(index)} className="text-xs font-semibold text-red-500 hover:underline">Remove</button>
               </div>
-              <AdFields ad={ad} onChange={(a) => setInv(i, a)} />
+              <AdFields ad={ad} mode="sponsor" onChange={(a) => setInv(index, { ...a, affiliate: false, affiliateNetwork: undefined })} />
             </div>
-          ))}
+          )) : (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">
+              No direct paid sponsors yet.
+            </div>
+          )}
         </div>
       </section>
 
@@ -202,7 +280,7 @@ export default function AdsEditor({ initial }: { initial: AdsConfig }) {
           {PLACEMENTS.map((p) => (
             <div key={p.key} className="card p-4">
               <span className="mb-2 block font-heading text-sm font-bold uppercase text-slate-500">{p.label}</span>
-              <AdFields ad={cfg.house[p.key]} onChange={(a) => setHouse(p.key, a)} />
+              <AdFields ad={cfg.house[p.key]} mode="house" onChange={(a) => setHouse(p.key, a)} />
             </div>
           ))}
         </div>

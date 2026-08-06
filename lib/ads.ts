@@ -18,6 +18,8 @@ export interface Ad {
   house?: boolean;
   /** affiliate = monetized referral link; shows an "Affiliate" label + disclosure */
   affiliate?: boolean;
+  /** optional affiliate network label, e.g. Amazon or ClickBank */
+  affiliateNetwork?: "Amazon" | "ClickBank" | "Other";
   /** optional banner image URL (advertiser artwork) */
   image?: string;
   /** flight window (ISO dates) — outside it the ad isn't shown */
@@ -245,8 +247,8 @@ export function getAd(placement: AdPlacement, seed = 0): Ad {
 /* ------------------------------------------------------------------ *
  *  Waterfall resolution (used by <AdSlot>). Every ad space fills by a
  *  strict priority so it shows exactly ONE ad:
- *    1. a sold DIRECT sponsor  →  2. Google AdSense (handled in AdSlot)
- *    3. a sold AFFILIATE ad    →  4. house / self-promo (never blank)
+ *    1. a sold AFFILIATE ad    →  2. Google AdSense (handled in AdSlot)
+ *    3. a sold DIRECT sponsor  →  4. house / self-promo (never blank)
  * ------------------------------------------------------------------ */
 
 /** Active sold creatives targeting this slot (region-aware), pre-tier-split. */
