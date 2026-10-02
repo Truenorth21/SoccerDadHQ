@@ -1,6 +1,7 @@
 import { loadListings, KIND_CONFIG, type ListingKind } from "./listings";
 import { loadClubs, loadSchools, loadCoaches, getVoteTalliesPublic } from "./data";
 import type { RankingItem, School } from "./types";
+import { stateName } from "./states";
 
 /* Community rankings are built from the live directory (DB + seed) and ordered by
  * REAL community votes for the current month. With no/few votes, the tiebreaker is
@@ -40,8 +41,9 @@ export async function getRankings(talliesOverride?: Record<string, number>): Pro
       id: c.id,
       rank: 0,
       name: c.name,
-      subtitle: `${c.city}, FL${c.leagues[0] ? ` • ${c.leagues[0]}` : ""}`,
+      subtitle: `${c.city}, ${c.state}${c.leagues[0] ? ` • ${c.leagues[0]}` : ""}`,
       region: c.region,
+      state: c.state,
       league: c.leagues[0],
       href: `/clubs/${c.slug}`,
       color: c.logo_color,
@@ -58,6 +60,7 @@ export async function getRankings(talliesOverride?: Record<string, number>): Pro
       name: c.name,
       subtitle: `${c.title}${c.club_name ? ` • ${c.club_name}` : ""}`,
       region: c.region,
+      state: c.state,
       href: `/coaches/${c.slug}`,
       color: c.photo_color,
       votes: v(c.id),
@@ -75,8 +78,9 @@ export async function getRankings(talliesOverride?: Record<string, number>): Pro
           id,
           rank: 0,
           name: s.name,
-          subtitle: `${gender} ${level} • ${s.mascot}${s.fhsaa_class ? ` • ${s.fhsaa_class}` : ""} • ${s.city}, FL`,
+          subtitle: `${gender} ${level} • ${s.mascot}${s.fhsaa_class ? ` • ${s.fhsaa_class}` : ""} • ${s.city}, ${s.state}`,
           region: s.region,
+          state: s.state,
           href: `/schools/${s.slug}`,
           color: s.logo_color,
           gender,
@@ -99,6 +103,7 @@ export async function getRankings(talliesOverride?: Record<string, number>): Pro
         name: l.name,
         subtitle: `${l.tags.join(" · ")} • ${l.city}, FL`,
         region: l.region,
+        state: "FL", // listings are Florida-only for now
         href: `${KIND_CONFIG[kind].path}/${l.slug}`,
         color: l.color,
         votes: v(l.id),
@@ -120,10 +125,10 @@ export async function getRankings(talliesOverride?: Record<string, number>): Pro
 
 export interface RankInfo {
   itemId: string; // the ranked item id (for schools, the chosen team's id)
-  rank: number; // statewide rank within the category
-  regionRank: number; // rank within the entity's own region
-  regionTotal: number; // how many ranked entities share that region
-  region: string;
+  rank: number; // national rank within the category
+  regionRank: number; // rank within the entity's own region (or state, when it has no region)
+  regionTotal: number; // how many ranked entities share that region / state
+  region: string; // region key, or the state name for entities without a region
   votes: number; // real recommendations behind it (0 = not yet ranked)
   programLabel?: string; // for schools: which team (e.g. "Boys Varsity")
 }
@@ -147,14 +152,17 @@ export async function getRankFor(
   if (!matches.length) return null;
   // Best = most real votes; the list is already vote-sorted so ties resolve fairly.
   const item = matches.reduce((best, it) => ((it.votes ?? 0) > (best.votes ?? 0) ? it : best), matches[0]);
-  const regionList = list.filter((it) => it.region === item.region);
+  // Entities without a region (states with no predefined regions) rank within their state.
+  const regionList = item.region
+    ? list.filter((it) => it.region === item.region)
+    : list.filter((it) => !it.region && it.state === item.state);
   const regionRank = regionList.findIndex((it) => it.id === item.id) + 1;
   return {
     itemId: item.id,
     rank: item.rank,
     regionRank,
     regionTotal: regionList.length,
-    region: item.region,
+    region: item.region || stateName(item.state),
     votes: item.votes ?? 0,
     programLabel: item.gender && item.level ? `${item.gender} ${item.level}` : undefined,
   };

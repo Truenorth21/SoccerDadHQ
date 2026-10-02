@@ -21,7 +21,7 @@ export default function TryoutTicker({ tryouts }: { tryouts: Tryout[] }) {
       <span className="text-white/40">·</span>
       <span>{t.age_groups}</span>
       <span className="text-white/40">·</span>
-      <span>{t.city}, FL</span>
+      <span>{t.city}, {t.state ?? "FL"}</span>
       <span className="text-white/40">·</span>
       <span className="text-brand-amber">{formatDate(t.date)}</span>
     </Link>

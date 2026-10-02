@@ -105,7 +105,7 @@ export default function PollDeck() {
           {poll.question}
         </h3>
         {insight && (
-          <p className="mt-1 text-xs text-slate-400">Anonymous · results help shape our reporting on Florida soccer families.</p>
+          <p className="mt-1 text-xs text-slate-400">Anonymous · results help shape our reporting on youth soccer families.</p>
         )}
 
         <div className="mt-4 space-y-2.5">

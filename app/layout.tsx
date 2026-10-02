@@ -24,33 +24,35 @@ const roboto = Roboto({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "SoccerDadHQ — Florida Youth Soccer Clubs, Coaches, Reviews & Rankings",
+    default: "SoccerDadHQ — Youth Soccer News, Tryouts & Club Discovery",
     template: "%s | SoccerDadHQ",
   },
   description:
-    "The home base for Florida youth soccer parents. Browse club and coach directories, read and write reviews, follow community rankings, and get the latest ECNL, MLS NEXT and Girls Academy news.",
+    "The home base for youth soccer parents in all 50 states. Find clubs and tryouts near you, read and write club and coach reviews, follow community rankings, and get the latest ECNL, MLS NEXT and Girls Academy news.",
   keywords: [
-    "Florida youth soccer",
-    "ECNL Florida",
+    "youth soccer",
+    "youth soccer clubs near me",
+    "youth soccer tryouts",
+    "ECNL",
     "MLS NEXT",
     "Girls Academy",
     "soccer club reviews",
     "soccer coach reviews",
-    "youth soccer tryouts Florida",
+    "youth soccer rankings",
   ],
   openGraph: {
     type: "website",
     siteName: "SoccerDadHQ",
-    title: "SoccerDadHQ — Florida Youth Soccer HQ",
+    title: "SoccerDadHQ — Youth Soccer News, Tryouts & Club Discovery",
     description:
-      "Club & coach directories, reviews, rankings and news for Florida youth soccer families.",
+      "Club & coach directories, tryouts, reviews, rankings and news for youth soccer families nationwide.",
     url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
-    title: "SoccerDadHQ — Florida Youth Soccer HQ",
+    title: "SoccerDadHQ — Youth Soccer News, Tryouts & Club Discovery",
     description:
-      "Club & coach directories, reviews, rankings and news for Florida youth soccer families.",
+      "Club & coach directories, tryouts, reviews, rankings and news for youth soccer families nationwide.",
   },
 };
 

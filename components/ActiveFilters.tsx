@@ -2,10 +2,13 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { regionName } from "@/lib/regions";
+import { stateName } from "@/lib/states";
 
 const LABELS: Record<string, (v: string) => string> = {
   q: (v) => `“${v}”`,
+  state: (v) => stateName(v),
   region: (v) => regionName(v),
+  city: (v) => v,
   league: (v) => v,
   gender: (v) => v,
   age: (v) => v,
@@ -29,6 +32,11 @@ export default function ActiveFilters({ basePath }: { basePath: string }) {
     const next = new URLSearchParams(params.toString());
     next.delete(key);
     if (key === "zip") next.delete("radius"); // radius is meaningless without a ZIP
+    if (key === "state") {
+      // region/city belong to the state being removed
+      next.delete("region");
+      next.delete("city");
+    }
     router.push(next.toString() ? `${basePath}?${next}` : basePath, { scroll: false });
   }
 

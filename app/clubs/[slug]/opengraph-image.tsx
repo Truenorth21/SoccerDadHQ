@@ -3,6 +3,7 @@ import { getClubBySlug } from "@/lib/data";
 import { getRankFor } from "@/lib/rankings";
 import { regionName } from "@/lib/regions";
 import { initials } from "@/lib/utils";
+import { stateBySlug } from "@/lib/states";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -11,7 +12,8 @@ export const alt = "Club profile — SoccerDadHQ";
 // DB + seed so crowdsourced/imported clubs get a real card, not the generic one.
 export default async function Image({ params }: { params: { slug: string } }) {
   const club = await getClubBySlug(params.slug);
-  const name = club?.name ?? "SoccerDadHQ";
+  const state = club ? undefined : stateBySlug(params.slug);
+  const name = club?.name ?? (state ? `Youth Soccer Clubs in ${state.name}` : "SoccerDadHQ");
   const color = club?.logo_color ?? "#1a4fa0";
   // Only stamp a rank when it's backed by real recommendations (honest).
   const rank = club ? await getRankFor("clubs", club.id) : null;
@@ -51,7 +53,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", fontSize: 26, color: "#e8a020", letterSpacing: 3, textTransform: "uppercase" }}>
-                {club ? regionName(club.region) : "Florida Youth Soccer"}
+                {club ? (club.region ? `${regionName(club.region)}, ${club.state}` : `${club.city}, ${club.state}`) : "Youth Soccer"}
               </div>
               <div style={{ display: "flex", fontSize: 64, fontWeight: 800, marginTop: 8, maxWidth: showRank ? 640 : 920, lineHeight: 1.05 }}>
                 {name}

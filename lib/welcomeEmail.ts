@@ -1,4 +1,5 @@
 import { regionName } from "./regions";
+import { stateByCode } from "./states";
 import { getAd, resolveAd, type Ad } from "./ads";
 import { getAdsConfig } from "./adsServer";
 import { sendEmail } from "./email";
@@ -11,10 +12,15 @@ const MAILING_ADDRESS = "SoccerDadHQ, a True North Trading company · Doral, FL 
  * Returns subject + plain-text + HTML so it can be handed to any provider
  * (Resend, Postmark, Supabase Auth email, etc.). See sendWelcomeEmail below.
  */
-export function buildWelcomeEmail(opts: { email: string; region?: string | null; sponsor?: Ad }) {
+export function buildWelcomeEmail(opts: { email: string; region?: string | null; state?: string | null; sponsor?: Ad }) {
+  const st = stateByCode(opts.state);
   const regionLine = opts.region
-    ? `We'll tilt your weekly issue toward ${regionName(opts.region)}, but you'll still get the statewide headlines that matter.`
-    : `You'll get the best of Florida youth soccer statewide — pick a region anytime to tailor it.`;
+    ? `We'll tilt your weekly issue toward ${regionName(opts.region)}, but you'll still get the national headlines that matter.`
+    : st
+      ? `We'll tilt your weekly issue toward ${st.name}, alongside the national headlines that matter.`
+      : `You'll get the best of youth soccer nationwide — pick your state anytime to tailor it.`;
+  const clubsHref = st ? `https://soccerdadhq.com/clubs/${st.slug}` : "https://soccerdadhq.com/clubs";
+  const clubsLabel = st ? `Explore ${st.name} clubs` : "Explore clubs";
 
   const sponsor = opts.sponsor ?? getAd("newsletter", 4); // one sponsor per issue
   const unsub = unsubUrl(opts.email);
@@ -22,7 +28,7 @@ export function buildWelcomeEmail(opts: { email: string; region?: string | null;
 
   const text = `Welcome to The Sideline — the SoccerDadHQ newsletter.
 
-You're officially on the list. Once a week we'll drop one email with everything a Florida soccer parent actually needs:
+You're officially on the list. Once a week we'll drop one email with everything a youth soccer parent actually needs:
 
   • Tryout alerts before spots fill up
   • Ranking shifts across clubs, coaches and tournaments
@@ -66,7 +72,7 @@ Unsubscribe: ${unsub}`;
     <h1 style="font-size:24px;margin:0 0 8px">Welcome to The Sideline ⚽</h1>
     <p style="font-size:15px;line-height:1.6;color:#334155">
       You're officially on the list. Once a week we'll send <strong>one email</strong> with everything a
-      Florida soccer parent actually needs:
+      youth soccer parent actually needs:
     </p>
     <ul style="font-size:15px;line-height:1.7;color:#334155;padding-left:20px">
       <li>Tryout alerts before spots fill up</li>
@@ -79,10 +85,10 @@ Unsubscribe: ${unsub}`;
     <p style="font-size:15px;line-height:1.6;color:#334155">
       No spam, no fluff, and you can unsubscribe with one click anytime.
     </p>
-    <a href="https://soccerdadhq.com/clubs"
+    <a href="${clubsHref}"
        style="display:inline-block;background:#e8a020;color:#0a1628;font-weight:700;text-decoration:none;
               padding:12px 22px;border-radius:8px;margin-top:8px">
-      Explore Florida clubs →
+      ${clubsLabel} →
     </a>
 
     <!-- Newsletter sponsor slot -->
@@ -115,9 +121,9 @@ Unsubscribe: ${unsub}`;
 /**
  * Sends the welcome email via Resend (no-op when RESEND_API_KEY isn't set).
  */
-export async function sendWelcomeEmail(email: string, region?: string | null) {
+export async function sendWelcomeEmail(email: string, region?: string | null, state?: string | null) {
   const sponsor = resolveAd(await getAdsConfig(), "newsletter", 4);
-  const message = buildWelcomeEmail({ email, region, sponsor });
+  const message = buildWelcomeEmail({ email, region, state, sponsor });
   const result = await sendEmail({ to: email, subject: message.subject, html: message.html, text: message.text });
   return { ...message, ...result };
 }

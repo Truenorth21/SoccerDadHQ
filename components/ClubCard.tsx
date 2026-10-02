@@ -14,7 +14,7 @@ export default function ClubCard({ club }: { club: Club & { distance?: number } 
         <CompareButton item={{ type: "club", slug: club.slug, name: club.name }} />
         <FavoriteButton
           floating
-          item={{ type: "club", slug: club.slug, name: club.name, subtitle: `${club.city}, FL`, color: club.logo_color }}
+          item={{ type: "club", slug: club.slug, name: club.name, subtitle: `${club.city}, ${club.state}`, color: club.logo_color }}
         />
       </div>
 
@@ -27,7 +27,7 @@ export default function ClubCard({ club }: { club: Club & { distance?: number } 
             </h3>
           </div>
           <p className="truncate text-sm text-slate-500">
-            {club.city}, FL · {regionName(club.region)}
+            {club.city}, {club.state}{club.region ? ` · ${regionName(club.region)}` : ""}
             {club.distance !== undefined && (
               <span className="text-brand-blue"> · {club.distance.toFixed(0)} mi</span>
             )}

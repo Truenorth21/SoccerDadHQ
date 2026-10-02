@@ -8,7 +8,7 @@ const fmt = (n: number) => (n <= 0 ? "Free" : `$${n % 1 === 0 ? n : n.toFixed(2)
 export const metadata: Metadata = {
   title: "Claim your profile — manage your club, school or coach page",
   description:
-    "Already listed on SoccerDadHQ? Claim your profile to edit your info, post tryout dates, respond to reviews and showcase commitments — in front of the Florida families comparing programs.",
+    "Already listed on SoccerDadHQ? Claim your profile to edit your info, post tryout dates, respond to reviews and showcase commitments — in front of the families comparing programs.",
 };
 export const revalidate = 3600;
 
@@ -47,7 +47,7 @@ export default async function ClaimPage() {
             This is your program&rsquo;s profile. Own it.
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-200">
-            Your club, school or coach page is already on SoccerDadHQ — where Florida families compare programs, read real
+            Your club, school or coach page is already on SoccerDadHQ — where families compare programs, read real
             reviews and look up tryouts. Claim it to manage your info, post tryout dates and respond to reviews, all in
             front of the parents already deciding.
           </p>

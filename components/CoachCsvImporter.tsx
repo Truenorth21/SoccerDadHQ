@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const TEMPLATE = `name,region,city,club_name,title,specialties,age_groups,genders,private_training,featured
-"Maria Gonzalez",south-florida,Weston,Weston FC,Director of Coaching,Attacking;Possession,U12;U19,Boys;Girls,true,false
-"David Cole",south-florida,Miami,Kendall Soccer Coalition,Goalkeeper Trainer,Goalkeeping,U10;U19,Boys;Girls,true,false`;
+const TEMPLATE = `name,state,region,city,club_name,title,specialties,age_groups,genders,private_training,featured
+"Maria Gonzalez",FL,south-florida,Weston,Weston FC,Director of Coaching,Attacking;Possession,U12;U19,Boys;Girls,true,false
+"David Cole",FL,south-florida,Miami,Kendall Soccer Coalition,Goalkeeper Trainer,Goalkeeping,U10;U19,Boys;Girls,true,false`;
 
 interface Result {
   imported?: number;
@@ -47,9 +47,9 @@ export default function CoachCsvImporter() {
       <div className="card p-5">
         <h3 className="font-heading text-lg font-bold uppercase text-navy">How it works</h3>
         <ul className="mt-2 space-y-1 text-sm text-slate-600">
-          <li>• Header row required. Required columns: <code>name</code>, <code>region</code>.</li>
+          <li>• Header row required. Required columns: <code>name</code>, plus <code>state</code> and/or <code>region</code>.</li>
           <li>• Optional: <code>city, club_name, title, bio, specialties, certifications, age_groups, genders, private_training, private_training_note, email, phone, photo_color, featured, slug</code>.</li>
-          <li>• <strong>Region</strong>: key (<code>south-florida</code>) or name (<code>South Florida</code>).</li>
+          <li>• <strong>State</strong>: code (<code>TX</code>) or name. <strong>Region</strong>: key (<code>tx-dfw</code>) or name (<code>DFW</code>), optional for states without predefined regions.</li>
           <li>• Multi-value cells (<code>specialties, age_groups, genders, certifications</code>): separate with <code>;</code> or <code>|</code>.</li>
           <li>• Re-importing the same coach <strong>updates</strong> them.</li>
         </ul>
@@ -82,7 +82,7 @@ export default function CoachCsvImporter() {
           {result.errors && result.errors.length > 0 && (
             <ul className="mt-2 space-y-1 text-sm text-amber-700">{result.errors.map((e, i) => <li key={i}>• {e}</li>)}</ul>
           )}
-          {result.imported ? <Link href="/coaches?region=south-florida" className="link-arrow mt-3 inline-block text-sm">View them in the directory →</Link> : null}
+          {result.imported ? <Link href="/coaches" className="link-arrow mt-3 inline-block text-sm">View them in the directory →</Link> : null}
         </div>
       )}
     </div>

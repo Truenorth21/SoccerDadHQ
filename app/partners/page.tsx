@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Premier Partner Program — Annual Marketing Partnerships",
   description:
-    "SoccerDadHQ Premier Partner Program: annual Gold and Platinum bundles combining ad credits, featured placement, newsletter branding, commitment showcases and editorial coverage for Florida soccer organizations.",
+    "SoccerDadHQ Premier Partner Program: annual Gold and Platinum bundles combining ad credits, featured placement, newsletter branding, commitment showcases and editorial coverage for youth soccer organizations.",
 };
 
 const STEPS = [

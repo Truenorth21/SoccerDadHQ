@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { sendWelcomeEmail } from "@/lib/welcomeEmail";
 import { isEmailConfigured } from "@/lib/email";
+import { REGION_MAP } from "@/lib/regions";
+import { stateByCode } from "@/lib/states";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(request: Request) {
-  let body: { email?: string; region?: string; age_confirmed?: boolean };
+  let body: { email?: string; state?: string; region?: string; age_confirmed?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -14,10 +16,21 @@ export async function POST(request: Request) {
   }
 
   const email = (body.email ?? "").trim().toLowerCase();
-  const region = body.region ?? null;
+  // Region is optional; it only counts when it's a known region key.
+  const regionDef = body.region ? REGION_MAP[body.region] : undefined;
+  const region = regionDef ? regionDef.key : null;
+  // State drives region-relevant emails. Taken from the form, or implied by the
+  // region when a profile-page signup pre-sets one.
+  const state = stateByCode(body.state)?.code ?? regionDef?.state ?? null;
 
   if (!EMAIL_RE.test(email)) {
     return NextResponse.json({ error: "Please enter a valid email address." }, { status: 400 });
+  }
+  if (!state) {
+    return NextResponse.json({ error: "Please choose your state." }, { status: 400 });
+  }
+  if (regionDef && regionDef.state !== state) {
+    return NextResponse.json({ error: "That region isn't in the state you picked." }, { status: 400 });
   }
   if (body.age_confirmed !== true) {
     return NextResponse.json({ error: "You must confirm that you are at least 13." }, { status: 400 });
@@ -33,7 +46,7 @@ export async function POST(request: Request) {
   if (supabase) {
     const { error } = await supabase
       .from("newsletter_subscribers")
-      .insert({ email, region });
+      .insert({ email, state, region });
     if (error && error.code !== "23505") {
       return NextResponse.json({ error: `Could not subscribe: ${error.message}` }, { status: 500 });
     }
@@ -41,7 +54,7 @@ export async function POST(request: Request) {
 
   // Send the welcome email whenever Resend is configured (independent of Supabase).
   if (isEmailConfigured) {
-    await sendWelcomeEmail(email, region);
+    await sendWelcomeEmail(email, region, state);
     return NextResponse.json({ message: welcome });
   }
 

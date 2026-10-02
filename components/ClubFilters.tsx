@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
-import { REGIONS, LEAGUES, GENDERS, AGE_GROUPS } from "@/lib/regions";
+import { LEAGUES, GENDERS, AGE_GROUPS } from "@/lib/regions";
+import StateRegionFields from "./StateRegionFields";
 
 export default function ClubFilters({ hasRatings = false }: { hasRatings?: boolean }) {
   const router = useRouter();
@@ -23,7 +24,7 @@ export default function ClubFilters({ hasRatings = false }: { hasRatings?: boole
     [params, router]
   );
 
-  const activeCount = ["region", "league", "gender", "age", "zip", "tryouts", "rating"].filter((k) =>
+  const activeCount = ["state", "region", "city", "league", "gender", "age", "zip", "tryouts", "rating"].filter((k) =>
     params.get(k)
   ).length;
 
@@ -70,12 +71,14 @@ export default function ClubFilters({ hasRatings = false }: { hasRatings?: boole
           />
         </div>
 
+        <StateRegionFields get={get} update={update} />
+
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="label">ZIP</label>
             <input
               className="input"
-              placeholder="33327"
+              placeholder="ZIP code"
               maxLength={5}
               defaultValue={get("zip")}
               onBlur={(e) => update({ zip: e.target.value })}
@@ -91,16 +94,6 @@ export default function ClubFilters({ hasRatings = false }: { hasRatings?: boole
               <option value="100">100 mi</option>
             </select>
           </div>
-        </div>
-
-        <div>
-          <label className="label">Region</label>
-          <select className="input" value={get("region")} onChange={(e) => update({ region: e.target.value })}>
-            <option value="">All regions</option>
-            {REGIONS.map((r) => (
-              <option key={r.key} value={r.key}>{r.name}</option>
-            ))}
-          </select>
         </div>
 
         <div>

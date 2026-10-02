@@ -95,7 +95,7 @@ export default function RankBadgeShare({
           {ranked ? (
             <>
               <span className="font-semibold text-navy">{name}</span> sits <span className="font-semibold text-navy">#{regionRank}</span> in{" "}
-              {regionName} and <span className="font-semibold text-navy">#{rank}</span> in Florida, on{" "}
+              {regionName} and <span className="font-semibold text-navy">#{rank}</span> nationally, on{" "}
               <span className="font-semibold text-navy">{votes}</span> real recommendation{votes === 1 ? "" : "s"} this month.
               Rankings reset monthly — rally your community to climb.
             </>

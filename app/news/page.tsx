@@ -6,9 +6,9 @@ import { getNews } from "@/lib/news";
 export const revalidate = 1800;
 
 export const metadata: Metadata = {
-  title: "Florida Youth Soccer News",
+  title: "Youth Soccer News — ECNL, MLS NEXT, Recruiting & More",
   description:
-    "The latest ECNL, MLS NEXT, Girls Academy, recruiting and tournament news for Florida youth soccer, aggregated from SoccerWire, TopDrawerSoccer and more.",
+    "The latest ECNL, MLS NEXT, Girls Academy, recruiting and tournament news for youth soccer nationwide, aggregated from Top Drawer Soccer, Soccer America, College Soccer News, ECNL, SoccerWire and more.",
 };
 
 export default async function NewsPage() {
@@ -23,7 +23,7 @@ export default async function NewsPage() {
           </h1>
           <p className="mt-1 max-w-2xl text-slate-300">
             Original parent-focused context for the ECNL, MLS NEXT, Girls Academy, recruiting and
-            tournament stories that matter to Florida families. Every story links to its original source.
+            tournament stories that matter to youth soccer families everywhere. Every story links to its original source.
           </p>
         </div>
       </section>

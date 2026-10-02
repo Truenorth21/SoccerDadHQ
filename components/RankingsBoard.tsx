@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Crest from "./Crest";
-import { RANKING_CATEGORIES, REGIONS, LEAGUES, TEAM_LEVELS, FHSAA_CLASSES, regionName } from "@/lib/regions";
+import { RANKING_CATEGORIES, LEAGUES, TEAM_LEVELS, FHSAA_CLASSES, regionsForState } from "@/lib/regions";
+import { US_STATES, stateName } from "@/lib/states";
 import type { RankingItem } from "@/lib/types";
 
 const TOP_DEFAULT = 10;
@@ -176,14 +177,18 @@ export default function RankingsBoard({
   authed = false,
   supabaseConfigured = false,
   period = "this month",
+  initialState = "",
 }: {
   data: Record<string, RankingItem[]>;
   authed?: boolean;
   supabaseConfigured?: boolean;
   period?: string;
+  initialState?: string; // two-letter code; "" = national
 }) {
   const [tab, setTab] = useState("clubs");
+  const [state, setState] = useState(initialState);
   const [region, setRegion] = useState("");
+  const stateRegions = regionsForState(state);
   const [league, setLeague] = useState("");
   const [gender, setGender] = useState("");
   const [level, setLevel] = useState("Varsity");
@@ -198,6 +203,7 @@ export default function RankingsBoard({
 
   const items = useMemo(() => {
     let list = [...(data[tab] ?? [])];
+    if (state) list = list.filter((i) => (i.state ?? "FL") === state);
     if (region) list = list.filter((i) => i.region === region);
     if (league) list = list.filter((i) => i.league === league);
     if (isSchools && gender) list = list.filter((i) => i.gender === gender);
@@ -210,7 +216,7 @@ export default function RankingsBoard({
     return list
       .sort((a, b) => b.votes - a.votes || (b.rating ?? 0) - (a.rating ?? 0) || a.name.localeCompare(b.name))
       .map((i, idx) => ({ ...i, rank: idx + 1 }));
-  }, [data, tab, region, league, gender, level, cls, isSchools, query]);
+  }, [data, tab, state, region, league, gender, level, cls, isSchools, query]);
 
   const showLeague = tab === "clubs";
   const podium = items.slice(0, 3);
@@ -273,12 +279,29 @@ export default function RankingsBoard({
           onChange={(e) => setQuery(e.target.value)}
           aria-label="Search rankings to vote"
         />
-        <select className="input max-w-[220px]" value={region} onChange={(e) => setRegion(e.target.value)}>
-          <option value="">All regions</option>
-          {REGIONS.map((r) => (
-            <option key={r.key} value={r.key}>{r.name}</option>
+        <select
+          className="input max-w-[200px]"
+          value={state}
+          onChange={(e) => {
+            setState(e.target.value);
+            setRegion("");
+            setShowAll(false);
+          }}
+          aria-label="State"
+        >
+          <option value="">National (all states)</option>
+          {US_STATES.map((s) => (
+            <option key={s.code} value={s.code}>{s.name}</option>
           ))}
         </select>
+        {stateRegions.length > 0 && (
+          <select className="input max-w-[220px]" value={region} onChange={(e) => setRegion(e.target.value)} aria-label="Region">
+            <option value="">All {stateName(state)} regions</option>
+            {stateRegions.map((r) => (
+              <option key={r.key} value={r.key}>{r.name}</option>
+            ))}
+          </select>
+        )}
         {showLeague && (
           <select className="input max-w-[220px]" value={league} onChange={(e) => setLeague(e.target.value)}>
             <option value="">All leagues</option>
@@ -315,7 +338,7 @@ export default function RankingsBoard({
 
       {items.length === 0 ? (
         <p className="rounded-xl bg-white p-8 text-center text-slate-500 ring-1 ring-slate-100">
-          No entries match these filters yet.
+          {state ? `No ${stateName(state)} entries ranked in this category yet.` : "No entries match these filters yet."}
         </p>
       ) : (
         <>

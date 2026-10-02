@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Logo from "./Logo";
-import { REGIONS } from "@/lib/regions";
+import { STATES_WITH_REGIONS } from "@/lib/regions";
+import { stateByCode } from "@/lib/states";
 import NewsletterSignup from "./NewsletterSignup";
 
 export default function Footer() {
@@ -10,7 +11,7 @@ export default function Footer() {
         <div className="sm:col-span-2 lg:col-span-3">
           <Logo light />
           <p className="mt-4 text-sm text-slate-400">
-            The home base for Florida youth soccer families — directories, reviews, rankings and news,
+            The home base for youth soccer families nationwide — directories, reviews, rankings and news,
             all in one place.
           </p>
         </div>
@@ -49,13 +50,13 @@ export default function Footer() {
 
         <div className="lg:col-span-2">
           <h4 className="mb-3 font-heading text-sm font-bold uppercase tracking-wider text-white">
-            Regions
+            Top States
           </h4>
-          <ul className="grid grid-cols-1 gap-2 text-sm">
-            {REGIONS.slice(0, 6).map((r) => (
-              <li key={r.key}>
-                <Link href={`/clubs?region=${r.key}`} className="hover:text-white">
-                  {r.name}
+          <ul className="grid grid-cols-2 gap-2 text-sm lg:grid-cols-1">
+            {STATES_WITH_REGIONS.map((code) => stateByCode(code)!).map((s) => (
+              <li key={s.code}>
+                <Link href={`/clubs/${s.slug}`} className="hover:text-white">
+                  {s.name}
                 </Link>
               </li>
             ))}

@@ -114,6 +114,7 @@ export interface Coach {
   name: string;
   region: RegionKey;
   city: string;
+  state: string; // two-letter state code
   club_id?: string;
   club_name?: string;
   title: string; // "Director of Coaching", "U15 Girls Head Coach"
@@ -142,6 +143,7 @@ export interface Tryout {
   club_slug: string;
   href?: string; // full profile path (club or school)
   region: RegionKey;
+  state?: string; // two-letter state code
   city: string;
   age_groups: string;
   gender: string;
@@ -155,6 +157,7 @@ export interface RankingItem {
   name: string;
   subtitle: string;
   region: RegionKey | "statewide";
+  state?: string; // two-letter state code — drives the rankings state filter
   league?: string;
   votes: number;
   rating?: number; // review rating — tiebreaker when votes are tied (esp. early, at 0 votes)
@@ -193,7 +196,8 @@ export interface NewsItem {
   link: string;
   source: string;
   category: string;
-  region?: RegionKey; // detected Florida region, when a story is geo-specific
+  region?: RegionKey; // detected region, when a story is geo-specific
+  state?: string; // detected state code, when a story names a state or one of its regions
   excerpt: string;
   published: string; // ISO
   image?: string;

@@ -7,7 +7,7 @@ import { CLUB_REVIEW_CATEGORIES, SCHOOL_REVIEW_CATEGORIES, regionName } from "@/
 
 export const metadata: Metadata = {
   title: "Compare — SoccerDadHQ",
-  description: "Compare Florida youth soccer clubs and high school programs side by side.",
+  description: "Compare youth soccer clubs and high school programs side by side.",
 };
 
 export default async function ComparePage({
@@ -30,7 +30,7 @@ export default async function ComparePage({
     type === "club"
       ? [
           { label: "Region", cell: (c) => regionName(c.region) },
-          { label: "City", cell: (c) => `${c.city}, FL` },
+          { label: "City", cell: (c) => `${c.city}, ${c.state}` },
           { label: "Top league", cell: (c) => c.leagues[0] ?? "—" },
           { label: "Age groups", cell: (c) => `${c.age_groups[0]}–${c.age_groups[c.age_groups.length - 1]}` },
           { label: "Programs", cell: (c) => c.genders.join(", ") },
@@ -38,7 +38,7 @@ export default async function ComparePage({
         ]
       : [
           { label: "Region", cell: (s) => regionName(s.region) },
-          { label: "City", cell: (s) => `${s.city}, FL` },
+          { label: "City", cell: (s) => `${s.city}, ${s.state}` },
           { label: "Class", cell: (s) => s.fhsaa_class },
           { label: "Type", cell: (s) => s.type },
           { label: "Programs", cell: (s) => s.programs.join(", ") },

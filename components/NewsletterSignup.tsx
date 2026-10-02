@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { US_STATES } from "@/lib/states";
+import { regionsForState } from "@/lib/regions";
 
 export default function NewsletterSignup({ compact = false }: { compact?: boolean }) {
   const [email, setEmail] = useState("");
+  const [state, setState] = useState("");
   const [region, setRegion] = useState("");
+  const regions = regionsForState(state);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -16,7 +20,7 @@ export default function NewsletterSignup({ compact = false }: { compact?: boolea
       const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, region, age_confirmed: ageConfirmed }),
+        body: JSON.stringify({ email, state, region, age_confirmed: ageConfirmed }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
@@ -47,18 +51,33 @@ export default function NewsletterSignup({ compact = false }: { compact?: boolea
         onChange={(e) => setEmail(e.target.value)}
         className={compact ? "input bg-navy-700 border-navy-700 text-white placeholder:text-slate-400" : "input sm:max-w-xs"}
       />
-      {!compact && (
+      {/* State is required so region-relevant emails can go out later. */}
+      <select
+        required
+        value={state}
+        onChange={(e) => {
+          setState(e.target.value);
+          setRegion("");
+        }}
+        className={compact ? "input bg-navy-700 border-navy-700 text-white" : "input sm:max-w-[200px]"}
+        aria-label="Your state"
+      >
+        <option value="">Your state…</option>
+        {US_STATES.map((s) => (
+          <option key={s.code} value={s.code}>{s.name}</option>
+        ))}
+      </select>
+      {!compact && regions.length > 0 && (
         <select
           value={region}
           onChange={(e) => setRegion(e.target.value)}
           className="input sm:max-w-[200px]"
           aria-label="Region (optional)"
         >
-          <option value="">All of Florida</option>
-          <option value="south-florida">South Florida</option>
-          <option value="tampa-bay">Tampa Bay</option>
-          <option value="orlando-central">Orlando / Central</option>
-          <option value="jacksonville-ne">Jacksonville / NE</option>
+          <option value="">All regions</option>
+          {regions.map((r) => (
+            <option key={r.key} value={r.key}>{r.name}</option>
+          ))}
         </select>
       )}
       <button type="submit" disabled={status === "loading"} className={compact ? "btn-amber w-full text-sm" : "btn-amber"}>

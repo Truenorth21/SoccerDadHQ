@@ -7,7 +7,7 @@ import { getClubs, getSchools, getCoaches } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Search",
-  description: "Search across Florida youth soccer clubs, high schools and coaches.",
+  description: "Search youth soccer clubs, high schools and coaches across the country.",
 };
 
 export default async function SearchPage({

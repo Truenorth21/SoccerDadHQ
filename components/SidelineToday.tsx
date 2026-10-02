@@ -5,35 +5,31 @@ import Link from "next/link";
 import { POLLS, pollOfTheDayIndex, tallyPoll, POLL_REVEAL_THRESHOLD } from "@/lib/funPolls";
 import { formatDate } from "@/lib/utils";
 import type { Tryout, Commitment, RankingItem } from "@/lib/types";
+import { US_STATES, stateByCode } from "@/lib/states";
+import { regionState } from "@/lib/regions";
 
-const REGION_STORE = "sdhq:region";
+const STATE_STORE = "sdhq:state";
 const POLL_STORE = "sdhq:pollvotes";
 
-interface RegionOpt {
-  key: string;
-  name: string;
-}
-
-/** "The Sideline Today" — a dated, daily-changing, region-aware snapshot beside
+/** "The Sideline Today" — a dated, daily-changing, state-aware snapshot beside
  *  Latest News: the votable Poll of the Day, tryout deadlines, new commitments,
  *  top clubs, and an inline newsletter signup. The reason to check in daily. */
 export default function SidelineToday({
   tryouts,
   commits,
   movers,
-  regions,
 }: {
   tryouts: Tryout[];
   commits: Commitment[];
   movers: RankingItem[];
-  regions: RegionOpt[];
 }) {
   const [today, setToday] = useState("");
-  const [region, setRegion] = useState("");
+  const [state, setState] = useState("");
   const [pollIdx, setPollIdx] = useState(0);
   const [votes, setVotes] = useState<Record<string, number>>({});
   const [results, setResults] = useState<Record<string, Record<number, number>>>({});
   const [email, setEmail] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [subStatus, setSubStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [subMsg, setSubMsg] = useState("");
 
@@ -41,7 +37,7 @@ export default function SidelineToday({
     setToday(new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }));
     setPollIdx(pollOfTheDayIndex());
     try {
-      setRegion(localStorage.getItem(REGION_STORE) || "");
+      setState(localStorage.getItem(STATE_STORE) || "");
     } catch {
       /* ignore */
     }
@@ -56,17 +52,19 @@ export default function SidelineToday({
       .catch(() => {});
   }, []);
 
-  function chooseRegion(r: string) {
-    setRegion(r);
+  function chooseState(s: string) {
+    setState(s);
     try {
-      localStorage.setItem(REGION_STORE, r);
+      localStorage.setItem(STATE_STORE, s);
     } catch {
       /* ignore */
     }
   }
 
-  const label = region ? regions.find((x) => x.key === region)?.name ?? "your area" : "Florida";
-  const inRegion = <T extends { region: string }>(arr: T[]) => (region ? arr.filter((a) => a.region === region) : arr);
+  const label = stateByCode(state)?.name ?? "your state";
+  // Items carry a state when they know it; older ones (commitments) fall back to their region's state.
+  const itemState = (a: { region: string; state?: string }) => a.state || regionState(a.region) || "FL";
+  const inRegion = <T extends { region: string; state?: string }>(arr: T[]) => (state ? arr.filter((a) => itemState(a) === state) : arr);
   const now = Date.now();
   const nextTryouts = inRegion(tryouts)
     .filter((t) => +new Date(t.date) > now)
@@ -106,7 +104,7 @@ export default function SidelineToday({
       const res = await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, region: region || null }),
+        body: JSON.stringify({ email, state, age_confirmed: ageConfirmed }),
       });
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Could not subscribe.");
@@ -127,22 +125,22 @@ export default function SidelineToday({
       <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3">
         <div>
           <p className="font-heading text-sm font-bold uppercase tracking-wide text-brand-sky">⚡ The Sideline Today</p>
-          <p className="text-xs text-slate-500">{today || "Your daily Florida soccer snapshot"}</p>
+          <p className="text-xs text-slate-500">{today || "Your daily youth soccer snapshot"}</p>
         </div>
       </div>
 
-      {/* Region filter */}
+      {/* State filter */}
       <label className="block">
         <span className="font-heading text-xs font-bold uppercase tracking-wide text-slate-400">Showing</span>
         <select
-          value={region}
-          onChange={(e) => chooseRegion(e.target.value)}
+          value={state}
+          onChange={(e) => chooseState(e.target.value)}
           className="input mt-1 py-2 text-sm"
-          aria-label="Filter by region"
+          aria-label="Filter by state"
         >
-          <option value="">All of Florida</option>
-          {regions.map((r) => (
-            <option key={r.key} value={r.key}>{r.name}</option>
+          <option value="">All states</option>
+          {US_STATES.map((s) => (
+            <option key={s.code} value={s.code}>{s.name}</option>
           ))}
         </select>
       </label>
@@ -191,7 +189,7 @@ export default function SidelineToday({
       <div>
         <div className="mb-1.5 flex items-center justify-between">
           <SectionLabel>⏰ Tryout deadlines</SectionLabel>
-          <Link href={`/clubs${region ? `?region=${region}` : ""}`} className="text-xs font-semibold text-brand-blue hover:underline">All →</Link>
+          <Link href={`/tryouts${stateByCode(state) ? `/${stateByCode(state)!.slug}` : ""}`} className="text-xs font-semibold text-brand-blue hover:underline">All →</Link>
         </div>
         {nextTryouts.length === 0 ? (
           <p className="text-sm text-slate-500">No upcoming tryouts in {label} right now.</p>
@@ -245,6 +243,20 @@ export default function SidelineToday({
           <form onSubmit={subscribe} className="space-y-2">
             <p className="text-xs font-bold uppercase tracking-wide text-amber-300">📬 Get The Sideline for {label}</p>
             <p className="text-xs text-slate-300">Tryout alerts, commitments &amp; the week&apos;s best reads — one email a week, free.</p>
+            {!state && (
+              <select
+                required
+                value={state}
+                onChange={(e) => chooseState(e.target.value)}
+                className="w-full rounded-md border-0 px-3 py-2 text-sm text-navy"
+                aria-label="Your state"
+              >
+                <option value="">Your state…</option>
+                {US_STATES.map((s) => (
+                  <option key={s.code} value={s.code}>{s.name}</option>
+                ))}
+              </select>
+            )}
             <div className="flex gap-2">
               <input
                 type="email"
@@ -258,6 +270,10 @@ export default function SidelineToday({
                 {subStatus === "loading" ? "…" : "Sign up"}
               </button>
             </div>
+            <label className="flex items-start gap-2 text-[11px] text-slate-400">
+              <input type="checkbox" required checked={ageConfirmed} onChange={(e) => setAgeConfirmed(e.target.checked)} className="mt-0.5" />
+              <span>I&apos;m 13+ and agree to the <a href="/privacy" className="underline">Privacy Policy</a>.</span>
+            </label>
             {subStatus === "error" && <p className="text-xs text-red-300">{subMsg}</p>}
           </form>
         )}

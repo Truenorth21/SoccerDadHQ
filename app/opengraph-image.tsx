@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og";
 export const runtime = "edge";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "SoccerDadHQ — Florida Youth Soccer";
+export const alt = "SoccerDadHQ — Youth Soccer News, Tryouts & Club Discovery";
 
 export default function Image() {
   return new ImageResponse(
@@ -30,13 +30,13 @@ export default function Image() {
           style={{ borderRadius: 9999, background: "#fff", marginBottom: 28 }}
         />
         <div style={{ display: "flex", fontSize: 30, color: "#e8a020", letterSpacing: 4, textTransform: "uppercase" }}>
-          Florida Youth Soccer
+          Youth Soccer News, Tryouts & Club Discovery
         </div>
         <div style={{ display: "flex", fontSize: 84, fontWeight: 800, marginTop: 16, lineHeight: 1.05 }}>
           Soccer<span style={{ color: "#2a7de1" }}>Dad</span>HQ
         </div>
         <div style={{ display: "flex", fontSize: 34, color: "#cbd5e1", marginTop: 24, maxWidth: 900 }}>
-          Club & coach directories, reviews, rankings and news for Florida soccer families.
+          Club & coach directories, tryouts, reviews, rankings and news for youth soccer families nationwide.
         </div>
       </div>
     ),

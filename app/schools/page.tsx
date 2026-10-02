@@ -10,9 +10,9 @@ import { getSchools, loadSchools, type SchoolFilters as Filters } from "@/lib/da
 import { regionName } from "@/lib/regions";
 
 export const metadata: Metadata = {
-  title: "Florida High School Soccer Directory",
+  title: "High School Soccer Directory",
   description:
-    "Browse Florida high school soccer programs (FHSAA) by region, class, public/private and boys/girls. Read reviews, see state-title history and find the right school program.",
+    "Browse high school soccer programs by region, class, public/private and boys/girls. Read reviews, see state-title history and find the right school program. Now covering Florida (FHSAA), with more states coming.",
 };
 
 export default async function SchoolsPage({

@@ -20,7 +20,7 @@ export default function Logo({ light = false }: { light?: boolean }) {
             light ? "text-slate-300" : "text-slate-400"
           }`}
         >
-          Florida Youth Soccer
+          National Youth Soccer
         </span>
       </span>
     </Link>

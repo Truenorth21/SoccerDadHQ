@@ -24,7 +24,7 @@ export default function CoachCard({ coach }: { coach: Coach }) {
           </h3>
           <p className="truncate text-sm text-slate-500">{coach.title}</p>
           <p className="truncate text-xs text-slate-400">
-            {coach.club_name} · {regionName(coach.region)}
+            {coach.club_name} · {coach.region ? regionName(coach.region) : `${coach.city}, ${coach.state}`}
           </p>
         </div>
       </div>
