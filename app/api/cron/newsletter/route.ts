@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { SUPABASE_URL } from "@/lib/supabase/config";
-import { buildRegionDigest, sendBuiltDigest } from "@/lib/digestEmail";
+import { adminServiceClient } from "@/lib/admin";
 import { isEmailConfigured } from "@/lib/email";
-import type { RegionKey } from "@/lib/regions";
+import { runSend, type SendRow } from "@/lib/newsletterSend";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 300;
 
 /**
- * Weekly send of "The Sideline": groups subscribers by their chosen region,
- * builds the region edition once per group, and (when an email provider is
- * wired) sends it to each subscriber. Runs via Vercel Cron (see vercel.json).
+ * Daily safety net for "The Sideline". It NEVER starts a newsletter on its own:
+ * state newsletters only go out when an admin approves them at /admin/newsletter.
+ * This job only finishes approvals that stopped part-way (e.g. a big list that
+ * hit the time limit); people already emailed for that approval are skipped.
  *
  * Auth: requires `Authorization: Bearer <CRON_SECRET>` (or `?secret=`) when
- * CRON_SECRET is set. Reads subscribers with the service-role key.
+ * CRON_SECRET is set.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -25,75 +25,25 @@ export async function GET(request: Request) {
     }
   }
 
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!SUPABASE_URL || !serviceKey) {
-    return NextResponse.json(
-      { error: "Newsletter send needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY." },
-      { status: 503 }
-    );
+  const service = adminServiceClient();
+  if (!service) {
+    return NextResponse.json({ error: "Needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY." }, { status: 503 });
   }
+  if (!isEmailConfigured) return NextResponse.json({ ok: true, resumed: 0, note: "email not configured" });
 
-  const admin = createClient(SUPABASE_URL, serviceKey, { auth: { persistSession: false } });
-  const { data: subs, error } = await admin
-    .from("newsletter_subscribers")
-    .select("email, region")
-    .eq("unsubscribed", false);
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data, error } = await service
+    .from("newsletter_sends")
+    .select("*")
+    .eq("status", "sending")
+    .order("approved_at");
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const started = Date.now();
+  const results = [];
+  for (const send of (data ?? []) as SendRow[]) {
+    const left = 240_000 - (Date.now() - started);
+    if (left < 20_000) break;
+    results.push(await runSend(service, send, { timeBudgetMs: left }));
   }
-
-  // Group subscribers by region ("" / null → statewide edition).
-  const groups = new Map<string, string[]>();
-  for (const s of (subs ?? []) as { email: string; region: string | null }[]) {
-    const key = s.region || "statewide";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(s.email);
-  }
-
-  // Per-run send cap so a single cron invocation can't blow past the email
-  // provider's rate/volume limits (Resend) or the function's 300s budget.
-  // Tune via NEWSLETTER_MAX_PER_RUN; pacing keeps us well under Resend's
-  // default rate limit. The full Broadcasts/Audiences migration replaces this
-  // hand-rolled fan-out once the list is large enough to warrant it.
-  const MAX_PER_RUN = Math.max(1, Number(process.env.NEWSLETTER_MAX_PER_RUN) || 2000);
-  const PACE_EVERY = 8; // brief pause every N sends to respect rate limits
-  const PACE_MS = 1100;
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-  const sent: { region: string; recipients: number; delivered: number; skipped: number; subject: string }[] = [];
-  let totalSendAttempts = 0;
-  let capped = false;
-
-  for (const [region, emails] of Array.from(groups.entries())) {
-    const digest = await buildRegionDigest(region === "statewide" ? null : (region as RegionKey));
-    // Build once per region, then fan out to each subscriber.
-    let delivered = 0;
-    let skipped = 0;
-    if (isEmailConfigured) {
-      for (const email of emails) {
-        if (totalSendAttempts >= MAX_PER_RUN) {
-          capped = true;
-          skipped++;
-          continue;
-        }
-        const r = await sendBuiltDigest(email, digest);
-        if (r.sent) delivered++;
-        totalSendAttempts++;
-        if (totalSendAttempts % PACE_EVERY === 0) await sleep(PACE_MS);
-      }
-    }
-    sent.push({ region, recipients: emails.length, delivered, skipped, subject: digest.subject });
-  }
-
-  return NextResponse.json({
-    ok: true,
-    emailProvider: isEmailConfigured ? "resend" : "none (digests built, not sent)",
-    editions: sent.length,
-    totalRecipients: sent.reduce((a, s) => a + s.recipients, 0),
-    totalDelivered: sent.reduce((a, s) => a + s.delivered, 0),
-    capped,
-    cap: MAX_PER_RUN,
-    skippedForCap: sent.reduce((a, s) => a + s.skipped, 0),
-    sent,
-  });
+  return NextResponse.json({ ok: true, resumed: results.length, results });
 }
