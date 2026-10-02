@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 type RegionOpt = { key: string; name: string; state: string };
 type StateOpt = { code: string; name: string };
@@ -38,6 +38,25 @@ export default function NewsletterAdmin({
   const [intro, setIntro] = useState(initialIntro);
   const [introStatus, setIntroStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [introMsg, setIntroMsg] = useState("");
+  const introRef = useRef<HTMLTextAreaElement>(null);
+
+  // The intro goes to every state, so a state typed by name (e.g. "Florida")
+  // would show up in every other state's email too.
+  const namedStates = useMemo(
+    () => states.filter((s) => new RegExp(`\\b${s.name}\\b`, "i").test(intro)).map((s) => s.name),
+    [states, intro]
+  );
+
+  function insertTag(tag: string) {
+    const el = introRef.current;
+    const at = el ? el.selectionStart : intro.length;
+    const end = el ? el.selectionEnd : intro.length;
+    setIntro(intro.slice(0, at) + tag + intro.slice(end));
+    requestAnimationFrame(() => {
+      el?.focus();
+      el?.setSelectionRange(at + tag.length, at + tag.length);
+    });
+  }
 
   // States with subscribers first (most subscribers on top), then the rest A–Z.
   const stateOptions = useMemo(() => {
@@ -167,14 +186,30 @@ export default function NewsletterAdmin({
       <form onSubmit={saveIntro} className="card space-y-3 p-5">
         <div>
           <h3 className="font-heading text-lg font-bold uppercase text-navy">This week&rsquo;s intro</h3>
-          <p className="text-sm text-slate-500">A short note from you at the top of every state&rsquo;s edition (leave blank to skip).</p>
+          <p className="text-sm text-slate-500">
+            A short note from you at the top of every state&rsquo;s edition (leave blank to skip). Write{" "}
+            <strong>{"{state}"}</strong> where the state&rsquo;s name should go, and it becomes &ldquo;Colorado&rdquo; in the
+            Colorado email, &ldquo;Texas&rdquo; in the Texas one, and so on. <strong>{"{region}"}</strong> becomes the
+            region&rsquo;s name (like &ldquo;Tampa Bay&rdquo;), or the state&rsquo;s name for the state-wide edition.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => insertTag("{state}")} className="btn-outline text-xs">+ Insert {"{state}"}</button>
+          <button type="button" onClick={() => insertTag("{region}")} className="btn-outline text-xs">+ Insert {"{region}"}</button>
         </div>
         <textarea
+          ref={introRef}
           className="input min-h-[120px]"
           value={intro}
           onChange={(e) => setIntro(e.target.value)}
-          placeholder="Big tryout week across the state — plus new commitments and the poll everyone's arguing about…"
+          placeholder="Welcome to The Sideline, your weekly five-minute catch-up on {state} youth soccer…"
         />
+        {namedStates.length > 0 && (
+          <p className="rounded-md bg-amber-50 p-2 text-sm text-amber-900">
+            Heads up: this names {namedStates.join(", ")}, which every state&rsquo;s subscribers will see. Swap it for{" "}
+            <strong>{"{state}"}</strong> if it should change per state.
+          </p>
+        )}
         <div className="flex items-center gap-3">
           <button type="submit" disabled={introStatus === "saving"} className="btn-primary">
             {introStatus === "saving" ? "Saving…" : "Save intro"}
