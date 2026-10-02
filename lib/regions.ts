@@ -153,6 +153,51 @@ const NATIONAL_REGIONS: Region[] = [
     { slug: "central-il", name: "Central IL", short: "Central IL", description: "Springfield, Peoria, Bloomington-Normal and Champaign." },
     { slug: "southern-il", name: "Southern IL", short: "Southern IL", description: "Metro East, Carbondale and Southern Illinois." },
   ]),
+  ...defineRegions("PA", [
+    { slug: "philadelphia", name: "Philadelphia/Suburbs", short: "Philly", description: "Philadelphia, the Main Line, Bucks, Montgomery, Delaware and Chester counties." },
+    { slug: "pittsburgh", name: "Pittsburgh/Western PA", short: "Pittsburgh", description: "Pittsburgh, Allegheny County, Erie and Western Pennsylvania." },
+    { slug: "central-pa", name: "Central PA", short: "Central PA", description: "Harrisburg, Lancaster, York, Hershey and State College." },
+    { slug: "lehigh-valley-ne", name: "Lehigh Valley/NE PA", short: "Lehigh Valley", description: "Allentown, Bethlehem, Reading, Scranton and Wilkes-Barre." },
+  ]),
+  ...defineRegions("OH", [
+    { slug: "columbus", name: "Columbus/Central OH", short: "Columbus", description: "Columbus, Dublin, Westerville and Central Ohio." },
+    { slug: "cleveland-ne", name: "Cleveland/NE Ohio", short: "Cleveland", description: "Cleveland, Akron, Canton and Northeast Ohio." },
+    { slug: "cincinnati-dayton", name: "Cincinnati/Dayton", short: "Cincinnati", description: "Cincinnati, Dayton and Southwest Ohio." },
+    { slug: "toledo-nw", name: "Toledo/NW Ohio", short: "Toledo", description: "Toledo, Findlay and Northwest Ohio." },
+  ]),
+  ...defineRegions("MD", [
+    { slug: "baltimore", name: "Baltimore Metro", short: "Baltimore", description: "Baltimore City and County, Howard, Harford and Carroll counties." },
+    { slug: "dc-suburbs", name: "DC Suburbs", short: "MoCo / PG", description: "Montgomery and Prince George's counties and the Maryland side of DC." },
+    { slug: "annapolis-southern", name: "Annapolis/Southern MD", short: "Annapolis", description: "Anne Arundel, Calvert, Charles and St. Mary's counties." },
+    { slug: "western-md", name: "Frederick/Western MD", short: "Frederick", description: "Frederick, Hagerstown and Western Maryland." },
+    { slug: "eastern-shore", name: "Eastern Shore", short: "Eastern Shore", description: "Salisbury, Easton, Ocean City and the Eastern Shore." },
+  ]),
+  ...defineRegions("WA", [
+    { slug: "seattle-eastside", name: "Seattle/Eastside", short: "Seattle", description: "Seattle, Bellevue, Redmond, Issaquah and King County." },
+    { slug: "tacoma-south-sound", name: "Tacoma/South Sound", short: "Tacoma", description: "Tacoma, Puyallup, Gig Harbor, Olympia and the South Sound." },
+    { slug: "north-sound", name: "North Sound", short: "North Sound", description: "Everett, Snohomish County, Skagit and Bellingham." },
+    { slug: "southwest-wa", name: "Vancouver/SW Washington", short: "Vancouver", description: "Vancouver, Clark County and Southwest Washington." },
+    { slug: "eastern-wa", name: "Spokane/Eastern WA", short: "Spokane", description: "Spokane, the Tri-Cities, Yakima and Eastern Washington." },
+  ]),
+  ...defineRegions("CO", [
+    { slug: "denver-metro", name: "Denver Metro", short: "Denver", description: "Denver, Aurora, Littleton, Centennial and the metro suburbs." },
+    { slug: "boulder-northern", name: "Boulder/Northern CO", short: "Northern CO", description: "Boulder, Longmont, Fort Collins, Loveland and Greeley." },
+    { slug: "colorado-springs", name: "Colorado Springs/Southern CO", short: "Colorado Springs", description: "Colorado Springs, Pueblo and Southern Colorado." },
+    { slug: "western-slope", name: "Western Slope/Mountains", short: "Western Slope", description: "Grand Junction, Durango and the mountain towns." },
+  ]),
+  ...defineRegions("AZ", [
+    { slug: "phoenix-west", name: "Phoenix/West Valley", short: "Phoenix", description: "Phoenix, Glendale, Peoria, Surprise and the West Valley." },
+    { slug: "east-valley", name: "East Valley/Scottsdale", short: "East Valley", description: "Scottsdale, Tempe, Mesa, Chandler, Gilbert and Queen Creek." },
+    { slug: "tucson-southern", name: "Tucson/Southern AZ", short: "Tucson", description: "Tucson, Marana, Sierra Vista and Yuma." },
+    { slug: "northern-az", name: "Northern AZ", short: "Northern AZ", description: "Flagstaff, Prescott and Northern Arizona." },
+  ]),
+  ...defineRegions("MA", [
+    { slug: "boston-metro", name: "Boston Metro", short: "Boston", description: "Boston, Newton, Lexington and the inner suburbs." },
+    { slug: "north-shore-merrimack", name: "North Shore/Merrimack Valley", short: "North Shore", description: "The North Shore, Lowell, Andover and the Merrimack Valley." },
+    { slug: "south-shore-cape", name: "South Shore/Cape Cod", short: "South Shore", description: "Foxborough, the South Shore, the South Coast and Cape Cod." },
+    { slug: "central-ma", name: "Central MA", short: "Worcester", description: "Worcester and Central Massachusetts." },
+    { slug: "western-ma", name: "Western MA", short: "Western MA", description: "Springfield, the Pioneer Valley and the Berkshires." },
+  ]),
 ];
 
 /** Every region in every state. */

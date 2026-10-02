@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------------ *
  *  National high school seed: about 20 real high school soccer programs
- *  in each state with predefined regions (TX, GA, NC, SC, TN, CA, NY, NJ,
+ *  in ten states with predefined regions (TX, GA, NC, SC, TN, CA, NY, NJ,
  *  VA, IL), spread across that state's regions. Every school competes
  *  under its state association (UIL, GHSA, NCHSAA, SCHSL, TSSAA, CIF,
  *  NYSPHSAA, NJSIAA, VHSL, IHSA), so private schools that play in a
