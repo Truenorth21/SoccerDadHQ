@@ -63,7 +63,7 @@ export default async function ListingProfile({ kind, slug }: { kind: ListingKind
                 <span className="chip-sky">{cfg.label}</span>
                 <OwnerChip tier={tier} />
               </div>
-              <p className="mt-1 text-slate-600">{l.city}, FL · {regionName(l.region)}</p>
+              <p className="mt-1 text-slate-600">{[`${l.city}, ${l.state}`, regionName(l.region)].filter(Boolean).join(" · ")}</p>
               <div className="mt-2 flex flex-wrap items-center gap-4">
                 <RatingBadge value={l.rating} count={reviews.length} />
                 <ShareButtons path={`${cfg.path}/${l.slug}`} title={`${l.name} — SoccerDadHQ`} />
@@ -120,7 +120,7 @@ export default async function ListingProfile({ kind, slug }: { kind: ListingKind
                 {l.website && <li className="flex gap-2"><span className="text-slate-400">🌐</span><a href={l.website} target="_blank" rel="noopener noreferrer" className="truncate text-brand-blue hover:underline">{l.website.replace(/^https?:\/\//, "")}</a></li>}
                 {l.email && <li className="flex gap-2"><span className="text-slate-400">✉️</span><a href={`mailto:${l.email}`} className="truncate text-brand-blue hover:underline">{l.email}</a></li>}
                 {l.phone && <li className="flex gap-2"><span className="text-slate-400">📞</span><span className="text-navy">{l.phone}</span></li>}
-                <li className="flex gap-2"><span className="text-slate-400">📍</span><span className="text-navy">{l.city}, FL {l.zip}</span></li>
+                <li className="flex gap-2"><span className="text-slate-400">📍</span><span className="text-navy">{l.city}, {l.state} {l.zip}</span></li>
               </ul>
             </div>
 

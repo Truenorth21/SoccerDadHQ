@@ -189,7 +189,7 @@ const SELF_PROMOS: { weight: number; ad: Ad }[] = [
   { weight: 2, ad: { id: "promo-advertise", advertiser: "SoccerDadHQ", headline: "Advertise to soccer families", body: "Get in front of youth soccer families with featured placement & sponsorships.", cta: "Advertise with us", href: "/advertise", color: "#0a1628", house: true } },
   { weight: 2, ad: { id: "promo-sideline", advertiser: "The Sideline", headline: "Get the weekly Sideline", body: "Tryout alerts, ranking shifts & recruiting news for your region — free.", cta: "Subscribe free", href: "/#newsletter", color: "#e8a020", house: true } },
   { weight: 1, ad: { id: "promo-rankings", advertiser: "SoccerDadHQ", headline: "Vote in the rankings", body: "Who are the top clubs, coaches and teams in your state? Cast your vote this month.", cta: "See rankings", href: "/rankings", color: "#5a2d82", house: true } },
-  { weight: 1, ad: { id: "promo-commits", advertiser: "SoccerDadHQ", headline: "Where do players go?", body: "College, pro & national-team commitments from Florida programs.", cta: "Commitment tracker", href: "/commitments", color: "#1d7a4d", house: true } },
+  { weight: 1, ad: { id: "promo-commits", advertiser: "SoccerDadHQ", headline: "Where do players go?", body: "College, pro & national-team commitments from programs nationwide.", cta: "Commitment tracker", href: "/commitments", color: "#1d7a4d", house: true } },
 ];
 
 /** Weighted filler pool: the slot's contextual house ad once, plus each

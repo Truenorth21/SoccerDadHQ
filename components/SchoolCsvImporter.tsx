@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const TEMPLATE = `name,region,city,type,fhsaa_class,district,mascot,programs,website,state_titles,featured
-"American Heritage School",south-florida,Plantation,Private,Class 4A,District 14,Patriots,Boys;Girls,https://www.ahschool.com,3,true
-"Belen Jesuit Preparatory",south-florida,Miami,Private,Class 5A,District 16,Wolverines,Boys,https://www.belenjesuit.org,2,false`;
+const TEMPLATE = `name,state,region,city,type,fhsaa_class,district,mascot,programs,website,state_titles,featured
+"American Heritage School",FL,south-florida,Plantation,Private,Class 4A,District 14,Patriots,Boys;Girls,https://www.ahschool.com,3,true
+"Belen Jesuit Preparatory",FL,south-florida,Miami,Private,Class 5A,District 16,Wolverines,Boys,https://www.belenjesuit.org,2,false`;
 
 interface Result {
   imported?: number;
@@ -47,9 +47,10 @@ export default function SchoolCsvImporter() {
       <div className="card p-5">
         <h3 className="font-heading text-lg font-bold uppercase text-navy">How it works</h3>
         <ul className="mt-2 space-y-1 text-sm text-slate-600">
-          <li>• Header row required. Required columns: <code>name</code>, <code>region</code>, <code>city</code>.</li>
+          <li>• Header row required. Required columns: <code>name</code>, <code>city</code>, plus <code>state</code> and/or <code>region</code>.</li>
           <li>• Optional: <code>type</code> (Public/Private), <code>fhsaa_class, district, mascot, programs, website, zip, state_titles, district_titles, enrollment, head_coach_boys, head_coach_girls, logo_color, featured, slug</code>.</li>
-          <li>• <strong>Region</strong>: key (<code>south-florida</code>) or name (<code>South Florida</code>).</li>
+          <li>• <strong>State</strong> is a code (<code>TX</code>) or name (<code>Texas</code>). <strong>Region</strong> can be a key (<code>tx-dfw</code>) or name (<code>DFW</code>) and is optional for states without predefined regions.</li>
+          <li>• <code>fhsaa_class</code> holds the school&apos;s classification under its own state association (e.g. <code>Class 6A</code>, <code>Division I</code>).</li>
           <li>• <strong>programs</strong>: separate with <code>;</code> (e.g. <code>Boys;Girls</code>).</li>
           <li>• Re-importing the same school <strong>updates</strong> it.</li>
         </ul>

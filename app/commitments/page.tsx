@@ -18,12 +18,12 @@ export default function CommitmentsPage() {
     <>
       <section className="bg-hero-grad text-white">
         <div className="container-page py-12 sm:py-16">
-          <span className="chip bg-white/10 text-amber-300 ring-1 ring-white/20">⚽ Where Florida players go</span>
+          <span className="chip bg-white/10 text-amber-300 ring-1 ring-white/20">⚽ Where players go</span>
           <h1 className="mt-4 max-w-3xl font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight sm:text-5xl">
             Commitment Tracker
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-200">
-            College, pro and national-team commitments announced by Florida clubs and high schools — the
+            College, pro and national-team commitments announced by clubs and high schools across the country — the
             track record that shows which programs develop players to the next level.
           </p>
           <div className="mt-5">

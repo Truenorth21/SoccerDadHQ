@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
+import { resolveLocation } from "@/lib/regions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,11 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
-  if (!b.name?.trim() || !b.region || !b.city?.trim()) {
-    return NextResponse.json({ error: "Name, region and city are required." }, { status: 400 });
+  if (!b.name?.trim() || !b.city?.trim()) {
+    return NextResponse.json({ error: "Name and city are required." }, { status: 400 });
   }
+  const loc = resolveLocation(b.state, b.region);
+  if ("error" in loc) return NextResponse.json({ error: `Location: ${loc.error}.` }, { status: 400 });
 
   const slug = (b.slug?.trim() || slugify(b.name)).toLowerCase();
   const id = b.id || `s-${slug}`;
@@ -36,9 +39,9 @@ export async function POST(request: Request) {
     id,
     slug,
     name: b.name.trim(),
-    region: b.region,
+    region: loc.region,
     city: b.city.trim(),
-    state: "FL",
+    state: loc.state,
     zip: b.zip || null,
     lat: num(b.lat),
     lng: num(b.lng),

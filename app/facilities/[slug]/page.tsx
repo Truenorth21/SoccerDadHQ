@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!l) return { title: "Not found" };
   return {
     title: `${l.name} — Soccer Facility`,
-    description: `${l.name} in ${l.city}, FL.${l.review_count > 0 ? ` ${l.rating.toFixed(1)}★ from ${l.review_count} reviews.` : ""}`,
+    description: `${l.name} in ${l.city}, ${l.state}.${l.review_count > 0 ? ` ${l.rating.toFixed(1)}★ from ${l.review_count} reviews.` : ""}`,
     alternates: { canonical: `${SITE_URL}/facilities/${l.slug}` },
   };
 }

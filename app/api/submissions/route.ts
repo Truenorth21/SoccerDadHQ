@@ -9,7 +9,7 @@ const KINDS = ["club", "school", "coach", "training-center", "facility", "tourna
 const DETAIL_LABELS: Record<string, string> = {
   address: "Address", zip: "ZIP", phone: "Phone", email: "Email", leagues: "Leagues",
   genders: "Teams", age_groups: "Age groups", type: "Type", programs: "Programs",
-  fhsaa_class: "FHSAA class", district: "District", private_training: "Private training", tags: "Tags",
+  state: "State", fhsaa_class: "Class", district: "District", private_training: "Private training", tags: "Tags",
   facet_focus: "Focus", facet_format: "Format", facet_surface: "Surface", facet_type: "Type", facet_level: "Level",
 };
 
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
   await notifyNewSubmission({
     kind: b.kind,
     name: b.name.trim(),
-    region: b.region || null,
+    region: [details.state, b.region].filter(Boolean).join(" · ") || null,
     city: b.city || null,
     website: b.website || null,
     notes: b.notes || null,

@@ -1,5 +1,6 @@
 import type { RegionKey } from "./regions";
 import type { School, SchoolReviewScores, Review } from "./types";
+import { hsAssociation, stateName } from "./states";
 
 /* Deterministic helpers (kept local to avoid coupling with the club seed). */
 function hash(str: string): number {
@@ -31,6 +32,7 @@ const CREST_COLORS = ["#1a4fa0", "#0a1628", "#2a7de1", "#1d7a4d", "#9b2d2d", "#5
 
 interface RawSchool {
   name: string;
+  state?: string; // two-letter code; defaults to "FL" (the original seed is all Florida)
   region: RegionKey;
   city: string;
   zip: string;
@@ -173,6 +175,7 @@ function avgSchoolScores(reviews: Review[]): SchoolReviewScores {
 
 function buildSchool(raw: RawSchool, idx: number): School {
   const slug = slugifySchool(raw.name);
+  const state = raw.state ?? "FL";
   const r = rng(slug);
   // Honest launch: schools start unrated (no fabricated reviews/stars).
   void (3 + Math.floor(r() * 5));
@@ -192,7 +195,7 @@ function buildSchool(raw: RawSchool, idx: number): School {
     name: raw.name,
     region: raw.region,
     city: raw.city,
-    state: "FL",
+    state,
     zip: raw.zip,
     lat: raw.lat,
     lng: raw.lng,
@@ -209,7 +212,7 @@ function buildSchool(raw: RawSchool, idx: number): School {
     last_title: lastTitle,
     district_titles: raw.stateTitles * 2 + Math.floor(r() * 6),
     enrollment: 700 + Math.floor(r() * 2600),
-    description: `${raw.name} (${raw.mascot}) is a${raw.type === "Private" ? " private" : " public"} ${raw.cls} high school in ${raw.city}, Florida, with ${programs.join(" and ")} soccer competing under the FHSAA. ${raw.stateTitles > 0 ? `The program has captured ${raw.stateTitles} state championship${raw.stateTitles === 1 ? "" : "s"} and is a perennial contender in its district.` : "The program is a competitive member of its district and a steady developer of college-bound players."} ${raw.name} blends a demanding academic environment with a serious commitment to soccer.`,
+    description: `${raw.name} (${raw.mascot}) is a${raw.type === "Private" ? " private" : " public"} ${raw.cls} high school in ${raw.city}, ${stateName(state)}, with ${programs.join(" and ")} soccer competing under the ${hsAssociation(state)}. ${raw.stateTitles > 0 ? `The program has captured ${raw.stateTitles} state championship${raw.stateTitles === 1 ? "" : "s"} and is a perennial contender in its district.` : "The program is a competitive member of its district and a steady developer of college-bound players."} ${raw.name} blends a demanding academic environment with a serious commitment to soccer.`,
     website: undefined, // unclaimed: no fabricated website (was an auto-generated placeholder)
     featured: plan === "featured",
     plan,

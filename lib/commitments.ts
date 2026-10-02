@@ -35,6 +35,7 @@ const DIVISIONS = ["NCAA D1", "NCAA D1", "NCAA D1", "NCAA D2", "NCAA D3", "NAIA"
 const COLORS = ["#1a4fa0", "#0a1628", "#2a7de1", "#1d7a4d", "#9b2d2d", "#5a2d82", "#b8860b"];
 
 function makeCommitment(seed: string, i: number, owner: {
+  state: string;
   region: RegionKey;
   club?: { id: string; name: string; slug: string };
   school?: { id: string; name: string; slug: string };
@@ -46,7 +47,8 @@ function makeCommitment(seed: string, i: number, owner: {
   let destination: string;
   let division: string | undefined;
   if (dest_type === "College") {
-    destination = r() > 0.45 ? pick(COLLEGES_FL, r) : pick(COLLEGES_NATIONAL, r);
+    // Florida programs lean toward in-state colleges; elsewhere draw from the national list.
+    destination = owner.state === "FL" && r() > 0.45 ? pick(COLLEGES_FL, r) : pick(COLLEGES_NATIONAL, r);
     division = pick(DIVISIONS, r);
   } else if (dest_type === "Pro") {
     destination = pick(PRO_TEAMS, r);
@@ -64,6 +66,7 @@ function makeCommitment(seed: string, i: number, owner: {
     dest_type,
     destination,
     division,
+    state: owner.state || "FL",
     region: owner.region,
     club_id: owner.club?.id,
     club_name: owner.club?.name,
@@ -83,13 +86,13 @@ export const COMMITMENTS: Commitment[] = (() => {
   for (const c of CLUBS) {
     const n = c.plan === "featured" ? 4 + Math.floor(rng(c.slug + "n")() * 4) : c.plan === "pro" ? 1 + Math.floor(rng(c.slug + "n")() * 3) : 0;
     for (let i = 0; i < n; i++) {
-      out.push(makeCommitment(c.slug, i, { region: c.region, club: { id: c.id, name: c.name, slug: c.slug } }));
+      out.push(makeCommitment(c.slug, i, { state: c.state, region: c.region, club: { id: c.id, name: c.name, slug: c.slug } }));
     }
   }
   for (const s of SCHOOLS) {
     const n = s.plan === "featured" ? 3 + Math.floor(rng(s.slug + "n")() * 3) : s.plan === "pro" ? 1 + Math.floor(rng(s.slug + "n")() * 2) : 0;
     for (let i = 0; i < n; i++) {
-      out.push(makeCommitment(s.slug, i + 100, { region: s.region, school: { id: s.id, name: s.name, slug: s.slug } }));
+      out.push(makeCommitment(s.slug, i + 100, { state: s.state, region: s.region, school: { id: s.id, name: s.name, slug: s.slug } }));
     }
   }
   return out.sort((a, b) => +new Date(b.date) - +new Date(a.date));

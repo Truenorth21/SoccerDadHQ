@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { US_STATES } from "@/lib/states";
 
 interface RegionOpt {
   key: string;
   name: string;
+  state: string;
 }
 type Row = Record<string, any>;
 
 const BLANK: Row = {
-  id: "", slug: "", name: "", region: "", city: "", zip: "",
+  id: "", slug: "", name: "", state: "FL", region: "", city: "", zip: "",
   type: "Public", fhsaa_class: "", district: "", mascot: "",
   programs: [], website: "", head_coach_boys: "", head_coach_girls: "",
   state_titles: "", district_titles: "", enrollment: "",
@@ -26,6 +28,7 @@ export default function SchoolManager({ schools, regions }: { schools: Row[]; re
   function edit(s: Row) {
     setForm({
       ...s,
+      state: s.state ?? "FL", region: s.region ?? "",
       programs: Array.isArray(s.programs) ? s.programs : [],
       zip: s.zip ?? "", fhsaa_class: s.fhsaa_class ?? "", district: s.district ?? "", mascot: s.mascot ?? "",
       website: s.website ?? "", head_coach_boys: s.head_coach_boys ?? "", head_coach_girls: s.head_coach_girls ?? "",
@@ -82,17 +85,24 @@ export default function SchoolManager({ schools, regions }: { schools: Row[]; re
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="block"><span className="label">Name *</span><input required className="input" value={form.name} onChange={(e) => set("name", e.target.value)} placeholder="American Heritage School" /></label>
             <label className="block"><span className="label">Slug {form.id ? "(locked)" : "(auto)"}</span><input className="input" value={form.slug} disabled={!!form.id} onChange={(e) => set("slug", e.target.value)} /></label>
-            <label className="block"><span className="label">Region *</span>
-              <select required className="input" value={form.region} onChange={(e) => set("region", e.target.value)}>
-                <option value="">Select region…</option>
-                {regions.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
+            <label className="block"><span className="label">State *</span>
+              <select required className="input" value={form.state} onChange={(e) => setForm((f) => (f ? { ...f, state: e.target.value, region: "" } : f))}>
+                {US_STATES.map((st) => <option key={st.code} value={st.code}>{st.name}</option>)}
               </select>
             </label>
+            {regions.some((r) => r.state === form.state) && (
+              <label className="block"><span className="label">Region</span>
+                <select className="input" value={form.region} onChange={(e) => set("region", e.target.value)}>
+                  <option value="">No region</option>
+                  {regions.filter((r) => r.state === form.state).map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
+                </select>
+              </label>
+            )}
             <label className="block"><span className="label">City *</span><input required className="input" value={form.city} onChange={(e) => set("city", e.target.value)} /></label>
             <label className="block"><span className="label">Type</span>
               <select className="input" value={form.type} onChange={(e) => set("type", e.target.value)}><option>Public</option><option>Private</option></select>
             </label>
-            <label className="block"><span className="label">FHSAA Class</span><input className="input" value={form.fhsaa_class} onChange={(e) => set("fhsaa_class", e.target.value)} placeholder="Class 6A" /></label>
+            <label className="block"><span className="label">Class</span><input className="input" value={form.fhsaa_class} onChange={(e) => set("fhsaa_class", e.target.value)} placeholder="Class 6A" /></label>
             <label className="block"><span className="label">District</span><input className="input" value={form.district} onChange={(e) => set("district", e.target.value)} placeholder="District 12" /></label>
             <label className="block"><span className="label">Mascot</span><input className="input" value={form.mascot} onChange={(e) => set("mascot", e.target.value)} placeholder="Patriots" /></label>
             <label className="block"><span className="label">ZIP</span><input className="input" value={form.zip} onChange={(e) => set("zip", e.target.value)} /></label>
@@ -125,13 +135,13 @@ export default function SchoolManager({ schools, regions }: { schools: Row[]; re
         <div className="overflow-hidden rounded-xl ring-1 ring-slate-100">
           <table className="w-full bg-white text-sm">
             <thead className="bg-slate-50 text-left font-heading text-xs uppercase tracking-wide text-slate-500">
-              <tr><th className="px-4 py-2">School</th><th className="px-4 py-2">Region</th><th className="px-4 py-2">City</th><th className="px-4 py-2"></th></tr>
+              <tr><th className="px-4 py-2">School</th><th className="px-4 py-2">State · Region</th><th className="px-4 py-2">City</th><th className="px-4 py-2"></th></tr>
             </thead>
             <tbody>
               {schools.map((s) => (
                 <tr key={s.id} className="border-t border-slate-100">
                   <td className="px-4 py-2 font-medium text-navy">{s.name} {s.featured && <span className="text-brand-amber">★</span>}</td>
-                  <td className="px-4 py-2 text-slate-500">{regions.find((r) => r.key === s.region)?.name ?? s.region}</td>
+                  <td className="px-4 py-2 text-slate-500">{[s.state, regions.find((r) => r.key === s.region)?.name ?? s.region].filter(Boolean).join(" · ")}</td>
                   <td className="px-4 py-2 text-slate-500">{s.city}</td>
                   <td className="px-4 py-2 text-right">
                     <button onClick={() => edit(s)} className="font-semibold text-brand-blue hover:underline">Edit</button>

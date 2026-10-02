@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient, MODERATION_TABLES } from "@/lib/admin";
 import { DEFAULT_ADS, adPlacementFromOrder, type Ad, type AdsConfig } from "@/lib/ads";
 import { notifyApproved } from "@/lib/notifyEmail";
+import { resolveLocation } from "@/lib/regions";
 
 export const dynamic = "force-dynamic";
 
@@ -31,14 +32,16 @@ async function publishSubmission(
   if (!["club", "school", "coach", ...LISTING_KINDS].includes(kind)) return undefined;
 
   const name = String(sub.name ?? "").trim();
-  const region = String(sub.region ?? "").trim();
   const city = String(sub.city ?? "").trim();
   const website = sub.website || null;
   if (!name) throw new Error("Submission has no name.");
-  if (!region) throw new Error("Submission is missing a region — can't publish. Reject it or ask the submitter.");
   const slug = slugify(name);
   // Filter-relevant fields the submitter provided (optional; admin completes the rest).
   const det = sub.details && typeof sub.details === "object" ? (sub.details as Record<string, any>) : {};
+  // Older (Florida-only) submissions have just a region, which implies the state.
+  const loc = resolveLocation(nz(det.state), nz(sub.region));
+  if ("error" in loc) throw new Error(`Submission location: ${loc.error} — can't publish. Reject it or ask the submitter.`);
+  const { state, region } = loc;
 
   const friendly = (e: { code?: string; message: string }) =>
     e.code === "23505"
@@ -49,7 +52,7 @@ async function publishSubmission(
     if (!city) throw new Error("Club submission is missing a city.");
     const { error } = await service.from("clubs").upsert(
       {
-        id: `c-${slug}`, slug, name, region, city, website,
+        id: `c-${slug}`, slug, name, state, region, city, website,
         zip: nz(det.zip),
         phone: nz(det.phone),
         email: nz(det.email),
@@ -67,7 +70,7 @@ async function publishSubmission(
     const programs = toArr(det.programs);
     const { error } = await service.from("schools").upsert(
       {
-        id: `s-${slug}`, slug, name, region, city, website,
+        id: `s-${slug}`, slug, name, state, region, city, website,
         zip: nz(det.zip),
         type: det.type === "Private" ? "Private" : "Public",
         fhsaa_class: nz(det.fhsaa_class),
@@ -90,7 +93,7 @@ async function publishSubmission(
     const tags = Array.from(new Set([...facetVals, ...toArr(det.tags)]));
     const { error } = await service.from("listings").upsert(
       {
-        id: `${kind}-${slug}`, slug, kind, name, region, city, website,
+        id: `${kind}-${slug}`, slug, kind, name, state, region, city, website,
         description: sub.notes || null,
         zip: nz(det.zip),
         phone: nz(det.phone),
@@ -110,7 +113,7 @@ async function publishSubmission(
   // coach (coaches table has no website column → fold extra detail into bio)
   const { error } = await service.from("coaches").upsert(
     {
-      id: `coach-${slug}`, slug, name, region, city: city || null,
+      id: `coach-${slug}`, slug, name, state, region, city: city || null,
       bio: sub.notes || null,
       phone: nz(det.phone),
       age_groups: toArr(det.age_groups),

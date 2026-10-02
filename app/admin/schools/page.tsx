@@ -3,7 +3,7 @@ import Link from "next/link";
 import SchoolManager from "@/components/SchoolManager";
 import { getCurrentAdmin, adminServiceClient, hasServiceKey } from "@/lib/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { REGIONS } from "@/lib/regions";
+import { ALL_REGIONS } from "@/lib/regions";
 
 export const metadata: Metadata = { title: "Admin — Schools", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -33,7 +33,7 @@ export default async function AdminSchoolsPage() {
   if (!service || !hasServiceKey) return <Notice title="Service key required">Add <code>SUPABASE_SERVICE_ROLE_KEY</code> to manage schools.</Notice>;
 
   const { data: schools } = await service.from("schools").select("*").order("name");
-  const regions = REGIONS.map((r) => ({ key: r.key, name: r.name }));
+  const regions = ALL_REGIONS.map((r) => ({ key: r.key, name: r.name, state: r.state }));
 
   return (
     <>
@@ -41,7 +41,7 @@ export default async function AdminSchoolsPage() {
         <div className="container-page flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Manage Schools</h1>
-            <p className="mt-1 text-slate-300">Add or edit real FHSAA programs — they appear live immediately.</p>
+            <p className="mt-1 text-slate-300">Add or edit real high school programs in any state — they appear live immediately.</p>
           </div>
           <div className="flex gap-2">
             <Link href="/admin" className="btn-outline text-sm">← Moderation</Link>

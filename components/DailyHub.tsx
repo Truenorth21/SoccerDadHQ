@@ -86,7 +86,7 @@ export default function DailyHub({
             <h2 className="font-heading text-2xl font-bold uppercase tracking-tight text-navy">
               ⚡ Your Sideline Today
             </h2>
-            <p className="text-sm text-slate-500">Tryouts, commitments and movers — tuned to your corner of Florida.</p>
+            <p className="text-sm text-slate-500">Tryouts, commitments and movers — tuned to your corner of the map.</p>
           </div>
           <label className="flex items-center gap-2 text-sm">
             <span className="font-heading font-semibold uppercase tracking-wide text-slate-500">Region</span>

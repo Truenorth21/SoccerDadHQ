@@ -2,9 +2,10 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
-import { REGIONS, GENDERS, FHSAA_CLASSES, SCHOOL_TYPES } from "@/lib/regions";
+import { GENDERS, SCHOOL_TYPES } from "@/lib/regions";
+import StateRegionFields from "./StateRegionFields";
 
-export default function SchoolFilters({ hasRatings = false }: { hasRatings?: boolean }) {
+export default function SchoolFilters({ hasRatings = false, classes = [] }: { hasRatings?: boolean; classes?: string[] }) {
   const router = useRouter();
   const params = useSearchParams();
   const [open, setOpen] = useState(false);
@@ -22,7 +23,7 @@ export default function SchoolFilters({ hasRatings = false }: { hasRatings?: boo
     [params, router]
   );
 
-  const activeCount = ["region", "type", "cls", "gender", "zip", "rating"].filter((k) => params.get(k)).length;
+  const activeCount = ["state", "region", "city", "type", "cls", "gender", "zip", "rating"].filter((k) => params.get(k)).length;
 
   return (
     <div className="card p-5">
@@ -58,10 +59,12 @@ export default function SchoolFilters({ hasRatings = false }: { hasRatings?: boo
           />
         </div>
 
+        <StateRegionFields get={get} update={update} />
+
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="label">ZIP</label>
-            <input className="input" placeholder="32082" maxLength={5} defaultValue={get("zip")} onBlur={(e) => update({ zip: e.target.value })} />
+            <input className="input" placeholder="ZIP code" maxLength={5} defaultValue={get("zip")} onBlur={(e) => update({ zip: e.target.value })} />
           </div>
           <div>
             <label className="label">Radius</label>
@@ -75,22 +78,13 @@ export default function SchoolFilters({ hasRatings = false }: { hasRatings?: boo
           </div>
         </div>
 
-        <div>
-          <label className="label">Region</label>
-          <select className="input" value={get("region")} onChange={(e) => update({ region: e.target.value })}>
-            <option value="">All regions</option>
-            {REGIONS.map((r) => (
-              <option key={r.key} value={r.key}>{r.name}</option>
-            ))}
-          </select>
-        </div>
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="label">FHSAA Class</label>
+            <label className="label">Class</label>
             <select className="input" value={get("cls")} onChange={(e) => update({ cls: e.target.value })}>
               <option value="">All</option>
-              {FHSAA_CLASSES.map((c) => (
+              {classes.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>

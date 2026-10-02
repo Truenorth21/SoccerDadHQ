@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { US_STATES } from "@/lib/states";
 
 interface RegionOpt {
   key: string;
   name: string;
+  state: string;
 }
 
 type Row = Record<string, any>;
@@ -22,6 +24,7 @@ const BLANK: Row = {
   slug: "",
   kind: "training-center",
   name: "",
+  state: "FL",
   region: "",
   city: "",
   zip: "",
@@ -47,6 +50,8 @@ export default function ListingManager({ listings, regions }: { listings: Row[];
   function edit(l: Row) {
     setForm({
       ...l,
+      state: l.state ?? "FL",
+      region: l.region ?? "",
       tags: Array.isArray(l.tags) ? l.tags.join(", ") : l.tags ?? "",
       zip: l.zip ?? "",
       website: l.website ?? "",
@@ -128,14 +133,24 @@ export default function ListingManager({ listings, regions }: { listings: Row[];
               <input className="input" value={form.slug} disabled={!!form.id} onChange={(e) => set("slug", e.target.value)} />
             </label>
             <label className="block">
-              <span className="label">Region *</span>
-              <select required className="input" value={form.region} onChange={(e) => set("region", e.target.value)}>
-                <option value="">Select region…</option>
-                {regions.map((r) => (
-                  <option key={r.key} value={r.key}>{r.name}</option>
+              <span className="label">State *</span>
+              <select required className="input" value={form.state} onChange={(e) => setForm((f) => (f ? { ...f, state: e.target.value, region: "" } : f))}>
+                {US_STATES.map((st) => (
+                  <option key={st.code} value={st.code}>{st.name}</option>
                 ))}
               </select>
             </label>
+            {regions.some((r) => r.state === form.state) && (
+              <label className="block">
+                <span className="label">Region</span>
+                <select className="input" value={form.region} onChange={(e) => set("region", e.target.value)}>
+                  <option value="">No region</option>
+                  {regions.filter((r) => r.state === form.state).map((r) => (
+                    <option key={r.key} value={r.key}>{r.name}</option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="block">
               <span className="label">City *</span>
               <input required className="input" value={form.city} onChange={(e) => set("city", e.target.value)} />
@@ -208,7 +223,7 @@ export default function ListingManager({ listings, regions }: { listings: Row[];
                 <tr key={l.id} className="border-t border-slate-100">
                   <td className="px-4 py-2 font-medium text-navy">{l.name} {l.featured && <span className="text-brand-amber">★</span>}</td>
                   <td className="px-4 py-2 text-slate-500">{kindLabel(l.kind)}</td>
-                  <td className="px-4 py-2 text-slate-500">{regions.find((r) => r.key === l.region)?.name ?? l.region}</td>
+                  <td className="px-4 py-2 text-slate-500">{[l.state, regions.find((r) => r.key === l.region)?.name ?? l.region].filter(Boolean).join(" · ")}</td>
                   <td className="px-4 py-2 text-slate-500">{l.city}</td>
                   <td className="px-4 py-2 text-right">
                     <button onClick={() => edit(l)} className="font-semibold text-brand-blue hover:underline">Edit</button>

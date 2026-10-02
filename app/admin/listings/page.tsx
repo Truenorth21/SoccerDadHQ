@@ -3,7 +3,7 @@ import Link from "next/link";
 import ListingManager from "@/components/ListingManager";
 import { getCurrentAdmin, adminServiceClient, hasServiceKey } from "@/lib/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { REGIONS } from "@/lib/regions";
+import { ALL_REGIONS } from "@/lib/regions";
 
 export const metadata: Metadata = { title: "Admin — Listings", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -38,7 +38,7 @@ export default async function AdminListingsPage() {
 
   const { data: listings, error } = await service.from("listings").select("*").order("name");
   const missingTable = error && (error.message?.includes("does not exist") || (error as any).code === "42P01");
-  const regions = REGIONS.map((r) => ({ key: r.key, name: r.name }));
+  const regions = ALL_REGIONS.map((r) => ({ key: r.key, name: r.name, state: r.state }));
 
   return (
     <>

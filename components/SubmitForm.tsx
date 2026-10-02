@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { REGIONS, FHSAA_CLASSES } from "@/lib/regions";
+import { FHSAA_CLASSES, regionsForState } from "@/lib/regions";
+import { US_STATES, hsAssociation } from "@/lib/states";
 
 const KINDS = [
   { value: "club", label: "Club" },
@@ -59,7 +60,7 @@ export default function SubmitForm({ presetKind }: { presetKind?: string }) {
   const locked = KINDS.find((k) => k.value === presetKind);
   const [user, setUser] = useState<{ email?: string } | null>(null);
   const [authReady, setAuthReady] = useState(!isSupabaseConfigured);
-  const [f, setF] = useState({ kind: locked?.value ?? "club", name: "", region: "", city: "", website: "", notes: "" });
+  const [f, setF] = useState({ kind: locked?.value ?? "club", name: "", state: "", region: "", city: "", website: "", notes: "" });
   const [d, setD] = useState<Record<string, any>>({ ...BLANK_DETAILS });
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
@@ -88,7 +89,7 @@ export default function SubmitForm({ presetKind }: { presetKind?: string }) {
       const res = await fetch("/api/submissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...f, details: d }),
+        body: JSON.stringify({ ...f, details: { ...d, state: f.state } }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not submit.");
@@ -116,6 +117,7 @@ export default function SubmitForm({ presetKind }: { presetKind?: string }) {
   }
 
   const kind = f.kind;
+  const regions = regionsForState(f.state);
   const GenderBoxes = ({ field }: { field: "genders" | "programs" }) => (
     <div className="mt-1 flex gap-4 text-sm">
       {["Boys", "Girls"].map((g) => (
@@ -146,14 +148,25 @@ export default function SubmitForm({ presetKind }: { presetKind?: string }) {
           <input required className="input" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} placeholder="e.g. Sunshine Soccer Club" />
         </div>
         <div>
-          <label className="label">Region</label>
-          <select required className="input" value={f.region} onChange={(e) => setF({ ...f, region: e.target.value })}>
+          <label className="label">State</label>
+          <select required className="input" value={f.state} onChange={(e) => setF({ ...f, state: e.target.value, region: "" })}>
             <option value="">Select…</option>
-            {REGIONS.map((r) => (
-              <option key={r.key} value={r.key}>{r.name}</option>
+            {US_STATES.map((s) => (
+              <option key={s.code} value={s.code}>{s.name}</option>
             ))}
           </select>
         </div>
+        {regions.length > 0 && (
+          <div>
+            <label className="label">Region</label>
+            <select required className="input" value={f.region} onChange={(e) => setF({ ...f, region: e.target.value })}>
+              <option value="">Select…</option>
+              {regions.map((r) => (
+                <option key={r.key} value={r.key}>{r.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="label">City</label>
           <input required className="input" value={f.city} onChange={(e) => setF({ ...f, city: e.target.value })} />
@@ -216,13 +229,17 @@ export default function SubmitForm({ presetKind }: { presetKind?: string }) {
                 </select>
               </div>
               <div>
-                <label className="label">FHSAA class</label>
-                <select className="input" value={d.fhsaa_class} onChange={(e) => setDetail("fhsaa_class", e.target.value)}>
-                  <option value="">Select…</option>
-                  {FHSAA_CLASSES.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
+                <label className="label">{f.state ? `${hsAssociation(f.state)} class` : "Class"}</label>
+                {f.state === "FL" ? (
+                  <select className="input" value={d.fhsaa_class} onChange={(e) => setDetail("fhsaa_class", e.target.value)}>
+                    <option value="">Select…</option>
+                    {FHSAA_CLASSES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input className="input" value={d.fhsaa_class} onChange={(e) => setDetail("fhsaa_class", e.target.value)} placeholder="e.g. Class 6A or Division I" />
+                )}
               </div>
               <div>
                 <label className="label">District</label>
