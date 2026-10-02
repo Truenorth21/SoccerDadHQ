@@ -2,7 +2,8 @@
 
 import { Fragment, useMemo, useState } from "react";
 import { NEWS_CATEGORIES } from "@/lib/news";
-import { REGIONS, regionName } from "@/lib/regions";
+import { regionName } from "@/lib/regions";
+import { US_STATES, stateName } from "@/lib/states";
 import { timeAgo } from "@/lib/utils";
 import type { NewsItem } from "@/lib/types";
 import AdSlot from "./AdSlot";
@@ -54,25 +55,26 @@ function Tag({ cat }: { cat: string }) {
 
 function editorialContext(item: NewsItem) {
   if (item.region) return `Why it matters locally: this story may affect families and programs in ${regionName(item.region)}.`;
+  if (item.state) return `Why it matters locally: this story may affect families and programs in ${stateName(item.state)}.`;
   if (item.category === "Recruiting") return "Parent lens: check eligibility, timing and the original source before making recruiting decisions.";
-  if (item.category === "High School") return "Florida family lens: confirm schedules, classifications and participation details with the school or FHSAA.";
+  if (item.category === "High School") return "Family lens: confirm schedules, classifications and participation details with the school or state association.";
   if (["ECNL", "MLS NEXT", "Girls Academy"].includes(item.category)) {
     return "Parent lens: useful context for families comparing pathways, showcases and national competition.";
   }
-  return "SoccerDadHQ context: selected for its relevance to Florida youth-soccer families; verify details with the original publisher.";
+  return "SoccerDadHQ context: selected for its relevance to youth-soccer families; verify details with the original publisher.";
 }
 
 export default function NewsFeed({ items }: { items: NewsItem[] }) {
   const [cat, setCat] = useState<string>("All");
-  const [region, setRegion] = useState<string>("");
+  const [state, setState] = useState<string>("");
 
   const filtered = useMemo(() => {
     return items.filter((i) => {
       const catOk = cat === "All" || i.category === cat;
-      const regionOk = !region || i.region === region;
-      return catOk && regionOk;
+      const stateOk = !state || i.state === state;
+      return catOk && stateOk;
     });
-  }, [items, cat, region]);
+  }, [items, cat, state]);
 
   // Distinct publishers present, for the "where this comes from" strip.
   const sources = useMemo(
@@ -82,7 +84,7 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
 
   // Newest story age, for the recency notice.
   const newest = items[0]?.published;
-  const regionTagged = items.filter((i) => i.region).length;
+  const stateTagged = items.filter((i) => i.state).length;
 
   return (
     <div>
@@ -106,31 +108,32 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
         </div>
       </div>
 
-      {/* Region filter */}
+      {/* State filter */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <label className="font-heading text-sm font-semibold uppercase tracking-wide text-slate-500">
-          Region
+        <label htmlFor="news-state" className="font-heading text-sm font-semibold uppercase tracking-wide text-slate-500">
+          State
         </label>
         <select
-          value={region}
-          onChange={(e) => setRegion(e.target.value)}
+          id="news-state"
+          value={state}
+          onChange={(e) => setState(e.target.value)}
           className="input max-w-[260px]"
         >
-          <option value="">All of Florida + national</option>
-          {REGIONS.map((r) => (
-            <option key={r.key} value={r.key}>{r.name}</option>
+          <option value="">National + all states</option>
+          {US_STATES.map((s) => (
+            <option key={s.code} value={s.code}>{s.name}</option>
           ))}
         </select>
-        {region && (
+        {state && (
           <span className="text-xs text-slate-500">
-            Showing stories that mention {regionName(region)}.
-            <button onClick={() => setRegion("")} className="ml-1 font-semibold text-brand-sky hover:underline">
+            Showing stories that mention {stateName(state)}.
+            <button onClick={() => setState("")} className="ml-1 font-semibold text-brand-sky hover:underline">
               Clear
             </button>
           </span>
         )}
-        {!region && (
-          <span className="text-xs text-slate-400">{regionTagged} stories tagged to a Florida region</span>
+        {!state && (
+          <span className="text-xs text-slate-400">{stateTagged} stories tagged to a state</span>
         )}
       </div>
 
@@ -151,10 +154,10 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
 
       {filtered.length === 0 ? (
         <div className="rounded-lg bg-white p-8 text-center text-slate-500 ring-1 ring-slate-100">
-          {region ? (
+          {state ? (
             <>
-              No <strong>{cat === "All" ? "" : `${cat} `}</strong>stories mention {regionName(region)} right now.
-              National coverage isn't always region-specific — try clearing the region filter.
+              No <strong>{cat === "All" ? "" : `${cat} `}</strong>stories mention {stateName(state)} right now.
+              National coverage isn't always state-specific — try clearing the state filter.
             </>
           ) : (
             "No stories in this category right now."
@@ -180,9 +183,9 @@ export default function NewsFeed({ items }: { items: NewsItem[] }) {
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Tag cat={item.category} />
-                    {item.region && (
+                    {(item.region || item.state) && (
                       <span className="inline-flex rounded-full bg-navy/5 px-2 py-0.5 text-xs font-semibold text-navy ring-1 ring-navy/10">
-                        📍 {regionName(item.region)}
+                        📍 {item.region ? `${regionName(item.region)}${item.state && item.state !== "FL" ? `, ${item.state}` : ""}` : stateName(item.state)}
                       </span>
                     )}
                   </div>

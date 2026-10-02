@@ -21,20 +21,27 @@ import { getLogo } from "@/lib/logos";
 import { slugify } from "@/lib/seed";
 import { COACH_REVIEW_CATEGORIES, regionName } from "@/lib/regions";
 import { SITE_URL } from "@/lib/utils";
+import { stateName, stateBySlug, US_STATES } from "@/lib/states";
+import { StateCoachesLanding } from "@/components/StateLanding";
+import { seoCopy, seoMetadata } from "@/lib/seo";
 
 export const revalidate = 3600;
 
 // Pre-render real imported coaches too (seed + DB), not just seed.
+// This segment also serves the /coaches/[state] SEO pages (state slugs win).
 export async function generateStaticParams() {
-  return (await loadCoaches()).map((c) => ({ slug: c.slug }));
+  const coaches = (await loadCoaches()).map((c) => ({ slug: c.slug }));
+  return [...US_STATES.map((s) => ({ slug: s.slug })), ...coaches];
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const state = stateBySlug(params.slug);
+  if (state) return seoMetadata(seoCopy.coachesState(state));
   const coach = await getCoachBySlug(params.slug);
   if (!coach) return { title: "Coach not found" };
   const title = `${coach.name} — ${coach.title}, ${coach.club_name}`;
   const ratingBit = coach.review_count > 0 ? `${coach.rating.toFixed(1)}★ from ${coach.review_count} reviews. ` : "";
-  const description = `${coach.name}, ${coach.title} at ${coach.club_name} (${coach.city}, FL). ${ratingBit}${coach.specialties.join(", ")}.`;
+  const description = `${coach.name}, ${coach.title} at ${coach.club_name} (${coach.city}, ${coach.state}). ${ratingBit}${coach.specialties.join(", ")}.`;
   return {
     title,
     description,
@@ -44,6 +51,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function CoachProfile({ params }: { params: { slug: string } }) {
+  const state = stateBySlug(params.slug);
+  if (state) return <StateCoachesLanding state={state} />;
+
   const coach = await getCoachBySlug(params.slug);
   if (!coach) notFound();
 
@@ -113,7 +123,7 @@ export default async function CoachProfile({ params }: { params: { slug: string 
                   coach.club_name
                 )}
               </p>
-              <p className="text-sm text-slate-500">{coach.city}, FL · {regionName(coach.region)}</p>
+              <p className="text-sm text-slate-500">{coach.city}, {coach.state}{coach.region ? ` · ${regionName(coach.region)}` : ""}</p>
               <div className="mt-2 flex flex-wrap items-center gap-4">
                 <RatingBadge value={coach.rating} count={reviews.length} />
                 <ShareButtons path={`/coaches/${coach.slug}`} title={`${coach.name} — ${coach.title}, SoccerDadHQ`} />
@@ -202,7 +212,7 @@ export default async function CoachProfile({ params }: { params: { slug: string 
                 profileUrl={`${SITE_URL}/coaches/${coach.slug}`}
                 period={rankingPeriod}
                 categoryLabel="Coaches"
-                regionName={regionName(coach.region)}
+                regionName={coach.region ? regionName(coach.region) : stateName(coach.state)}
                 rank={rankInfo.rank}
                 regionRank={rankInfo.regionRank}
                 regionTotal={rankInfo.regionTotal}
@@ -211,7 +221,7 @@ export default async function CoachProfile({ params }: { params: { slug: string 
             )}
             <RankingVote itemId={coach.id} itemName={coach.name} period={rankingPeriod} category="coaches" profileUrl={`${SITE_URL}/coaches/${coach.slug}`} />
             <ContactForm recipient={coach.name} subjectType="coach" subjectSlug={coach.slug} subjectName={coach.name} />
-            <TryoutAlertSignup region={coach.region} regionName={regionName(coach.region)} />
+            <TryoutAlertSignup region={coach.region} state={coach.state} regionName={coach.region ? regionName(coach.region) : stateName(coach.state)} />
             {club && (
               <div className="card p-5">
                 <h3 className="mb-2 font-heading text-lg font-bold uppercase text-navy">Club</h3>
@@ -219,7 +229,7 @@ export default async function CoachProfile({ params }: { params: { slug: string 
                   <Crest name={club.name} color={club.logo_color} size="sm" />
                   <div>
                     <p className="font-heading font-bold text-navy">{club.name}</p>
-                    <p className="text-xs text-slate-500">{club.city}, FL</p>
+                    <p className="text-xs text-slate-500">{club.city}, {club.state}</p>
                   </div>
                 </Link>
               </div>

@@ -109,7 +109,7 @@ const INVENTORY: Ad[] = [
     id: "ad-gear-affiliate",
     advertiser: "Soccer Gear",
     headline: "Cleats, balls & team kits",
-    body: "Shop the latest boots and training gear — fast shipping for Florida families.",
+    body: "Shop the latest boots and training gear — fast shipping nationwide.",
     cta: "Shop now",
     href: "https://www.example.com/?ref=soccerdadhq", // replace with your affiliate link
     color: "#9b2d2d",
@@ -122,8 +122,8 @@ const HOUSE: Record<AdPlacement, Ad> = {
   "home-banner": {
     id: "house-home",
     advertiser: "SoccerDadHQ",
-    headline: "Put your club in front of Florida soccer families",
-    body: "Featured placement, profile upgrades and newsletter sponsorships in front of Florida soccer families.",
+    headline: "Put your club in front of youth soccer families",
+    body: "Featured placement, profile upgrades and newsletter sponsorships in front of youth soccer families nationwide.",
     cta: "Advertise with us",
     href: "/advertise",
     color: "#1a4fa0",
@@ -186,9 +186,9 @@ const HOUSE: Record<AdPlacement, Ad> = {
  *  the pure content promos. */
 const SELF_PROMOS: { weight: number; ad: Ad }[] = [
   { weight: 3, ad: { id: "promo-claim", advertiser: "SoccerDadHQ", headline: "Is this your profile?", body: "Claim it to respond to reviews, manage your info and showcase commitments.", cta: "Claim & upgrade", href: "/advertise", color: "#1a4fa0", house: true } },
-  { weight: 2, ad: { id: "promo-advertise", advertiser: "SoccerDadHQ", headline: "Advertise to soccer families", body: "Get in front of Florida soccer families with featured placement & sponsorships.", cta: "Advertise with us", href: "/advertise", color: "#0a1628", house: true } },
+  { weight: 2, ad: { id: "promo-advertise", advertiser: "SoccerDadHQ", headline: "Advertise to soccer families", body: "Get in front of youth soccer families with featured placement & sponsorships.", cta: "Advertise with us", href: "/advertise", color: "#0a1628", house: true } },
   { weight: 2, ad: { id: "promo-sideline", advertiser: "The Sideline", headline: "Get the weekly Sideline", body: "Tryout alerts, ranking shifts & recruiting news for your region — free.", cta: "Subscribe free", href: "/#newsletter", color: "#e8a020", house: true } },
-  { weight: 1, ad: { id: "promo-rankings", advertiser: "SoccerDadHQ", headline: "Vote in the rankings", body: "Who are Florida's top clubs, coaches and teams? Cast your vote this month.", cta: "See rankings", href: "/rankings", color: "#5a2d82", house: true } },
+  { weight: 1, ad: { id: "promo-rankings", advertiser: "SoccerDadHQ", headline: "Vote in the rankings", body: "Who are the top clubs, coaches and teams in your state? Cast your vote this month.", cta: "See rankings", href: "/rankings", color: "#5a2d82", house: true } },
   { weight: 1, ad: { id: "promo-commits", advertiser: "SoccerDadHQ", headline: "Where do players go?", body: "College, pro & national-team commitments from Florida programs.", cta: "Commitment tracker", href: "/commitments", color: "#1d7a4d", house: true } },
 ];
 

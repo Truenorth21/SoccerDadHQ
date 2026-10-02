@@ -2,7 +2,10 @@
  * Generates supabase/seed.sql from the canonical seed data in lib/seed.ts
  * so the database seed always matches what the app ships with.
  *
- *   npx tsx scripts/gen-seed-sql.ts
+ *   npx tsx scripts/gen-seed-sql.ts              → supabase/seed.sql (everything)
+ *   npx tsx scripts/gen-seed-sql.ts --national   → supabase/national-clubs-seed.sql
+ *                                                  (non-Florida clubs + coaches only, for
+ *                                                  databases that already hold the Florida seed)
  */
 import { writeFileSync } from "node:fs";
 import { CLUBS, COACHES, TRYOUTS } from "../lib/seed";
@@ -22,16 +25,28 @@ function n(v: number | undefined): string {
   return v === undefined ? "null" : String(v);
 }
 
+const national = process.argv.includes("--national");
+const clubs = national ? CLUBS.filter((c) => c.state !== "FL") : CLUBS;
+const coaches = national ? COACHES.filter((c) => c.state !== "FL") : COACHES;
+// The national file skips rows that collide on id OR slug (e.g. a club an admin
+// already imported by CSV), so it never overwrites live data.
+const onConflict = national ? "on conflict do nothing" : "on conflict (id) do nothing";
+
 const lines: string[] = [];
 lines.push("-- ============================================================");
-lines.push("--  SoccerDadHQ — seed data (generated from lib/seed.ts)");
-lines.push("--  Run AFTER schema.sql.");
+if (national) {
+  lines.push("--  SoccerDadHQ — national expansion seed (generated from lib/seedNational.ts)");
+  lines.push("--  Run AFTER national-expansion-migration.sql. Safe to re-run.");
+} else {
+  lines.push("--  SoccerDadHQ — seed data (generated from lib/seed.ts)");
+  lines.push("--  Run AFTER schema.sql.");
+}
 lines.push("-- ============================================================");
 lines.push("");
 
 // Clubs
 lines.push("-- Clubs --------------------------------------------------------");
-for (const c of CLUBS) {
+for (const c of clubs) {
   lines.push(
     `insert into public.clubs (id, slug, name, region, city, state, zip, lat, lng, founded, description, logo_color, website, email, phone, instagram, facebook, twitter, leagues, age_groups, genders, tryouts_open, tryout_note, claimed, verified, featured, plan) values (` +
       [
@@ -41,26 +56,32 @@ for (const c of CLUBS) {
         arr(c.leagues), arr(c.age_groups), arr(c.genders), b(c.tryouts_open),
         s(c.tryout_note), b(c.claimed), b(c.verified), b(c.featured), s(c.plan),
       ].join(", ") +
-      `) on conflict (id) do nothing;`
+      `) ${onConflict};`
   );
 }
 lines.push("");
 
 // Coaches
 lines.push("-- Coaches ------------------------------------------------------");
-for (const c of COACHES) {
+for (const c of coaches) {
   lines.push(
-    `insert into public.coaches (id, slug, name, region, city, club_id, club_name, title, bio, photo_color, certifications, specialties, age_groups, genders, private_training, private_training_note, email, phone, featured, plan) values (` +
+    `insert into public.coaches (id, slug, name, region, city, state, club_id, club_name, title, bio, photo_color, certifications, specialties, age_groups, genders, private_training, private_training_note, email, phone, featured, plan) values (` +
       [
-        s(c.id), s(c.slug), s(c.name), s(c.region), s(c.city), s(c.club_id ?? null),
+        s(c.id), s(c.slug), s(c.name), s(c.region), s(c.city), s(c.state), s(c.club_id ?? null),
         s(c.club_name), s(c.title), s(c.bio), s(c.photo_color), arr(c.certifications),
         arr(c.specialties), arr(c.age_groups), arr(c.genders), b(c.private_training),
         s(c.private_training_note), s(c.email), s(c.phone), b(c.featured), s(c.plan),
       ].join(", ") +
-      `) on conflict (id) do nothing;`
+      `) ${onConflict};`
   );
 }
 lines.push("");
+
+if (national) {
+  writeFileSync(new URL("../supabase/national-clubs-seed.sql", import.meta.url), lines.join("\n") + "\n");
+  console.log(`Wrote supabase/national-clubs-seed.sql — ${clubs.length} clubs, ${coaches.length} coaches.`);
+  process.exit(0);
+}
 
 // Schools
 lines.push("-- Schools ------------------------------------------------------");

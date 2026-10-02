@@ -8,11 +8,13 @@ import AddListingCTA from "@/components/AddListingCTA";
 import AdSlot from "@/components/AdSlot";
 import { getClubs, loadClubs, type ClubFilters as Filters } from "@/lib/data";
 import { regionName } from "@/lib/regions";
+import { stateName } from "@/lib/states";
 
 export const metadata: Metadata = {
-  title: "Florida Youth Soccer Club Directory",
+  title: "Youth Soccer Club Directory — All 50 States",
   description:
-    "Search and compare youth soccer clubs across Florida by region, league, age group, gender and location. Read parent reviews and find open tryouts.",
+    "Search and compare youth soccer clubs nationwide by state, region, league, age group, gender and location. Read parent reviews and find open tryouts.",
+  alternates: { canonical: "/clubs" },
 };
 
 export default async function ClubsPage({
@@ -29,7 +31,9 @@ export default async function ClubsPage({
 
   const heading = filters.region
     ? `${regionName(filters.region)} Clubs`
-    : "Florida Youth Soccer Clubs";
+    : filters.state
+      ? `${stateName(filters.state)} Youth Soccer Clubs`
+      : "Youth Soccer Clubs";
 
   return (
     <>
@@ -38,7 +42,7 @@ export default async function ClubsPage({
           <div>
             <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">{heading}</h1>
             <p className="mt-1 text-slate-300">
-              {clubs.length} club{clubs.length === 1 ? "" : "s"} · search, filter and compare programs across the state
+              {clubs.length} club{clubs.length === 1 ? "" : "s"} · search, filter and compare programs {filters.state ? `across ${stateName(filters.state)}` : "in all 50 states"}
             </p>
           </div>
           <Link href="/submit?kind=club" className="btn-amber shrink-0 whitespace-nowrap">+ Add a club</Link>

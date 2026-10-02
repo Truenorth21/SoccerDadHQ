@@ -3,7 +3,7 @@ import Link from "next/link";
 import { getPricing, CLAIM_TIERS } from "@/lib/pricing";
 
 export const metadata: Metadata = {
-  title: "Advertise & Upgrade — Reach Florida Soccer Families",
+  title: "Advertise & Upgrade — Reach Youth Soccer Families Nationwide",
   description:
     "Advertise on SoccerDadHQ or upgrade your club, school, training center or coach profile. Featured placement, review responses, lead capture, analytics and newsletter sponsorships.",
 };
@@ -31,10 +31,10 @@ export default async function AdvertisePage() {
         <div className="container-page py-16 sm:py-20">
           <span className="chip bg-white/10 text-amber-300 ring-1 ring-white/20">For clubs, schools, academies & businesses</span>
           <h1 className="mt-4 max-w-3xl font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight sm:text-5xl">
-            Reach Florida soccer families where they're already looking
+            Reach youth soccer families where they're already looking
           </h1>
           <p className="mt-4 max-w-2xl text-lg text-slate-200">
-            SoccerDadHQ is where Florida families compare clubs, schools and coaches — all in one place.
+            SoccerDadHQ is where families nationwide compare clubs, schools and coaches — all in one place.
             Upgrade your profile or run an ad to put your program in front of them.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
@@ -123,7 +123,7 @@ export default async function AdvertisePage() {
           <div className="mx-auto mt-4 max-w-2xl rounded-xl bg-white p-4 text-center text-sm text-slate-600 ring-1 ring-slate-200">
             <p>
               <strong className="text-navy">Monthly packages are slot sponsorships</strong> — you own the
-              placement for the month (no impression minimums). We&rsquo;re a growing Florida youth-soccer
+              placement for the month (no impression minimums). We&rsquo;re a growing national youth-soccer
               site, so we offer <strong className="text-navy">founding-advertiser rates</strong> and send you
               <strong className="text-navy"> real impression &amp; click numbers</strong> each month.
             </p>

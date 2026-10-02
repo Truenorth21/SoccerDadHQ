@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveLocation } from "@/lib/regions";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
@@ -23,9 +24,11 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
-  if (!b.name?.trim() || !b.region) {
-    return NextResponse.json({ error: "Name and region are required." }, { status: 400 });
+  if (!b.name?.trim()) {
+    return NextResponse.json({ error: "Name is required." }, { status: 400 });
   }
+  const loc = resolveLocation(b.state, b.region);
+  if ("error" in loc) return NextResponse.json({ error: `Location: ${loc.error}.` }, { status: 400 });
 
   const slug = (b.slug?.trim() || slugify(b.name)).toLowerCase();
   const id = b.id || `co-${slug}`;
@@ -34,7 +37,8 @@ export async function POST(request: Request) {
     id,
     slug,
     name: b.name.trim(),
-    region: b.region,
+    region: loc.region,
+    state: loc.state,
     city: b.city || null,
     club_name: b.club_name || null,
     title: b.title || null,

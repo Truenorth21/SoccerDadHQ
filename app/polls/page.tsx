@@ -3,9 +3,9 @@ import PollsHub from "@/components/PollsHub";
 import { POLLS } from "@/lib/funPolls";
 
 export const metadata: Metadata = {
-  title: "Florida Soccer Parent Polls & Results — Parent Pulse",
+  title: "Soccer Parent Polls & Results — Parent Pulse",
   description:
-    "Vote in every SoccerDadHQ poll and see how Florida youth soccer families answered — from sideline life to the serious questions about club costs, coaching and the recruiting grind.",
+    "Vote in every SoccerDadHQ poll and see how youth soccer families answered — from sideline life to the serious questions about club costs, coaching and the recruiting grind.",
 };
 
 // Per-request so "this month so far" is always current (the poll-of-the-day rotates daily).
@@ -40,7 +40,7 @@ export default function PollsPage() {
         <div className="container-page">
           <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">Polls &amp; Results</h1>
           <p className="mt-1 max-w-2xl text-slate-300">
-            How Florida soccer families really answer — the fun ones and the ones that matter. A new poll is
+            How soccer families really answer — the fun ones and the ones that matter. A new poll is
             featured on the homepage each day; vote here anytime and watch the results.
           </p>
         </div>

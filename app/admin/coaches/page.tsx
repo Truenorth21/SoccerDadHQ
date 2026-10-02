@@ -3,7 +3,7 @@ import Link from "next/link";
 import CoachManager from "@/components/CoachManager";
 import { getCurrentAdmin, adminServiceClient, hasServiceKey } from "@/lib/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { REGIONS } from "@/lib/regions";
+import { ALL_REGIONS } from "@/lib/regions";
 
 export const metadata: Metadata = { title: "Admin — Coaches", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -33,7 +33,7 @@ export default async function AdminCoachesPage() {
   if (!service || !hasServiceKey) return <Notice title="Service key required">Add <code>SUPABASE_SERVICE_ROLE_KEY</code> to manage coaches.</Notice>;
 
   const { data: coaches } = await service.from("coaches").select("*").order("name");
-  const regions = REGIONS.map((r) => ({ key: r.key, name: r.name }));
+  const regions = ALL_REGIONS.map((r) => ({ key: r.key, name: `${r.state} · ${r.name}` }));
 
   return (
     <>

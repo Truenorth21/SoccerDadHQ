@@ -3,7 +3,7 @@ import SubmitForm from "@/components/SubmitForm";
 
 export const metadata: Metadata = {
   title: "Submit a Listing",
-  description: "Know a Florida club, school, coach, training center, facility, tournament or camp that's missing? Submit it and we'll add it to the directory.",
+  description: "Know a youth soccer club, school, coach, training center, facility, tournament or camp that's missing? Submit it and we'll add it to the directory.",
 };
 
 const KIND_LABELS: Record<string, { noun: string; blurb: string }> = {

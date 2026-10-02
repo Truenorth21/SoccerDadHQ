@@ -15,7 +15,9 @@ import { publicClient } from "./supabase/public";
 
 export interface ClubFilters {
   q?: string;
+  state?: string; // two-letter code
   region?: string;
+  city?: string;
   league?: string;
   gender?: string;
   age?: string;
@@ -61,7 +63,7 @@ function dbRowToClub(r: Record<string, any>): Club {
     id: String(r.id),
     slug: r.slug,
     name: r.name,
-    region: r.region as RegionKey,
+    region: (r.region ?? "") as RegionKey,
     city: r.city,
     state: r.state ?? "FL",
     zip: r.zip ?? "",
@@ -176,7 +178,15 @@ export async function getClubs(filters: ClubFilters = {}): Promise<(Club & { dis
         c.leagues.some((l) => l.toLowerCase().includes(q))
     );
   }
+  if (filters.state) {
+    const st = filters.state.toUpperCase();
+    results = results.filter((c) => (c.state || "FL").toUpperCase() === st);
+  }
   if (filters.region) results = results.filter((c) => c.region === filters.region);
+  if (filters.city) {
+    const city = filters.city.trim().toLowerCase();
+    if (city) results = results.filter((c) => c.city.toLowerCase().includes(city));
+  }
   if (filters.league) results = results.filter((c) => c.leagues.includes(filters.league!));
   if (filters.gender) results = results.filter((c) => c.genders.includes(filters.gender!));
   if (filters.age) results = results.filter((c) => c.age_groups.includes(filters.age!));
@@ -311,7 +321,9 @@ export async function getNearbyClubs(club: Club, limit = 4): Promise<(Club & { d
 
 export interface CoachFilters {
   q?: string;
+  state?: string; // two-letter code
   region?: string;
+  city?: string;
   gender?: string;
   age?: string;
   private?: string;
@@ -327,8 +339,9 @@ function dbRowToCoach(r: Record<string, any>): Coach {
     id: String(r.id),
     slug: r.slug,
     name: r.name,
-    region: r.region as RegionKey,
+    region: (r.region ?? "") as RegionKey,
     city: r.city ?? "",
+    state: r.state ?? "FL",
     club_id: r.club_id ?? undefined,
     club_name: r.club_name ?? undefined,
     title: r.title ?? "",
@@ -379,7 +392,15 @@ export async function getCoaches(filters: CoachFilters = {}): Promise<Coach[]> {
         c.specialties.some((s) => s.toLowerCase().includes(q))
     );
   }
+  if (filters.state) {
+    const st = filters.state.toUpperCase();
+    results = results.filter((c) => (c.state || "FL").toUpperCase() === st);
+  }
   if (filters.region) results = results.filter((c) => c.region === filters.region);
+  if (filters.city) {
+    const city = filters.city.trim().toLowerCase();
+    if (city) results = results.filter((c) => c.city.toLowerCase().includes(city));
+  }
   if (filters.gender) results = results.filter((c) => c.genders.includes(filters.gender!));
   if (filters.age) results = results.filter((c) => c.age_groups.includes(filters.age!));
   if (filters.private === "1") results = results.filter((c) => c.private_training);
@@ -464,6 +485,7 @@ export async function getActiveTryouts(limit?: number): Promise<Tryout[]> {
       club_slug: row.slug,
       href: `${isSchool ? "/schools" : "/clubs"}/${row.slug}`,
       region: ent.region,
+      state: (ent as { state?: string }).state || "FL",
       city: ent.city,
       age_groups: isSchool ? "High school" : ages.length ? `${ages[0]}–${ages[ages.length - 1]}` : "",
       gender: genders.join(" & "),
@@ -503,7 +525,7 @@ function dbRowToSchool(r: Record<string, any>): School {
     id: String(r.id),
     slug: r.slug,
     name: r.name,
-    region: r.region as RegionKey,
+    region: (r.region ?? "") as RegionKey,
     city: r.city,
     state: r.state ?? "FL",
     zip: r.zip ?? "",

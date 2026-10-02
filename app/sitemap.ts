@@ -2,12 +2,14 @@ import type { MetadataRoute } from "next";
 import { loadListings, KIND_CONFIG } from "@/lib/listings";
 import { loadClubs, loadSchools, loadCoaches } from "@/lib/data";
 import { SITE_URL } from "@/lib/utils";
+import { US_STATES, stateByCode } from "@/lib/states";
+import { ALL_REGIONS } from "@/lib/regions";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const CLUBS = await loadClubs();
   const SCHOOLS = await loadSchools();
   const COACHES = await loadCoaches();
-  const staticRoutes = ["", "/clubs", "/schools", "/coaches", "/training-centers", "/facilities", "/tournaments", "/camps", "/commitments", "/rankings", "/news", "/polls", "/sideline", "/advertise", "/advertise/order", "/partners", "/privacy", "/terms", "/login"].map((path) => ({
+  const staticRoutes = ["", "/clubs", "/schools", "/coaches", "/training-centers", "/facilities", "/tournaments", "/camps", "/commitments", "/rankings", "/tryouts", "/news", "/polls", "/sideline", "/advertise", "/advertise/order", "/partners", "/privacy", "/terms", "/login"].map((path) => ({
     url: `${SITE_URL}${path}`,
     lastModified: new Date(Date.UTC(2026, 4, 31)),
     changeFrequency: "daily" as const,
@@ -42,5 +44,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...clubRoutes, ...coachRoutes, ...schoolRoutes, ...listingRoutes];
+  // Programmatic state / region SEO pages.
+  const statePaths = US_STATES.flatMap((st) => [
+    `/clubs/${st.slug}`,
+    `/coaches/${st.slug}`,
+    `/rankings/${st.slug}`,
+    `/tryouts/${st.slug}`,
+  ]);
+  const regionPaths = ALL_REGIONS.map((r) => `/clubs/${stateByCode(r.state)!.slug}/${r.slug}`);
+  const seoRoutes = [...statePaths, ...regionPaths].map((path) => ({
+    url: `${SITE_URL}${path}`,
+    lastModified: new Date(Date.UTC(2026, 9, 2)),
+    changeFrequency: "weekly" as const,
+    priority: 0.75,
+  }));
+
+  return [...staticRoutes, ...seoRoutes, ...clubRoutes, ...coachRoutes, ...schoolRoutes, ...listingRoutes];
 }

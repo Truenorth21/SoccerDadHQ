@@ -126,6 +126,7 @@ function SearchBox({ onSubmitted }: { onSubmitted?: () => void }) {
 const LINKS = [
   { href: "/news", label: "News" },
   { href: "/clubs", label: "Clubs" },
+  { href: "/tryouts", label: "Tryouts" },
   { href: "/schools", label: "Schools" },
   { href: "/coaches", label: "Coaches" },
   { href: "/rankings", label: "Rankings" },

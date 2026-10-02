@@ -6,7 +6,7 @@ import SoccerParentBingo from "@/components/SoccerParentBingo";
 export const metadata: Metadata = {
   title: "Sideline Life — Polls for Soccer Parents",
   description:
-    "Florida soccer parents weigh in: fun sideline polls mixed with the serious questions — what matters most, the real cost, what parents value. Vote, share, and see how the community answers.",
+    "Soccer parents weigh in: fun sideline polls mixed with the serious questions — what matters most, the real cost, what parents value. Vote, share, and see how the community answers.",
 };
 
 export default function SidelinePage() {

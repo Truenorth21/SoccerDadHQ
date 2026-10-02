@@ -5,12 +5,14 @@ export default function MapEmbed({
   label,
   zip,
   city,
+  state = "FL",
 }: {
   lat: number;
   lng: number;
   label: string;
   zip?: string;
   city?: string;
+  state?: string; // two-letter code
 }) {
   const d = 0.025; // ~1.7 mi bounding box around the point
   const bbox = `${lng - d}%2C${lat - d}%2C${lng + d}%2C${lat + d}`;
@@ -27,7 +29,7 @@ export default function MapEmbed({
       />
       <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5 text-sm">
         <span className="text-slate-500">
-          {city ? `${city}, FL` : "Florida"}
+          {city ? `${city}, ${state}` : state}
           {zip ? ` ${zip}` : ""}
         </span>
         <a

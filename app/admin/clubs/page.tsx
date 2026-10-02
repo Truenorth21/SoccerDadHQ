@@ -3,7 +3,7 @@ import Link from "next/link";
 import ClubManager from "@/components/ClubManager";
 import { getCurrentAdmin, adminServiceClient, hasServiceKey } from "@/lib/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { REGIONS } from "@/lib/regions";
+import { ALL_REGIONS } from "@/lib/regions";
 
 export const metadata: Metadata = { title: "Admin — Clubs", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export default async function AdminClubsPage() {
   }
 
   const { data: clubs } = await service.from("clubs").select("*").order("name");
-  const regions = REGIONS.map((r) => ({ key: r.key, name: r.name }));
+  const regions = ALL_REGIONS.map((r) => ({ key: r.key, name: `${r.state} · ${r.name}` }));
 
   return (
     <>

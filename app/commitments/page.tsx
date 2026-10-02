@@ -6,9 +6,9 @@ import ShareButtons from "@/components/ShareButtons";
 import { getCommitments } from "@/lib/data";
 
 export const metadata: Metadata = {
-  title: "Florida Soccer Commitment Tracker — College, Pro & National Team",
+  title: "Youth Soccer Commitment Tracker — College, Pro & National Team",
   description:
-    "Track college, pro and national-team commitments from Florida youth soccer clubs and high schools. See where players are going and which programs produce them.",
+    "Track college, pro and national-team commitments from youth soccer clubs and high schools. See where players are going and which programs produce them.",
 };
 
 export default function CommitmentsPage() {
@@ -27,7 +27,7 @@ export default function CommitmentsPage() {
             track record that shows which programs develop players to the next level.
           </p>
           <div className="mt-5">
-            <ShareButtons path="/commitments" title="Florida Soccer Commitment Tracker — SoccerDadHQ" />
+            <ShareButtons path="/commitments" title="Youth Soccer Commitment Tracker — SoccerDadHQ" />
           </div>
         </div>
       </section>

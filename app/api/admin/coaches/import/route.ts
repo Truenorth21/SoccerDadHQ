@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
-import { REGIONS } from "@/lib/regions";
+import { resolveLocation } from "@/lib/regions";
 
 export const dynamic = "force-dynamic";
 
@@ -27,13 +27,6 @@ function parseCSV(text: string): string[][] {
 const multi = (v: string) => (v ?? "").split(/[;|]/).map((x) => x.trim()).filter(Boolean);
 const bool = (v: string) => /^(1|true|yes|y)$/i.test((v ?? "").trim());
 
-const regionByKey = new Set<string>(REGIONS.map((r) => r.key));
-const regionByName = new Map<string, string>(REGIONS.map((r) => [r.name.toLowerCase(), r.key]));
-function resolveRegion(v: string): string | null {
-  const t = (v ?? "").trim();
-  if (regionByKey.has(t)) return t;
-  return regionByName.get(t.toLowerCase()) ?? null;
-}
 
 export async function POST(request: Request) {
   const admin = await getCurrentAdmin();
@@ -52,8 +45,8 @@ export async function POST(request: Request) {
 
   const header = grid[0].map((h) => h.trim().toLowerCase().replace(/\s+/g, "_"));
   const idx = (n: string) => header.indexOf(n);
-  if (idx("name") === -1 || idx("region") === -1) {
-    return NextResponse.json({ error: "CSV must include at least: name, region columns." }, { status: 400 });
+  if (idx("name") === -1 || (idx("region") === -1 && idx("state") === -1)) {
+    return NextResponse.json({ error: "CSV must include at least: name, and a state and/or region column." }, { status: 400 });
   }
   const get = (r: string[], c: string) => {
     const i = idx(c);
@@ -65,20 +58,20 @@ export async function POST(request: Request) {
   for (let n = 1; n < grid.length; n++) {
     const r = grid[n];
     const name = get(r, "name");
-    const regionRaw = get(r, "region");
-    if (!name || !regionRaw) {
-      errors.push(`Row ${n + 1}: missing name/region — skipped.`);
+    if (!name) {
+      errors.push(`Row ${n + 1}: missing name — skipped.`);
       continue;
     }
-    const region = resolveRegion(regionRaw);
-    if (!region) {
-      errors.push(`Row ${n + 1} ("${name}"): unknown region "${regionRaw}" — skipped.`);
+    const loc = resolveLocation(get(r, "state"), get(r, "region"));
+    if ("error" in loc) {
+      errors.push(`Row ${n + 1} ("${name}"): ${loc.error} — skipped.`);
       continue;
     }
+    const { state, region } = loc;
     const slug = get(r, "slug") ? slugify(get(r, "slug")) : slugify(name);
     const id = `co-${slug}`;
     byId.set(id, {
-      id, slug, name, region,
+      id, slug, name, region, state,
       city: get(r, "city") || null,
       club_name: get(r, "club_name") || null,
       title: get(r, "title") || null,

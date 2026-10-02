@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useState } from "react";
-import { REGIONS, GENDERS, AGE_GROUPS } from "@/lib/regions";
+import { GENDERS, AGE_GROUPS } from "@/lib/regions";
+import StateRegionFields from "./StateRegionFields";
 
 export default function CoachFilters({ hasRatings = false }: { hasRatings?: boolean }) {
   const router = useRouter();
@@ -44,15 +45,7 @@ export default function CoachFilters({ hasRatings = false }: { hasRatings?: bool
             onBlur={(e) => update({ q: e.target.value })}
           />
         </div>
-        <div>
-          <label className="label">Region</label>
-          <select className="input" value={get("region")} onChange={(e) => update({ region: e.target.value })}>
-            <option value="">All regions</option>
-            {REGIONS.map((r) => (
-              <option key={r.key} value={r.key}>{r.name}</option>
-            ))}
-          </select>
-        </div>
+        <StateRegionFields get={get} update={update} />
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="label">Gender</label>

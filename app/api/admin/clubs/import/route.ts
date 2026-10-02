@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
-import { REGIONS } from "@/lib/regions";
+import { resolveLocation } from "@/lib/regions";
 
 export const dynamic = "force-dynamic";
 
@@ -44,13 +44,6 @@ function parseCSV(text: string): string[][] {
 const multi = (v: string) => (v ?? "").split(/[;|]/).map((x) => x.trim()).filter(Boolean);
 const bool = (v: string) => /^(1|true|yes|y|open)$/i.test((v ?? "").trim());
 
-const regionByKey = new Set<string>(REGIONS.map((r) => r.key));
-const regionByName = new Map<string, string>(REGIONS.map((r) => [r.name.toLowerCase(), r.key]));
-function resolveRegion(v: string): string | null {
-  const t = (v ?? "").trim();
-  if (regionByKey.has(t)) return t;
-  return regionByName.get(t.toLowerCase()) ?? null;
-}
 
 export async function POST(request: Request) {
   const admin = await getCurrentAdmin();
@@ -71,8 +64,8 @@ export async function POST(request: Request) {
 
   const header = grid[0].map((h) => h.trim().toLowerCase().replace(/\s+/g, "_"));
   const idx = (name: string) => header.indexOf(name);
-  if (idx("name") === -1 || idx("region") === -1 || idx("city") === -1) {
-    return NextResponse.json({ error: "CSV must include at least: name, region, city columns." }, { status: 400 });
+  if (idx("name") === -1 || idx("city") === -1 || (idx("region") === -1 && idx("state") === -1)) {
+    return NextResponse.json({ error: "CSV must include at least: name, city, and a state and/or region column." }, { status: 400 });
   }
   const get = (r: string[], col: string) => {
     const i = idx(col);
@@ -86,16 +79,16 @@ export async function POST(request: Request) {
     const r = grid[n];
     const name = get(r, "name");
     const city = get(r, "city");
-    const regionRaw = get(r, "region");
-    if (!name || !city || !regionRaw) {
-      errors.push(`Row ${n + 1}: missing name/region/city — skipped.`);
+    if (!name || !city) {
+      errors.push(`Row ${n + 1}: missing name/city — skipped.`);
       continue;
     }
-    const region = resolveRegion(regionRaw);
-    if (!region) {
-      errors.push(`Row ${n + 1} ("${name}"): unknown region "${regionRaw}" — skipped.`);
+    const loc = resolveLocation(get(r, "state"), get(r, "region"));
+    if ("error" in loc) {
+      errors.push(`Row ${n + 1} ("${name}"): ${loc.error} — skipped.`);
       continue;
     }
+    const { state, region } = loc;
     const slug = get(r, "slug") ? slugify(get(r, "slug")) : slugify(name);
     const id = `c-${slug}`;
     byId.set(id, {
@@ -104,7 +97,7 @@ export async function POST(request: Request) {
       name,
       region,
       city,
-      state: "FL",
+      state,
       zip: get(r, "zip") || null,
       lat: get(r, "lat") ? Number(get(r, "lat")) : null,
       lng: get(r, "lng") ? Number(get(r, "lng")) : null,

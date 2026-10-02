@@ -1,6 +1,6 @@
 # SoccerDadHQ.com
 
-The home base for Florida youth soccer families — a media, directory, reviews, rankings and
+The home base for youth soccer families in all 50 states — a media, directory, reviews, rankings and
 community platform built with **Next.js 14 (App Router)**, **Tailwind CSS** and **Supabase**.
 
 > Runs out of the box with zero configuration. The full club/coach directory, reviews, rankings,
@@ -21,7 +21,8 @@ community platform built with **Next.js 14 (App Router)**, **Tailwind CSS** and 
 - **Coach Directory & Profiles** — bio, certifications, specialties, age groups, private-training info,
   club affiliation, six-category reviews (Communication, Development, Personality, Fairness, Game
   Management, Overall Impact), and a contact form.
-- **News Aggregator** — pulls live RSS from SoccerWire, TopDrawerSoccer, MLSsoccer.com and U.S. Soccer,
+- **News Aggregator** — pulls live RSS for national sources (Top Drawer Soccer, College Soccer News,
+  Soccer America, ECNL, SoccerWire) alongside Florida-focused feeds, tags stories by state,
   auto-categorizes (ECNL, MLS NEXT, Girls Academy, Girls/Boys Soccer, Recruiting, Tournaments, Parent
   Life, Opinion), shows the source, and links out to the original article. Falls back to editorial
   content if feeds are unreachable.
@@ -49,6 +50,21 @@ npm run dev
 ```
 
 That's it — the site is fully browsable with seed data.
+
+## National coverage (states & regions)
+
+- Every club, coach and newsletter subscriber has a two-letter `state`. `lib/states.ts` holds all
+  50 states; `lib/regions.ts` holds Florida's nine regions plus predefined regions for TX, GA, NC,
+  SC, TN, CA, NY, NJ, VA and IL. States without regions are searched by city / ZIP.
+- Region keys outside Florida are prefixed with the state code (`tx-dfw`, `nc-triangle`).
+- National seed clubs (30 each in TX, GA, NC, SC, TN) live in `lib/seedNational.ts`.
+- Programmatic SEO pages: `/clubs/[state]`, `/clubs/[state]/[region]`, `/coaches/[state]`,
+  `/rankings/[state]`, `/tryouts/[state]` (all in the sitemap).
+
+**Upgrading an existing database:** in the Supabase SQL editor run
+`supabase/national-expansion-migration.sql` (adds `state`, tags existing rows `FL`), then
+`supabase/national-clubs-seed.sql` (the 150 national clubs + coaches). Regenerate that seed with
+`npx tsx scripts/gen-seed-sql.ts --national`.
 
 ## Connecting Supabase (optional, for auth + persistence)
 

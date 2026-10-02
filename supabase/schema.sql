@@ -51,9 +51,9 @@ create table if not exists public.clubs (
   id           text primary key,
   slug         text unique not null,
   name         text not null,
-  region       text not null,
+  region       text,                          -- null for states without predefined regions
   city         text not null,
-  state        text not null default 'FL',
+  state        text not null default 'FL' check (state ~ '^[A-Z]{2}$'),
   zip          text,
   lat          double precision,
   lng          double precision,
@@ -80,6 +80,8 @@ create table if not exists public.clubs (
 );
 
 create index if not exists clubs_region_idx on public.clubs (region);
+create index if not exists clubs_state_idx on public.clubs (state);
+create index if not exists clubs_state_region_idx on public.clubs (state, region);
 create index if not exists clubs_tryouts_idx on public.clubs (tryouts_open);
 
 -- ============================================================
@@ -89,8 +91,9 @@ create table if not exists public.coaches (
   id                    text primary key,
   slug                  text unique not null,
   name                  text not null,
-  region                text not null,
+  region                text,                 -- null for states without predefined regions
   city                  text,
+  state                 text not null default 'FL' check (state ~ '^[A-Z]{2}$'),
   club_id               text references public.clubs(id) on delete set null,
   club_name             text,
   title                 text,
@@ -110,6 +113,8 @@ create table if not exists public.coaches (
 );
 
 create index if not exists coaches_region_idx on public.coaches (region);
+create index if not exists coaches_state_idx on public.coaches (state);
+create index if not exists coaches_state_region_idx on public.coaches (state, region);
 create index if not exists coaches_club_idx on public.coaches (club_id);
 
 -- ============================================================
@@ -409,6 +414,7 @@ create table if not exists public.site_config (
 create table if not exists public.newsletter_subscribers (
   id           uuid primary key default gen_random_uuid(),
   email        text unique not null,
+  state        text check (state is null or state ~ '^[A-Z]{2}$'),
   region       text,
   unsubscribed boolean not null default false,
   created_at   timestamptz not null default now()

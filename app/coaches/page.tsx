@@ -7,11 +7,14 @@ import ActiveFilters from "@/components/ActiveFilters";
 import AddListingCTA from "@/components/AddListingCTA";
 import AdSlot from "@/components/AdSlot";
 import { getCoaches, loadCoaches, type CoachFilters as Filters } from "@/lib/data";
+import { regionName } from "@/lib/regions";
+import { stateName } from "@/lib/states";
 
 export const metadata: Metadata = {
-  title: "Florida Youth Soccer Coach Directory",
+  title: "Youth Soccer Coach Directory — All 50 States",
   description:
-    "Find and review youth soccer coaches and private trainers across Florida. Filter by region, age group, gender and private-training availability.",
+    "Find and review youth soccer coaches and private trainers nationwide. Filter by state, region, age group, gender and private-training availability.",
+  alternates: { canonical: "/coaches" },
 };
 
 export default async function CoachesPage({
@@ -31,7 +34,11 @@ export default async function CoachesPage({
         <div className="container-page flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">
-              Florida Soccer Coaches
+              {filters.region
+                ? `${regionName(filters.region)} Coaches`
+                : filters.state
+                  ? `${stateName(filters.state)} Soccer Coaches`
+                  : "Youth Soccer Coaches"}
             </h1>
             <p className="mt-1 text-slate-300">
               {coaches.length} coaches · directors, head coaches and private trainers, reviewed by parents

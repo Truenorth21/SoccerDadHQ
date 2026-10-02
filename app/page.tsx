@@ -11,7 +11,8 @@ import TryoutTicker from "@/components/TryoutTicker";
 import SidelineToday from "@/components/SidelineToday";
 import { getNews } from "@/lib/news";
 import { getRankings } from "@/lib/rankings";
-import { REGIONS } from "@/lib/regions";
+import { STATES_WITH_REGIONS, regionsForState } from "@/lib/regions";
+import { stateByCode } from "@/lib/states";
 import type { RankingItem } from "@/lib/types";
 import WelcomeGuide from "@/components/WelcomeGuide";
 
@@ -21,10 +22,11 @@ export default async function HomePage() {
   const featured = await getFeaturedClubs(6);
   const featuredSchools = await getFeaturedSchools(3);
   // Real, live counts (seed + imported) so the hero stats match the directories.
-  const [clubCount, schoolCount, coachCount] = await Promise.all([
+  const [clubCount, schoolCount, coachCount, stateCount] = await Promise.all([
     loadClubs().then((a) => a.length),
     loadSchools().then((a) => a.length),
     loadCoaches().then((a) => a.length),
+    loadClubs().then((a) => new Set(a.map((c) => c.state)).size),
   ]);
   const tryouts = await getActiveTryouts(12);
   const news = (await getNews()).slice(0, 7);
@@ -43,7 +45,6 @@ export default async function HomePage() {
   // Data for the "Sideline Today" daily snapshot rail.
   const hubTryouts = await getActiveTryouts(60);
   const hubCommits = getRecentCommitments(40);
-  const hubRegions = REGIONS.map((r) => ({ key: r.key, name: r.name }));
 
   return (
     <>
@@ -56,12 +57,11 @@ export default async function HomePage() {
         <div className="container-page relative grid items-center gap-10 py-12 sm:py-14 lg:grid-cols-[1fr_340px]">
           <div>
             <h1 className="font-heading text-4xl font-bold uppercase leading-[1.05] tracking-tight sm:text-6xl">
-              Find the right club.<br />
-              <span className="text-brand-amber">Know the coach.</span> Skip the guesswork.
+              Youth Soccer News, <span className="text-brand-amber">Tryouts</span> &amp; Club Discovery
             </h1>
             <p className="mt-4 max-w-2xl text-lg text-slate-200">
               Directories, real parent reviews, community rankings and the news that matters —
-              for every Florida youth soccer family, from Miami to the Panhandle.
+              for youth soccer families in all 50 states. Pick your state to get started.
             </p>
             <div className="mt-5 flex flex-wrap items-center gap-3">
               <Link href="/login?next=/dashboard" className="btn-amber">
@@ -85,7 +85,7 @@ export default async function HomePage() {
                 { n: `${clubCount}`, l: "Clubs listed" },
                 { n: `${schoolCount}`, l: "High schools" },
                 { n: `${coachCount}`, l: "Coaches profiled" },
-                { n: `${REGIONS.length}`, l: "Regions covered" },
+                { n: `${stateCount}`, l: "States with clubs" },
               ].map((s) => (
                 <div key={s.l}>
                   <div className="font-heading text-3xl font-bold text-brand-amber">{s.n}</div>
@@ -111,7 +111,7 @@ export default async function HomePage() {
           </div>
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-1">
-              <SidelineToday tryouts={hubTryouts} commits={hubCommits} movers={rankedClubs} regions={hubRegions} />
+              <SidelineToday tryouts={hubTryouts} commits={hubCommits} movers={rankedClubs} />
             </div>
             <div className="lg:col-span-2">
               <HomeNews items={news} />
@@ -159,7 +159,7 @@ export default async function HomePage() {
           <div className="mb-5 flex items-end justify-between">
             <div>
               <h2 className="section-title">Club Spotlight</h2>
-              <p className="text-sm text-slate-500">Editorial picks from across the state</p>
+              <p className="text-sm text-slate-500">Editorial picks from across the country</p>
             </div>
             <Link href="/clubs" className="link-arrow">All clubs →</Link>
           </div>
@@ -207,19 +207,22 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* REGIONS */}
+        {/* STATES */}
         <section className="mt-16">
-          <h2 className="section-title mb-5">Browse by Region</h2>
+          <div className="mb-5 flex items-end justify-between">
+            <h2 className="section-title">Browse by State</h2>
+            <Link href="/clubs" className="link-arrow">All 50 states →</Link>
+          </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {REGIONS.map((r) => (
+            {STATES_WITH_REGIONS.map((code) => stateByCode(code)!).map((s) => (
               <Link
-                key={r.key}
-                href={`/clubs?region=${r.key}`}
+                key={s.code}
+                href={`/clubs/${s.slug}`}
                 className="card card-hover group flex items-center justify-between p-4"
               >
                 <div>
-                  <h3 className="font-heading text-lg font-bold text-navy group-hover:text-brand-sky">{r.name}</h3>
-                  <p className="text-xs text-slate-500">{r.description}</p>
+                  <h3 className="font-heading text-lg font-bold text-navy group-hover:text-brand-sky">{s.name}</h3>
+                  <p className="text-xs text-slate-500">{regionsForState(s.code).map((r) => r.name).join(" · ")}</p>
                 </div>
                 <svg className="h-5 w-5 shrink-0 text-slate-300 group-hover:text-brand-sky" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
@@ -238,7 +241,7 @@ export default async function HomePage() {
             </h2>
             <p className="mt-2 text-slate-200">
               Tryout alerts, ranking shifts, recruiting news and the best reads — one email a week,
-              tailored to your region. Free, always.
+              tailored to your state. Free, always.
             </p>
             <div className="mt-6">
               <NewsletterSignup />

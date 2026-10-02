@@ -33,21 +33,29 @@ import CommitmentCard from "@/components/CommitmentCard";
 import CommitmentForm from "@/components/CommitmentForm";
 import { CLUB_REVIEW_CATEGORIES, regionName } from "@/lib/regions";
 import { SITE_URL } from "@/lib/utils";
+import { stateName, stateBySlug, US_STATES } from "@/lib/states";
+import { StateClubsLanding } from "@/components/StateLanding";
+import { seoCopy, seoMetadata } from "@/lib/seo";
 
 export const revalidate = 3600;
 
 // Build params from the live directory (seed + DB) so real imported clubs are
 // pre-rendered too — runtime DB reads on dynamic routes can't be relied on alone.
+// This segment also serves the /clubs/[state] SEO pages (a state slug wins over a
+// club slug — no seeded club is named after a state).
 export async function generateStaticParams() {
-  return (await loadClubs()).map((c) => ({ slug: c.slug }));
+  const clubs = (await loadClubs()).map((c) => ({ slug: c.slug }));
+  return [...US_STATES.map((s) => ({ slug: s.slug })), ...clubs];
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const state = stateBySlug(params.slug);
+  if (state) return seoMetadata(seoCopy.clubsState(state));
   const club = await getClubBySlug(params.slug);
   if (!club) return { title: "Club not found" };
   const title = `${club.name} — Reviews, Tryouts & Info`;
   const ratingBit = club.review_count > 0 ? `${club.rating.toFixed(1)}★ from ${club.review_count} parent reviews. ` : "";
-  const description = `${club.name} in ${club.city}, FL. ${ratingBit}Leagues: ${club.leagues.join(", ")}. Age groups ${club.age_groups[0]}–${club.age_groups[club.age_groups.length - 1]}.`;
+  const description = `${club.name} in ${club.city}, ${club.state}. ${ratingBit}Leagues: ${club.leagues.join(", ")}. Age groups ${club.age_groups[0]}–${club.age_groups[club.age_groups.length - 1]}.`;
   return {
     title,
     description,
@@ -57,6 +65,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 }
 
 export default async function ClubProfile({ params }: { params: { slug: string } }) {
+  const state = stateBySlug(params.slug);
+  if (state) return <StateClubsLanding state={state} />;
+
   const club = await getClubBySlug(params.slug);
   if (!club) notFound();
 
@@ -80,7 +91,7 @@ export default async function ClubProfile({ params }: { params: { slug: string }
     address: {
       "@type": "PostalAddress",
       addressLocality: club.city,
-      addressRegion: "FL",
+      addressRegion: club.state,
       postalCode: club.zip,
       addressCountry: "US",
     },
@@ -135,7 +146,7 @@ export default async function ClubProfile({ params }: { params: { slug: string }
                 {club.tryouts_open && <span className="chip-amber">Tryouts open</span>}
               </div>
               <p className="mt-1 text-slate-600">
-                {club.city}, FL · {regionName(club.region)} · Est. {club.founded}
+                {[`${club.city}, ${club.state}`, club.region ? regionName(club.region) : "", club.founded ? `Est. ${club.founded}` : ""].filter(Boolean).join(" · ")}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-4">
                 <RatingBadge value={club.rating} count={reviews.length} />
@@ -295,7 +306,7 @@ export default async function ClubProfile({ params }: { params: { slug: string }
                 profileUrl={`${SITE_URL}/clubs/${club.slug}`}
                 period={rankingPeriod}
                 categoryLabel="Clubs"
-                regionName={regionName(club.region)}
+                regionName={club.region ? regionName(club.region) : stateName(club.state)}
                 rank={rankInfo.rank}
                 regionRank={rankInfo.regionRank}
                 regionTotal={rankInfo.regionTotal}
@@ -330,7 +341,7 @@ export default async function ClubProfile({ params }: { params: { slug: string }
                 )}
                 <li className="flex gap-2">
                   <span className="text-slate-400">📍</span>
-                  <span className="text-navy">{club.city}, FL {club.zip}</span>
+                  <span className="text-navy">{club.city}, {club.state} {club.zip}</span>
                 </li>
               </ul>
               <div className="mt-4 flex gap-2">
@@ -343,10 +354,10 @@ export default async function ClubProfile({ params }: { params: { slug: string }
             {/* Contact the club */}
             <ContactForm recipient={club.name} subjectType="club" subjectSlug={club.slug} subjectName={club.name} />
 
-            <TryoutAlertSignup region={club.region} regionName={regionName(club.region)} />
+            <TryoutAlertSignup region={club.region} state={club.state} regionName={club.region ? regionName(club.region) : stateName(club.state)} />
 
             {/* Map */}
-            <MapEmbed lat={club.lat} lng={club.lng} label={club.name} city={club.city} zip={club.zip} />
+            <MapEmbed lat={club.lat} lng={club.lng} label={club.name} city={club.city} state={club.state} zip={club.zip} />
 
             {/* Ownership — consistent across all profile types */}
             <ClaimPanel tier={tier} subjectType="club" slug={club.slug} name={club.name} label="club" />

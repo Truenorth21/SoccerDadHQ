@@ -1,4 +1,6 @@
-import type { RegionKey } from "./regions";
+import { regionName, type RegionKey } from "./regions";
+import { stateName } from "./states";
+import { NATIONAL_RAW_CLUBS } from "./seedNational";
 import type {
   Club,
   Coach,
@@ -46,21 +48,23 @@ function score(r: () => number, floor = 3.4): number {
 const CREST_COLORS = ["#1a4fa0", "#0a1628", "#2a7de1", "#e8a020", "#1d7a4d", "#9b2d2d", "#5a2d82"];
 
 /* ------------------------------------------------------------------ *
- *  Source-of-truth: 50+ real Florida youth soccer clubs.
+ *  Source-of-truth: 50+ real Florida youth soccer clubs, plus the
+ *  national expansion clubs in lib/seedNational.ts.
  * ------------------------------------------------------------------ */
 interface RawClub {
   name: string;
+  state?: string; // two-letter code; Florida when omitted
   region: RegionKey;
   city: string;
   zip: string;
   lat: number;
   lng: number;
-  founded: number;
+  founded?: number;
   topLeagues: string[];
-  website: string;
+  website?: string;
 }
 
-const RAW_CLUBS: RawClub[] = [
+const FLORIDA_RAW_CLUBS: RawClub[] = [
   // ---- South Florida ----
   { name: "Weston FC", region: "south-florida", city: "Weston", zip: "33327", lat: 26.1003, lng: -80.3998, founded: 1998, topLeagues: ["ECNL", "MLS NEXT"], website: "https://www.westonfc.com" },
   { name: "Inter Miami CF Academy", region: "south-florida", city: "Fort Lauderdale", zip: "33309", lat: 26.1934, lng: -80.1711, founded: 2020, topLeagues: ["MLS NEXT"], website: "https://www.intermiamicf.com" },
@@ -256,6 +260,8 @@ export function slugify(s: string): string {
 
 function buildClub(raw: RawClub, idx: number): Club {
   const slug = slugify(raw.name);
+  const state = raw.state ?? "FL";
+  const isFlorida = state === "FL";
   const r = rng(slug);
   // Honest launch: seed clubs are real directory entries but start UNRATED —
   // no fabricated reviews or stars. Real parent reviews fill these in over time.
@@ -280,7 +286,8 @@ function buildClub(raw: RawClub, idx: number): Club {
   };
 
   // Gender-appropriate extra pathways so each pyramid is represented in the data.
-  const pool: string[] = ["Florida State Premier League (FSPL)", "FYSA Classic", "Recreational"];
+  // The FSPL / FYSA Classic state leagues only apply to Florida clubs.
+  const pool: string[] = isFlorida ? ["Florida State Premier League (FSPL)", "FYSA Classic", "Recreational"] : ["Recreational"];
   if (genders.includes("Girls")) pool.push("Girls Academy (GA)", "GA Conference", "Development Player League (DPL)");
   if (genders.includes("Boys")) pool.push("USL Academy", "Pre-ECNL");
   pool.push("USYS National League", "USYS National League P.R.O.", "National Premier Leagues (NPL)");
@@ -299,12 +306,12 @@ function buildClub(raw: RawClub, idx: number): Club {
     name: raw.name,
     region: raw.region,
     city: raw.city,
-    state: "FL",
+    state,
     zip: raw.zip,
     lat: raw.lat,
     lng: raw.lng,
     founded: raw.founded,
-    description: `${raw.name} is a youth soccer club based in ${raw.city}, Florida, founded in ${raw.founded}. The club fields competitive teams across ${ages.length} age groups and competes in ${raw.topLeagues.join(" and ")}. ${raw.name} focuses on long-term player development, a clear pathway to college and pro opportunities, and a positive team culture for families across the ${raw.region.replace(/-/g, " ")} area.`,
+    description: `${raw.name} is a youth soccer club based in ${raw.city}, ${stateName(state)}${raw.founded ? `, founded in ${raw.founded}` : ""}. The club fields competitive teams across ${ages.length} age groups and competes in ${raw.topLeagues.join(" and ")}. ${raw.name} focuses on long-term player development, a clear pathway to college and pro opportunities, and a positive team culture for families across the ${isFlorida ? raw.region.replace(/-/g, " ") : regionName(raw.region)} area.`,
     logo_color: CREST_COLORS[idx % CREST_COLORS.length],
     website: raw.website,
     // Unclaimed profiles show no fabricated contact details — the program fills these
@@ -333,7 +340,8 @@ function buildClub(raw: RawClub, idx: number): Club {
   };
 }
 
-export const CLUBS: Club[] = RAW_CLUBS.map(buildClub);
+// Florida first so the original club ids (club-1…club-N) stay stable.
+export const CLUBS: Club[] = [...FLORIDA_RAW_CLUBS, ...NATIONAL_RAW_CLUBS].map(buildClub);
 
 /* ------------------------------------------------------------------ *
  *  Coaches — derived from clubs.
@@ -428,10 +436,11 @@ export const COACHES: Coach[] = (() => {
         name,
         region: club.region,
         city: club.city,
+        state: club.state,
         club_id: club.id,
         club_name: club.name,
         title,
-        bio: `${name} serves as ${title} at ${club.name}. With over ${5 + Math.floor(r() * 18)} years coaching youth soccer in Florida, ${first} specializes in player development and has guided multiple players to college commitments. ${first}'s coaching philosophy centers on technical mastery, game intelligence, and building confident, coachable players.`,
+        bio: `${name} serves as ${title} at ${club.name}. With over ${5 + Math.floor(r() * 18)} years coaching youth soccer in ${stateName(club.state)}, ${first} specializes in player development and has guided multiple players to college commitments. ${first}'s coaching philosophy centers on technical mastery, game intelligence, and building confident, coachable players.`,
         photo_color: CREST_COLORS[(ci + k) % CREST_COLORS.length],
         certifications: pickMany(CERTS, r, 2, 4),
         specialties: pickMany(SPECIALTY_POOL, r, 2, 4),
@@ -467,10 +476,11 @@ export const TRYOUTS: Tryout[] = CLUBS.filter((c) => c.tryouts_open).map((c, i) 
     club_name: c.name,
     club_slug: c.slug,
     region: c.region,
+    state: c.state,
     city: c.city,
     age_groups: `${c.age_groups[0]}–${c.age_groups[c.age_groups.length - 1]}`,
     gender: c.genders.join(" & "),
     date: new Date(Date.UTC(2026, 4, 31) + daysOut * 86400000).toISOString(),
-    note: `${c.genders.join(" & ")} ${c.age_groups[0]}–${c.age_groups[c.age_groups.length - 1]} • ${c.city}, FL`,
+    note: `${c.genders.join(" & ")} ${c.age_groups[0]}–${c.age_groups[c.age_groups.length - 1]} • ${c.city}, ${c.state}`,
   };
 });
