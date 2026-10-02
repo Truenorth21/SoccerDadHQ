@@ -51,6 +51,12 @@ async function getStateCommitments(state: string, limit = 5): Promise<DigestComm
   }
 }
 
+/** Swaps the {state} / {region} placeholders in the admin's intro (any casing,
+ *  with or without spaces inside the braces). */
+export function fillIntro(intro: string, state: string, region: string): string {
+  return intro.replace(/\{\s*state\s*\}/gi, state).replace(/\{\s*region\s*\}/gi, region);
+}
+
 /**
  * Builds a "The Sideline" issue for one state, optionally narrowed to one of its
  * regions. Leads with platform data that is ALWAYS relevant (open tryouts, top
@@ -101,7 +107,10 @@ export async function buildRegionDigest(region?: RegionKey | null, state?: strin
 
   // Region-aware sponsor: a creative tagged with this region (or untagged) fills the slot.
   const sponsor = resolveAd(await getAdsConfig(), "newsletter", 4, region ?? "statewide");
-  const intro = await getNewsletterIntro();
+  // The intro is one note shared by every edition, so {state} and {region} in it
+  // become this edition's names ({region} falls back to the state when the
+  // edition isn't for a region).
+  const intro = fillIntro(await getNewsletterIntro(), stName, label);
   const fun = await getFunPollOfTheWeek();
   const funTop = fun.options[fun.topIndex];
   const insight = await getInsightOfTheWeek();
