@@ -57,13 +57,14 @@ That's it — the site is fully browsable with seed data.
   50 states; `lib/regions.ts` holds Florida's nine regions plus predefined regions for TX, GA, NC,
   SC, TN, CA, NY, NJ, VA and IL. States without regions are searched by city / ZIP.
 - Region keys outside Florida are prefixed with the state code (`tx-dfw`, `nc-triangle`).
-- National seed clubs (30 each in TX, GA, NC, SC, TN) live in `lib/seedNational.ts`.
+- National seed clubs (30 each in TX, GA, NC, SC, TN, CA, NY, NJ, VA, IL) live in `lib/seedNational.ts`.
 - Programmatic SEO pages: `/clubs/[state]`, `/clubs/[state]/[region]`, `/coaches/[state]`,
   `/rankings/[state]`, `/tryouts/[state]` (all in the sitemap).
 
 **Upgrading an existing database:** in the Supabase SQL editor run
 `supabase/national-expansion-migration.sql` (adds `state`, tags existing rows `FL`), then
-`supabase/national-clubs-seed.sql` (the 150 national clubs + coaches). Regenerate that seed with
+`supabase/national-clubs-seed.sql` (the 300 national clubs + coaches). A database that already ran
+the earlier 150-club seed only needs `supabase/national-clubs-seed-ca-ny-nj-va-il.sql`. Regenerate that seed with
 `npx tsx scripts/gen-seed-sql.ts --national`. Then run
 `supabase/national-schools-listings-migration.sql`, which does the same for high schools,
 listings and commitments.

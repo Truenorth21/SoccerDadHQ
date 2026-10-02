@@ -6,6 +6,10 @@
  *   npx tsx scripts/gen-seed-sql.ts --national   → supabase/national-clubs-seed.sql
  *                                                  (non-Florida clubs + coaches only, for
  *                                                  databases that already hold the Florida seed)
+ *   npx tsx scripts/gen-seed-sql.ts --national --states CA,NY
+ *                                                → supabase/national-clubs-seed-ca-ny.sql
+ *                                                  (just those states' clubs + coaches, for
+ *                                                  databases that already hold earlier states)
  */
 import { writeFileSync } from "node:fs";
 import { CLUBS, COACHES, TRYOUTS } from "../lib/seed";
@@ -26,8 +30,14 @@ function n(v: number | undefined): string {
 }
 
 const national = process.argv.includes("--national");
-const clubs = national ? CLUBS.filter((c) => c.state !== "FL") : CLUBS;
-const coaches = national ? COACHES.filter((c) => c.state !== "FL") : COACHES;
+const statesArg = process.argv[process.argv.indexOf("--states") + 1];
+const onlyStates = process.argv.includes("--states") && statesArg ? statesArg.toUpperCase().split(",") : null;
+const inScope = (state: string) => (onlyStates ? onlyStates.includes(state) : state !== "FL");
+const clubs = national ? CLUBS.filter((c) => inScope(c.state)) : CLUBS;
+const coaches = national ? COACHES.filter((c) => inScope(c.state)) : COACHES;
+const nationalFile = onlyStates
+  ? `national-clubs-seed-${onlyStates.map((x) => x.toLowerCase()).join("-")}.sql`
+  : "national-clubs-seed.sql";
 // The national file skips rows that collide on id OR slug (e.g. a club an admin
 // already imported by CSV), so it never overwrites live data.
 const onConflict = national ? "on conflict do nothing" : "on conflict (id) do nothing";
@@ -36,6 +46,7 @@ const lines: string[] = [];
 lines.push("-- ============================================================");
 if (national) {
   lines.push("--  SoccerDadHQ — national expansion seed (generated from lib/seedNational.ts)");
+  if (onlyStates) lines.push(`--  States: ${onlyStates.join(", ")}`);
   lines.push("--  Run AFTER national-expansion-migration.sql. Safe to re-run.");
 } else {
   lines.push("--  SoccerDadHQ — seed data (generated from lib/seed.ts)");
@@ -78,8 +89,8 @@ for (const c of coaches) {
 lines.push("");
 
 if (national) {
-  writeFileSync(new URL("../supabase/national-clubs-seed.sql", import.meta.url), lines.join("\n") + "\n");
-  console.log(`Wrote supabase/national-clubs-seed.sql — ${clubs.length} clubs, ${coaches.length} coaches.`);
+  writeFileSync(new URL(`../supabase/${nationalFile}`, import.meta.url), lines.join("\n") + "\n");
+  console.log(`Wrote supabase/${nationalFile} — ${clubs.length} clubs, ${coaches.length} coaches.`);
   process.exit(0);
 }
 
