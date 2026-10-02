@@ -336,7 +336,8 @@ const FALLBACK: NewsItem[] = [
 
 export async function getNews(): Promise<NewsItem[]> {
   const results = await Promise.all(NEWS_SOURCES.map(fetchSource));
-  let all = results.flat();
+  // Florida-search results are Florida stories even when the text names no place.
+  let all = results.flatMap((items, i) => (NEWS_SOURCES[i].scope === "florida" ? items.map((n) => ({ ...n, state: n.state ?? "FL" })) : items));
 
   // De-dupe by normalized title (queries overlap, esp. site: vs topical).
   const seen = new Set<string>();
@@ -361,4 +362,34 @@ export async function getNews(): Promise<NewsItem[]> {
   if (all.length < 6) all = [...all, ...FALLBACK];
 
   return all;
+}
+
+/** Stories about one state, searched by its name on Google News (plus any story
+ *  from the main feed that names it). Every result is tagged with that state, and
+ *  to a region when the text names one. Newest first, de-duped. */
+export async function getStateNews(code: string): Promise<NewsItem[]> {
+  const st = US_STATES.find((s) => s.code === code);
+  if (!st) return [];
+  const queries = [
+    `"${st.name}" (youth OR club OR "high school") soccer`,
+    `"${st.name}" soccer college commitment OR recruiting OR tryouts`,
+  ];
+  const results = await Promise.all(queries.map((q) => fetchFeed(googleNewsUrl(q), "Google News")));
+  const nameRe = new RegExp(`${code === "VA" ? "(?<!west )" : ""}\\b${st.name}\\b`, "i");
+  const seen = new Set<string>();
+  const out: NewsItem[] = [];
+  for (const n of results.flat()) {
+    const text = `${n.title} ${n.excerpt}`;
+    // Google matches loosely; keep only stories that actually name the state
+    // (or one of its regions' places).
+    const region = detectRegion(text);
+    const inState = nameRe.test(text) || (region && REGION_MAP[region]?.state === code);
+    if (!inState) continue;
+    const k = normKey(n.title);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ ...n, state: code, region: region && REGION_MAP[region]?.state === code ? region : undefined });
+  }
+  out.sort((a, b) => +new Date(b.published) - +new Date(a.published));
+  return out;
 }

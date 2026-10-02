@@ -1,6 +1,6 @@
 import { getRankings } from "./rankings";
 import { getActiveTryouts } from "./data";
-import { getNews } from "./news";
+import { getNews, getStateNews } from "./news";
 import { resolveAd } from "./ads";
 import { getAdsConfig } from "./adsServer";
 import { getInsightOfTheWeek, getFunPollOfTheWeek } from "./pollResults";
@@ -86,24 +86,26 @@ export async function buildRegionDigest(region?: RegionKey | null, state?: strin
 
   const commits = await getStateCommitments(st);
 
-  // News: prefer this region's stories, then the state's, then national, and
-  // label the section honestly so a Texas edition never presents Florida news
-  // as if it were local.
-  const allNews = await getNews();
-  const stateNews = allNews.filter((n) => n.state === st);
-  const regionNews = region ? stateNews.filter((n) => n.region === region) : stateNews;
-  let news = regionNews;
-  let newsHeading = region ? `News in ${label}` : `${stName} News`;
-  if (news.length < 2) {
-    const rest = stateNews.filter((n) => !regionNews.includes(n));
-    news = [...regionNews, ...rest];
-    newsHeading = `${stName} News`;
-  }
-  if (news.length < 2) {
-    news = allNews;
-    newsHeading = "Around U.S. Youth Soccer";
-  }
-  news = news.slice(0, 5);
+  // News: this state's stories (region ones first in a region edition), then,
+  // when the state is quiet, national stories that aren't about some other
+  // state, under their own honest heading. A Colorado edition never shows
+  // Florida news.
+  const [allNews, searched] = await Promise.all([getNews(), getStateNews(st)]);
+  const seenNews = new Set<string>();
+  const stateNews = [...searched, ...allNews.filter((n) => n.state === st)]
+    .filter((n) => {
+      const k = n.title.toLowerCase();
+      if (seenNews.has(k)) return false;
+      seenNews.add(k);
+      return true;
+    })
+    .sort((a, b) => +new Date(b.published) - +new Date(a.published));
+  const regionNews = region ? stateNews.filter((n) => n.region === region) : [];
+  const news = [...regionNews, ...stateNews.filter((n) => !regionNews.includes(n))].slice(0, 5);
+  const newsHeading = regionNews.length >= 2 ? `News in ${label}` : `${stName} News`;
+  const nationalNews =
+    news.length < 3 ? allNews.filter((n) => !n.state && !seenNews.has(n.title.toLowerCase())).slice(0, 5 - news.length) : [];
+  const nationalHeading = "Around U.S. Youth Soccer";
 
   // Region-aware sponsor: a creative tagged with this region (or untagged) fills the slot.
   const sponsor = resolveAd(await getAdsConfig(), "newsletter", 4, region ?? "statewide");
@@ -135,6 +137,9 @@ ${commits.map((c) => `• ${c.player_name}${c.position || c.grad_year ? ` (${[c.
 
 ${news.length ? `${newsHeading.toUpperCase()}
 ${news.map((n) => `• ${n.title} (${n.source}) — ${n.link}`).join("\n")}` : ""}
+
+${nationalNews.length ? `${nationalHeading.toUpperCase()}
+${nationalNews.map((n) => `• ${n.title} (${n.source}) — ${n.link}`).join("\n")}` : ""}
 
 PARENT PULSE — WHAT SOCCER PARENTS SAY
 ${insight.poll.emoji} ${insight.poll.question}
@@ -189,12 +194,15 @@ Unsubscribe: ${UNSUB_PLACEHOLDER}`;
         .join("")
     : "";
 
-  const newsHtml = news
+  const newsItemsHtml = (list: typeof news) =>
+    list
     .map(
       (n) =>
         `<div style="padding:8px 0;border-bottom:1px solid #f1f5f9"><a href="${n.link}" style="color:#0a1628;text-decoration:none;font-weight:600">${n.title}</a><div style="color:#94a3b8;font-size:12px">${n.source}</div></div>`
     )
     .join("");
+  const newsHtml = newsItemsHtml(news);
+  const nationalHtml = newsItemsHtml(nationalNews);
 
   // Result-bar renderer shared by both polls — lead option in amber, rest in blue.
   const resultBars = (r: typeof insight) =>
@@ -235,6 +243,7 @@ Unsubscribe: ${UNSUB_PLACEHOLDER}`;
     ${section(clubsHeading, clubsHtml)}
     ${section("Recent Commitments", commitsHtml)}
     ${section(newsHeading, newsHtml)}
+    ${section(nationalHeading, nationalHtml)}
 
     <!-- Parent Pulse: serious insight poll of the week, with results -->
     <div style="margin-top:24px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
