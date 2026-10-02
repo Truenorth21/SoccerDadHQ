@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import { getCurrentAdmin } from "@/lib/admin";
 import { buildRegionDigest, sendBuiltDigest } from "@/lib/digestEmail";
 import { isEmailConfigured } from "@/lib/email";
-import type { RegionKey } from "@/lib/regions";
+import { stateByCode } from "@/lib/states";
 
 export const dynamic = "force-dynamic";
 
-/** Send a test copy of a region's edition to one address (defaults to the admin). */
+/** Send a test copy of a state's (or region's) edition to one address (defaults to the admin). */
 export async function POST(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
@@ -21,9 +21,10 @@ export async function POST(request: Request) {
   if (!to) return NextResponse.json({ error: "No recipient email." }, { status: 400 });
   if (!isEmailConfigured) return NextResponse.json({ error: "Email isn't configured (set RESEND_API_KEY)." }, { status: 503 });
 
-  const region = b.region && b.region !== "statewide" ? (b.region as RegionKey) : null;
+  const region = b.region && b.region !== "statewide" ? String(b.region) : null;
+  const state = stateByCode(b.state)?.code ?? null;
   try {
-    const digest = await buildRegionDigest(region);
+    const digest = await buildRegionDigest(region, state);
     const r = await sendBuiltDigest(to, { subject: `[TEST] ${digest.subject}`, html: digest.html, text: digest.text });
     if (!r.sent) {
       return NextResponse.json({ error: `Send failed — ${r.error || "check Resend."}` }, { status: 500 });

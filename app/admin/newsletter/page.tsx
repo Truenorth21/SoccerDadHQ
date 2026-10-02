@@ -3,7 +3,10 @@ import Link from "next/link";
 import NewsletterAdmin from "@/components/NewsletterAdmin";
 import { getCurrentAdmin, adminServiceClient, hasServiceKey } from "@/lib/admin";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { REGIONS } from "@/lib/regions";
+import { ALL_REGIONS } from "@/lib/regions";
+import { US_STATES } from "@/lib/states";
+import { countAudience, loadSubscribers, recentSends } from "@/lib/newsletterSend";
+import { isEmailConfigured } from "@/lib/email";
 
 export const metadata: Metadata = { title: "Admin — Newsletter", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -27,7 +30,22 @@ export default async function AdminNewsletterPage() {
 
   const { data } = await service.from("site_config").select("value").eq("key", "newsletter").maybeSingle();
   const initialIntro = ((data?.value as { intro?: string } | null)?.intro ?? "") as string;
-  const regions = REGIONS.map((r) => ({ key: r.key, name: r.name }));
+  const regions = ALL_REGIONS.map((r) => ({ key: r.key, name: r.name, state: r.state }));
+  const states = US_STATES.map((s) => ({ code: s.code, name: s.name }));
+
+  // Subscriber counts and send history. If the newsletter_sends table hasn't been
+  // created yet (SQL not run), say so instead of crashing the page.
+  let audience: ReturnType<typeof countAudience> = {};
+  let sends: Awaited<ReturnType<typeof recentSends>> = [];
+  let setupNeeded = false;
+  try {
+    audience = countAudience(await loadSubscribers(service));
+  } catch {
+    /* counts stay empty */
+  }
+  const probe = await service.from("newsletter_sends").select("id").limit(1);
+  if (probe.error) setupNeeded = true;
+  else sends = await recentSends(service);
 
   return (
     <>
@@ -35,13 +53,22 @@ export default async function AdminNewsletterPage() {
         <div className="container-page flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Newsletter</h1>
-            <p className="mt-1 text-slate-300">The Sideline — weekly intro &amp; test sends.</p>
+            <p className="mt-1 text-slate-300">The Sideline — preview each state&rsquo;s edition and approve the send.</p>
           </div>
           <Link href="/admin" className="btn-outline text-sm">← Admin</Link>
         </div>
       </section>
       <div className="container-page py-8">
-        <NewsletterAdmin initialIntro={initialIntro} adminEmail={admin.email ?? ""} regions={regions} />
+        <NewsletterAdmin
+          initialIntro={initialIntro}
+          adminEmail={admin.email ?? ""}
+          regions={regions}
+          states={states}
+          audience={audience}
+          sends={sends}
+          setupNeeded={setupNeeded}
+          emailConfigured={isEmailConfigured}
+        />
       </div>
     </>
   );
