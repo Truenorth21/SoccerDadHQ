@@ -37,7 +37,7 @@ export default async function ImportSchoolsPage() {
         <div className="container-page flex flex-wrap items-center justify-between gap-3">
           <div>
             <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Import Schools (CSV)</h1>
-            <p className="mt-1 text-slate-300">Bulk-add FHSAA programs. They appear live immediately.</p>
+            <p className="mt-1 text-slate-300">Bulk-add high school programs in any state. They appear live immediately.</p>
           </div>
           <Link href="/admin/schools" className="btn-outline text-sm">← Manage schools</Link>
         </div>

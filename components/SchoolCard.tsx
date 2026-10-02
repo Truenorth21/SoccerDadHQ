@@ -4,6 +4,7 @@ import { RatingBadge } from "./Stars";
 import FavoriteButton from "./FavoriteButton";
 import CompareButton from "./CompareButton";
 import { regionName } from "@/lib/regions";
+import { hsAssociation } from "@/lib/states";
 import type { School } from "@/lib/types";
 
 export default function SchoolCard({ school }: { school: School & { distance?: number } }) {
@@ -14,7 +15,7 @@ export default function SchoolCard({ school }: { school: School & { distance?: n
         <CompareButton item={{ type: "school", slug: school.slug, name: school.name }} />
         <FavoriteButton
           floating
-          item={{ type: "school", slug: school.slug, name: school.name, subtitle: `${school.mascot} · ${school.city}, FL`, color: school.logo_color }}
+          item={{ type: "school", slug: school.slug, name: school.name, subtitle: `${school.mascot} · ${school.city}, ${school.state}`, color: school.logo_color }}
         />
       </div>
 
@@ -25,7 +26,7 @@ export default function SchoolCard({ school }: { school: School & { distance?: n
             {school.name}
           </h3>
           <p className="truncate text-sm text-slate-500">
-            {school.mascot} · {school.city}, FL
+            {school.mascot} · {school.city}, {school.state}
           </p>
           <p className="truncate text-xs text-slate-400">{regionName(school.region)}</p>
         </div>
@@ -52,7 +53,7 @@ export default function SchoolCard({ school }: { school: School & { distance?: n
         {school.state_titles > 0 ? (
           <span className="chip-amber">🏆 {school.state_titles} state title{school.state_titles === 1 ? "" : "s"}</span>
         ) : (
-          <span className="text-slate-400">FHSAA member</span>
+          <span className="text-slate-400">{hsAssociation(school.state)} member</span>
         )}
       </div>
     </div>

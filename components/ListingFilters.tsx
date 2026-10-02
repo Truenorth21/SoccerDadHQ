@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
-import { REGIONS } from "@/lib/regions";
+import StateRegionFields from "./StateRegionFields";
 import { KIND_CONFIG, type ListingKind } from "@/lib/listings";
 
 export default function ListingFilters({ kind, hasRatings = false }: { kind: ListingKind; hasRatings?: boolean }) {
@@ -36,15 +36,7 @@ export default function ListingFilters({ kind, hasRatings = false }: { kind: Lis
             onBlur={(e) => update({ q: e.target.value })}
           />
         </div>
-        <div>
-          <label className="label">Region</label>
-          <select className="input" value={get("region")} onChange={(e) => update({ region: e.target.value })}>
-            <option value="">All regions</option>
-            {REGIONS.map((r) => (
-              <option key={r.key} value={r.key}>{r.name}</option>
-            ))}
-          </select>
-        </div>
+        <StateRegionFields get={get} update={update} />
         {cfg.facets.map((f) => (
           <div key={f.key}>
             <label className="label">{f.label}</label>

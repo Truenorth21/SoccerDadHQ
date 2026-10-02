@@ -22,6 +22,7 @@ import CommitmentForm from "@/components/CommitmentForm";
 import RankBadgeShare from "@/components/RankBadgeShare";
 import { getRankFor } from "@/lib/rankings";
 import { SCHOOL_REVIEW_CATEGORIES, regionName } from "@/lib/regions";
+import { hsAssociation, stateName } from "@/lib/states";
 import { SITE_URL } from "@/lib/utils";
 
 export const revalidate = 3600;
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!school) return { title: "School not found" };
   const title = `${school.name} Soccer — Reviews & Program Info`;
   const ratingBit = school.review_count > 0 ? `${school.rating.toFixed(1)}★ from ${school.review_count} reviews. ` : "";
-  const description = `${school.name} (${school.mascot}) ${school.fhsaa_class} ${school.type.toLowerCase()} high school soccer in ${school.city}, FL. ${ratingBit}${school.state_titles} state title${school.state_titles === 1 ? "" : "s"}.`;
+  const description = `${school.name} (${school.mascot}) ${school.fhsaa_class} ${school.type.toLowerCase()} high school soccer in ${school.city}, ${school.state}. ${ratingBit}${school.state_titles} state title${school.state_titles === 1 ? "" : "s"}.`;
   return {
     title,
     description,
@@ -115,7 +116,7 @@ export default async function SchoolProfile({ params }: { params: { slug: string
                 <OwnerChip tier={tier} />
               </div>
               <p className="mt-1 text-slate-600">
-                {school.mascot} · {school.city}, FL · {regionName(school.region)}
+                {[school.mascot, `${school.city}, ${school.state}`, school.region ? regionName(school.region) : ""].filter(Boolean).join(" · ")}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-4">
                 <RatingBadge value={school.rating} count={reviews.length} />
@@ -200,7 +201,7 @@ export default async function SchoolProfile({ params }: { params: { slug: string
               <div className="mt-3 card border-l-4 border-brand-amber p-4">
                 <h3 className="label text-amber-700">Schedule &amp; Standings</h3>
                 <p className="text-sm text-slate-600">
-                  Full FHSAA schedule, district standings and playoff results are published on the school
+                  Full {hsAssociation(school.state)} schedule, district standings and playoff results are published on the school
                   athletics site each season.
                 </p>
               </div>
@@ -267,7 +268,7 @@ export default async function SchoolProfile({ params }: { params: { slug: string
                 profileUrl={`${SITE_URL}/schools/${school.slug}`}
                 period={rankingPeriod}
                 categoryLabel="Schools"
-                regionName={regionName(school.region)}
+                regionName={school.region ? regionName(school.region) : stateName(school.state)}
                 rank={rankInfo.rank}
                 regionRank={rankInfo.regionRank}
                 regionTotal={rankInfo.regionTotal}
@@ -279,10 +280,10 @@ export default async function SchoolProfile({ params }: { params: { slug: string
               <h3 className="mb-3 font-heading text-lg font-bold uppercase text-navy">Details</h3>
               <ul className="space-y-2.5 text-sm">
                 <li className="flex justify-between"><span className="text-slate-500">Type</span><span className="font-semibold text-navy">{school.type}</span></li>
-                <li className="flex justify-between"><span className="text-slate-500">FHSAA Class</span><span className="font-semibold text-navy">{school.fhsaa_class}</span></li>
+                <li className="flex justify-between"><span className="text-slate-500">{hsAssociation(school.state)} Class</span><span className="font-semibold text-navy">{school.fhsaa_class}</span></li>
                 <li className="flex justify-between"><span className="text-slate-500">District</span><span className="font-semibold text-navy">{school.district}</span></li>
-                <li className="flex justify-between"><span className="text-slate-500">Region</span><span className="font-semibold text-navy">{regionName(school.region)}</span></li>
-                <li className="flex justify-between"><span className="text-slate-500">Location</span><span className="font-semibold text-navy">{school.city}, FL</span></li>
+                {school.region && <li className="flex justify-between"><span className="text-slate-500">Region</span><span className="font-semibold text-navy">{regionName(school.region)}</span></li>}
+                <li className="flex justify-between"><span className="text-slate-500">Location</span><span className="font-semibold text-navy">{school.city}, {school.state}</span></li>
               </ul>
             </div>
 
@@ -292,7 +293,7 @@ export default async function SchoolProfile({ params }: { params: { slug: string
 
             <ClaimPanel tier={tier} subjectType="school" slug={school.slug} name={school.name} label="program" perk="post results" />
 
-            <TryoutAlertSignup region={school.region} regionName={regionName(school.region)} />
+            <TryoutAlertSignup region={school.region} state={school.state} regionName={school.region ? regionName(school.region) : stateName(school.state)} />
 
             {tier === "unclaimed" && <AdSlot placement="profile-sidebar" seed={school.name.length} />}
           </div>

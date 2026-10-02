@@ -14,7 +14,7 @@ export default function ListingCard({ listing: l }: { listing: Listing }) {
           <div className="flex items-center gap-1.5">
             <h3 className="truncate font-heading text-lg font-bold leading-tight text-navy group-hover:text-brand-sky">{l.name}</h3>
           </div>
-          <p className="truncate text-sm text-slate-500">{l.city}, FL · {regionName(l.region)}</p>
+          <p className="truncate text-sm text-slate-500">{[`${l.city}, ${l.state}`, regionName(l.region)].filter(Boolean).join(" · ")}</p>
         </div>
       </div>
       <div className="mt-3">

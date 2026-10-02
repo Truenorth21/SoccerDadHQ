@@ -1,6 +1,7 @@
 import type { RegionKey } from "./regions";
 import type { Review } from "./types";
 import { publicClient } from "./supabase/public";
+import { stateName } from "./states";
 
 /* ------------------------------------------------------------------ *
  *  Bespoke directory sections for the "extra" entity types:
@@ -15,6 +16,7 @@ export interface Listing {
   slug: string;
   kind: ListingKind;
   name: string;
+  state: string; // two-letter code
   region: RegionKey;
   city: string;
   zip: string;
@@ -61,7 +63,7 @@ export const KIND_CONFIG: Record<ListingKind, KindConfig> = {
     plural: "Training Centers",
     path: "/training-centers",
     navLabel: "Training",
-    blurb: "Private & small-group skills academies across Florida.",
+    blurb: "Private & small-group skills academies.",
     reviewCats: [
       { key: "coaching", label: "Coaching" },
       { key: "development", label: "Development" },
@@ -81,7 +83,7 @@ export const KIND_CONFIG: Record<ListingKind, KindConfig> = {
     plural: "Facilities",
     path: "/facilities",
     navLabel: "Facilities",
-    blurb: "Fields, complexes and indoor venues where Florida soccer is played.",
+    blurb: "Fields, complexes and indoor venues where youth soccer is played.",
     reviewCats: [
       { key: "fields", label: "Fields" },
       { key: "amenities", label: "Amenities" },
@@ -101,7 +103,7 @@ export const KIND_CONFIG: Record<ListingKind, KindConfig> = {
     plural: "Tournaments",
     path: "/tournaments",
     navLabel: "Tournaments",
-    blurb: "Showcases, cups and college-recruiting events around the state.",
+    blurb: "Showcases, cups and college-recruiting events.",
     reviewCats: [
       { key: "organization", label: "Organization" },
       { key: "competition", label: "Competition" },
@@ -166,6 +168,7 @@ const REVIEW_REL = ["Parent", "Player", "Coach", "Parent of two players"];
 /* ---------------- raw seed (name, region, city) ---------------- */
 interface Raw {
   name: string;
+  state?: string; // two-letter code; defaults to "FL" (the original seed is all Florida)
   region: RegionKey;
   city: string;
   zip: string;
@@ -287,6 +290,7 @@ function buildFactsAndTags(kind: ListingKind, r: () => number): { facts: { label
 
 function buildListing(kind: ListingKind, raw: Raw, idx: number): Listing {
   const slug = slugify(raw.name);
+  const state = raw.state ?? "FL";
   const r = rng(kind + ":" + slug);
   const cfg = KIND_CONFIG[kind];
   // Honest launch: listings start unrated (no fabricated reviews/stars).
@@ -307,12 +311,13 @@ function buildListing(kind: ListingKind, raw: Raw, idx: number): Listing {
     slug,
     kind,
     name: raw.name,
+    state,
     region: raw.region,
     city: raw.city,
     zip: raw.zip,
     lat: raw.lat,
     lng: raw.lng,
-    description: `${raw.name} is a ${cfg.label.toLowerCase()} based in ${raw.city}, Florida. ${cfg.blurb} It serves youth soccer families across the ${raw.region.replace(/-/g, " ")} area with a focus on quality, development and a positive experience.`,
+    description: `${raw.name} is a ${cfg.label.toLowerCase()} based in ${raw.city}, ${stateName(state)}. ${cfg.blurb} It serves youth soccer families across the ${raw.region.replace(/-/g, " ")} area with a focus on quality, development and a positive experience.`,
     // Unclaimed: no fabricated contact (these were auto-generated placeholders).
     website: undefined,
     email: undefined,
@@ -342,7 +347,8 @@ function dbRowToListing(r: Record<string, any>): Listing {
     slug: r.slug,
     kind: r.kind as ListingKind,
     name: r.name,
-    region: r.region as RegionKey,
+    state: r.state ?? "FL",
+    region: (r.region ?? "") as RegionKey,
     city: r.city ?? "",
     zip: r.zip ?? "",
     lat: r.lat ?? 0,
@@ -418,14 +424,22 @@ export async function loadListings(): Promise<Listing[]> {
 
 export async function getListings(
   kind: ListingKind,
-  filters: { q?: string; region?: string; facet?: string; sort?: string } = {}
+  filters: { q?: string; state?: string; region?: string; city?: string; facet?: string; sort?: string } = {}
 ): Promise<Listing[]> {
   let res = (await loadListings()).filter((l) => l.kind === kind);
   if (filters.q) {
     const q = filters.q.toLowerCase();
     res = res.filter((l) => l.name.toLowerCase().includes(q) || l.city.toLowerCase().includes(q) || l.tags.join(" ").toLowerCase().includes(q));
   }
+  if (filters.state) {
+    const st = filters.state.toUpperCase();
+    res = res.filter((l) => (l.state || "FL").toUpperCase() === st);
+  }
   if (filters.region) res = res.filter((l) => l.region === filters.region);
+  if (filters.city) {
+    const city = filters.city.trim().toLowerCase();
+    if (city) res = res.filter((l) => l.city.toLowerCase().includes(city));
+  }
   if (filters.facet) res = res.filter((l) => l.tags.includes(filters.facet!));
   if (filters.sort === "rating") res.sort((a, b) => b.rating - a.rating);
   else if (filters.sort === "reviews") res.sort((a, b) => b.review_count - a.review_count);
@@ -453,5 +467,5 @@ export async function getListingBySlug(kind: ListingKind, slug: string): Promise
 }
 
 export async function getNearbyListings(l: Listing, limit = 4): Promise<Listing[]> {
-  return (await loadListings()).filter((x) => x.kind === l.kind && x.id !== l.id && x.region === l.region).slice(0, limit);
+  return (await loadListings()).filter((x) => x.kind === l.kind && x.id !== l.id && x.state === l.state && (l.region ? x.region === l.region : x.city === l.city)).slice(0, limit);
 }

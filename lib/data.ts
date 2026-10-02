@@ -502,11 +502,13 @@ export async function getFeaturedClubs(limit = 6): Promise<Club[]> {
 }
 
 /* ------------------------------------------------------------------ *
- *  Schools (FHSAA high school soccer programs)
+ *  Schools (high school soccer programs, every state)
  * ------------------------------------------------------------------ */
 export interface SchoolFilters {
   q?: string;
+  state?: string; // two-letter code
   region?: string;
+  city?: string;
   type?: string;
   cls?: string;
   gender?: string;
@@ -588,7 +590,15 @@ export async function getSchools(filters: SchoolFilters = {}): Promise<(School &
         s.description.toLowerCase().includes(q)
     );
   }
+  if (filters.state) {
+    const st = filters.state.toUpperCase();
+    results = results.filter((s) => (s.state || "FL").toUpperCase() === st);
+  }
   if (filters.region) results = results.filter((s) => s.region === filters.region);
+  if (filters.city) {
+    const city = filters.city.trim().toLowerCase();
+    if (city) results = results.filter((s) => s.city.toLowerCase().includes(city));
+  }
   if (filters.type) results = results.filter((s) => s.type === filters.type);
   if (filters.cls) results = results.filter((s) => s.fhsaa_class === filters.cls);
   if (filters.gender) results = results.filter((s) => s.programs.includes(filters.gender!));
@@ -653,6 +663,7 @@ export async function getFeaturedSchools(limit = 6): Promise<School[]> {
  * ------------------------------------------------------------------ */
 export interface CommitmentFilters {
   q?: string;
+  state?: string; // two-letter code
   region?: string;
   gender?: string;
   year?: string;
@@ -671,6 +682,7 @@ export function getCommitments(filters: CommitmentFilters = {}): Commitment[] {
         (c.school_name ?? "").toLowerCase().includes(q)
     );
   }
+  if (filters.state) results = results.filter((c) => c.state === filters.state!.toUpperCase());
   if (filters.region) results = results.filter((c) => c.region === filters.region);
   if (filters.gender) results = results.filter((c) => c.gender === filters.gender);
   if (filters.year) results = results.filter((c) => String(c.grad_year) === filters.year);

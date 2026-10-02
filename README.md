@@ -64,7 +64,9 @@ That's it — the site is fully browsable with seed data.
 **Upgrading an existing database:** in the Supabase SQL editor run
 `supabase/national-expansion-migration.sql` (adds `state`, tags existing rows `FL`), then
 `supabase/national-clubs-seed.sql` (the 150 national clubs + coaches). Regenerate that seed with
-`npx tsx scripts/gen-seed-sql.ts --national`.
+`npx tsx scripts/gen-seed-sql.ts --national`. Then run
+`supabase/national-schools-listings-migration.sql`, which does the same for high schools,
+listings and commitments.
 
 ## Connecting Supabase (optional, for auth + persistence)
 

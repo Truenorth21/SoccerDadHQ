@@ -2,12 +2,20 @@
 
 import { useMemo, useState } from "react";
 import CommitmentCard from "./CommitmentCard";
-import { REGIONS, COMMITMENT_TYPES, GRAD_YEARS } from "@/lib/regions";
+import { COMMITMENT_TYPES, GRAD_YEARS, regionsForState } from "@/lib/regions";
+import { US_STATES } from "@/lib/states";
 import type { Commitment } from "@/lib/types";
 
 export default function CommitmentTracker({ data }: { data: Commitment[] }) {
   const [q, setQ] = useState("");
+  const [state, setState] = useState("");
   const [region, setRegion] = useState("");
+  const regions = regionsForState(state);
+  // Only offer states that actually have commitments, so no pick leads to an empty list.
+  const states = useMemo(() => {
+    const present = new Set(data.map((c) => c.state));
+    return US_STATES.filter((s) => present.has(s.code));
+  }, [data]);
   const [gender, setGender] = useState("");
   const [year, setYear] = useState("");
   const [dest, setDest] = useState("");
@@ -24,13 +32,14 @@ export default function CommitmentTracker({ data }: { data: Commitment[] }) {
         )
           return false;
       }
+      if (state && c.state !== state) return false;
       if (region && c.region !== region) return false;
       if (gender && c.gender !== gender) return false;
       if (year && String(c.grad_year) !== year) return false;
       if (dest && c.dest_type !== dest) return false;
       return true;
     });
-  }, [data, q, region, gender, year, dest]);
+  }, [data, q, state, region, gender, year, dest]);
 
   const counts = useMemo(
     () => ({
@@ -63,12 +72,27 @@ export default function CommitmentTracker({ data }: { data: Commitment[] }) {
           placeholder="Player, college, club or school…"
           className="input max-w-xs"
         />
-        <select className="input max-w-[200px]" value={region} onChange={(e) => setRegion(e.target.value)}>
-          <option value="">All regions</option>
-          {REGIONS.map((r) => (
-            <option key={r.key} value={r.key}>{r.name}</option>
+        <select
+          className="input max-w-[180px]"
+          value={state}
+          onChange={(e) => {
+            setState(e.target.value);
+            setRegion("");
+          }}
+        >
+          <option value="">All states</option>
+          {states.map((s) => (
+            <option key={s.code} value={s.code}>{s.name}</option>
           ))}
         </select>
+        {regions.length > 0 && (
+          <select className="input max-w-[200px]" value={region} onChange={(e) => setRegion(e.target.value)}>
+            <option value="">All regions</option>
+            {regions.map((r) => (
+              <option key={r.key} value={r.key}>{r.name}</option>
+            ))}
+          </select>
+        )}
         <select className="input max-w-[130px]" value={gender} onChange={(e) => setGender(e.target.value)}>
           <option value="">Boys & Girls</option>
           <option value="Boys">Boys</option>

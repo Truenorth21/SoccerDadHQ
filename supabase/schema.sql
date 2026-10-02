@@ -118,15 +118,16 @@ create index if not exists coaches_state_region_idx on public.coaches (state, re
 create index if not exists coaches_club_idx on public.coaches (club_id);
 
 -- ============================================================
---  SCHOOLS  (FHSAA high school soccer programs)
+--  SCHOOLS  (high school soccer programs; fhsaa_class holds the classification
+--            under each state's own association)
 -- ============================================================
 create table if not exists public.schools (
   id              text primary key,
   slug            text unique not null,
   name            text not null,
-  region          text not null,
+  region          text,                -- null for states without predefined regions
   city            text not null,
-  state           text not null default 'FL',
+  state           text not null default 'FL' check (state ~ '^[A-Z]{2}$'),
   zip             text,
   lat             double precision,
   lng             double precision,
@@ -152,6 +153,8 @@ create table if not exists public.schools (
 
 create index if not exists schools_region_idx on public.schools (region);
 create index if not exists schools_class_idx on public.schools (fhsaa_class);
+create index if not exists schools_state_idx on public.schools (state);
+create index if not exists schools_state_region_idx on public.schools (state, region);
 
 -- ============================================================
 --  REVIEWS  (clubs + coaches + schools)
@@ -255,6 +258,7 @@ create table if not exists public.commitments (
   dest_type     text not null check (dest_type in ('College','Pro','National Team')),
   destination   text not null,
   division      text,
+  state         text check (state is null or state ~ '^[A-Z]{2}$'),  -- the announcing program's state
   user_id       uuid references public.profiles(id) on delete set null,
   status        text not null default 'pending',  -- pending | published | rejected
   created_at    timestamptz not null default now()
@@ -506,9 +510,9 @@ create table if not exists public.listings (
   slug        text not null,
   kind        text not null check (kind in ('training-center','facility','tournament','camp')),
   name        text not null,
-  region      text not null,
+  region      text,                    -- null for states without predefined regions
   city        text not null,
-  state       text not null default 'FL',
+  state       text not null default 'FL' check (state ~ '^[A-Z]{2}$'),
   zip         text,
   lat         double precision,
   lng         double precision,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { loadClubs, loadSchools } from "@/lib/data";
 
 export async function POST(request: Request) {
   let body: any;
@@ -27,7 +28,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please log in as the profile owner to announce a commitment.", code: "auth_required" }, { status: 401 });
   }
 
-  const { error } = await supabase.from("commitments").insert({
+  // Tag the commitment with the announcing club/school's state for the tracker's state filter.
+  const subjects: { slug: string; state: string }[] = subject_type === "club" ? await loadClubs() : await loadSchools();
+  const state = subjects.find((s) => s.slug === subject_slug)?.state ?? null;
+
+  const row = {
     subject_type,
     subject_slug,
     subject_name: subject_name ?? null,
@@ -40,7 +45,10 @@ export async function POST(request: Request) {
     division: dest_type === "College" ? division : null,
     user_id: userData.user.id,
     status: "pending",
-  });
+  };
+  let { error } = await supabase.from("commitments").insert({ ...row, state });
+  // Before national-schools-listings-migration.sql runs there's no state column; submit without it.
+  if (error && /state/i.test(error.message)) ({ error } = await supabase.from("commitments").insert(row));
 
   if (error) {
     return NextResponse.json({ error: "Could not submit the commitment. Please try again." }, { status: 500 });

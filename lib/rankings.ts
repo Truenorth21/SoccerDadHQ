@@ -101,9 +101,9 @@ export async function getRankings(talliesOverride?: Record<string, number>): Pro
         id: l.id,
         rank: 0,
         name: l.name,
-        subtitle: `${l.tags.join(" · ")} • ${l.city}, FL`,
+        subtitle: `${l.tags.join(" · ")} • ${l.city}, ${l.state}`,
         region: l.region,
-        state: "FL", // listings are Florida-only for now
+        state: l.state,
         href: `${KIND_CONFIG[kind].path}/${l.slug}`,
         color: l.color,
         votes: v(l.id),

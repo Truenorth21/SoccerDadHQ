@@ -166,7 +166,7 @@ export interface RankingItem {
   color?: string; // crest/avatar color for the podium + rows
   gender?: string; // "Boys" | "Girls" — for school team rankings
   level?: string; // "Varsity" | "JV" | "Middle School" — for school team rankings
-  cls?: string; // FHSAA class/division (e.g. "Class 5A") — for school team rankings
+  cls?: string; // state-association class/division (e.g. "Class 5A") — for school team rankings
 }
 
 export interface Commitment {
@@ -178,6 +178,7 @@ export interface Commitment {
   dest_type: "College" | "Pro" | "National Team";
   destination: string; // e.g. "University of Florida", "Inter Miami CF", "U-17 USYNT"
   division?: string; // NCAA D1/D2/D3, NAIA, JUCO (college only)
+  state: string; // two-letter code of the club/school that announced it
   region: RegionKey;
   // A commitment is showcased by a club and/or a school (the paid profile that announced it)
   club_id?: string;

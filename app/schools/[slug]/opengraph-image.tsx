@@ -51,7 +51,7 @@ export default async function Image({ params }: { params: { slug: string } }) {
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", fontSize: 26, color: "#e8a020", letterSpacing: 3, textTransform: "uppercase" }}>
-                {school ? [school.fhsaa_class, regionName(school.region)].filter(Boolean).join(" · ") : "Florida High School Soccer"}
+                {school ? [school.fhsaa_class, school.region ? regionName(school.region) : school.state].filter(Boolean).join(" · ") : "High School Soccer"}
               </div>
               <div style={{ display: "flex", fontSize: 60, fontWeight: 800, marginTop: 8, maxWidth: showRank ? 600 : 920, lineHeight: 1.05 }}>
                 {name}

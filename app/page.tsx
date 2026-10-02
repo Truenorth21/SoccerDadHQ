@@ -175,7 +175,7 @@ export default async function HomePage() {
           <div className="mb-5 flex items-end justify-between">
             <div>
               <h2 className="section-title">High School Soccer</h2>
-              <p className="text-sm text-slate-500">Top FHSAA programs across Florida</p>
+              <p className="text-sm text-slate-500">Top high school programs</p>
             </div>
             <Link href="/schools" className="link-arrow">All schools →</Link>
           </div>

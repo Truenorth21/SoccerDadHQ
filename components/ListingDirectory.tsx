@@ -5,6 +5,8 @@ import ListingCard from "./ListingCard";
 import AddListingCTA from "./AddListingCTA";
 import AdSlot from "./AdSlot";
 import { getListings, KIND_CONFIG, type ListingKind } from "@/lib/listings";
+import { regionName } from "@/lib/regions";
+import { stateName } from "@/lib/states";
 
 export default async function ListingDirectory({
   kind,
@@ -20,13 +22,15 @@ export default async function ListingDirectory({
   const listings = await getListings(kind, filters);
   // Rating-based sorts appear only once listings have real reviews.
   const hasRatings = (await getListings(kind, {})).some((l) => l.rating > 0);
+  const place = filters.region ? regionName(filters.region) : filters.state ? stateName(filters.state) : "";
+  const heading = place ? `${place} ${cfg.plural}` : cfg.plural;
 
   return (
     <>
       <section className="border-b border-slate-200 bg-navy py-10 text-white">
         <div className="container-page flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">Florida {cfg.plural}</h1>
+            <h1 className="font-heading text-3xl font-bold uppercase tracking-tight sm:text-4xl">{heading}</h1>
             <p className="mt-1 text-slate-300">
               {listings.length} {listings.length === 1 ? cfg.label.toLowerCase() : cfg.plural.toLowerCase()} · {cfg.blurb}
             </p>
