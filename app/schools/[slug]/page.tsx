@@ -37,7 +37,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!school) return { title: "School not found" };
   const title = `${school.name} Soccer — Reviews & Program Info`;
   const ratingBit = school.review_count > 0 ? `${school.rating.toFixed(1)}★ from ${school.review_count} reviews. ` : "";
-  const description = `${school.name} (${school.mascot}) ${school.fhsaa_class} ${school.type.toLowerCase()} high school soccer in ${school.city}, ${school.state}. ${ratingBit}${school.state_titles} state title${school.state_titles === 1 ? "" : "s"}.`;
+  const lead = [school.name + (school.mascot ? ` (${school.mascot})` : ""), school.fhsaa_class, `${school.type.toLowerCase()} high school soccer`].filter(Boolean).join(" ");
+  const titlesBit = school.state_titles > 0 ? `${school.state_titles} state title${school.state_titles === 1 ? "" : "s"}.` : "";
+  const description = `${lead} in ${school.city}, ${school.state}. ${ratingBit}${titlesBit}`.trim();
   return {
     title,
     description,
@@ -110,7 +112,7 @@ export default async function SchoolProfile({ params }: { params: { slug: string
                 <h1 className="font-heading text-3xl font-bold uppercase tracking-tight text-navy sm:text-4xl">
                   {school.name}
                 </h1>
-                <span className="chip-sky">{school.fhsaa_class}</span>
+                {school.fhsaa_class && <span className="chip-sky">{school.fhsaa_class}</span>}
                 <span className="chip">{school.type}</span>
                 {(school as { tryouts_open?: boolean }).tryouts_open && <span className="chip-amber">Tryouts open</span>}
                 <OwnerChip tier={tier} />
@@ -159,10 +161,11 @@ export default async function SchoolProfile({ params }: { params: { slug: string
             {/* Quick stats */}
             <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { n: school.state_titles, l: "State titles" },
-                { n: school.district_titles, l: "District titles" },
+                // Unclaimed seed schools have no verified history yet: show a dash, not a made-up zero.
+                { n: school.state_titles || (school.enrollment ? 0 : "—"), l: "State titles" },
+                { n: school.district_titles || (school.enrollment ? 0 : "—"), l: "District titles" },
                 { n: school.programs.length === 2 ? "B + G" : school.programs[0], l: "Programs" },
-                { n: school.enrollment.toLocaleString(), l: "Enrollment" },
+                { n: school.enrollment ? school.enrollment.toLocaleString() : "—", l: "Enrollment" },
               ].map((s) => (
                 <div key={s.l} className="card p-4 text-center">
                   <div className="font-heading text-2xl font-bold text-brand-blue">{s.n}</div>
@@ -186,15 +189,15 @@ export default async function SchoolProfile({ params }: { params: { slug: string
                 {school.programs.includes("Boys") && (
                   <div className="card p-4">
                     <h3 className="label">Boys Varsity</h3>
-                    <p className="font-heading text-lg font-bold text-navy">{school.head_coach_boys}</p>
-                    <p className="text-sm text-slate-500">Head Coach · {school.district}</p>
+                    <p className="font-heading text-lg font-bold text-navy">{school.head_coach_boys || "Not listed yet"}</p>
+                    <p className="text-sm text-slate-500">{["Head Coach", school.district].filter(Boolean).join(" · ")}</p>
                   </div>
                 )}
                 {school.programs.includes("Girls") && (
                   <div className="card p-4">
                     <h3 className="label">Girls Varsity</h3>
-                    <p className="font-heading text-lg font-bold text-navy">{school.head_coach_girls}</p>
-                    <p className="text-sm text-slate-500">Head Coach · {school.district}</p>
+                    <p className="font-heading text-lg font-bold text-navy">{school.head_coach_girls || "Not listed yet"}</p>
+                    <p className="text-sm text-slate-500">{["Head Coach", school.district].filter(Boolean).join(" · ")}</p>
                   </div>
                 )}
               </div>
@@ -280,8 +283,9 @@ export default async function SchoolProfile({ params }: { params: { slug: string
               <h3 className="mb-3 font-heading text-lg font-bold uppercase text-navy">Details</h3>
               <ul className="space-y-2.5 text-sm">
                 <li className="flex justify-between"><span className="text-slate-500">Type</span><span className="font-semibold text-navy">{school.type}</span></li>
-                <li className="flex justify-between"><span className="text-slate-500">{hsAssociation(school.state)} Class</span><span className="font-semibold text-navy">{school.fhsaa_class}</span></li>
-                <li className="flex justify-between"><span className="text-slate-500">District</span><span className="font-semibold text-navy">{school.district}</span></li>
+                <li className="flex justify-between"><span className="text-slate-500">Association</span><span className="font-semibold text-navy">{hsAssociation(school.state)}</span></li>
+                {school.fhsaa_class && <li className="flex justify-between"><span className="text-slate-500">{hsAssociation(school.state)} Class</span><span className="font-semibold text-navy">{school.fhsaa_class}</span></li>}
+                {school.district && <li className="flex justify-between"><span className="text-slate-500">District</span><span className="font-semibold text-navy">{school.district}</span></li>}
                 {school.region && <li className="flex justify-between"><span className="text-slate-500">Region</span><span className="font-semibold text-navy">{regionName(school.region)}</span></li>}
                 <li className="flex justify-between"><span className="text-slate-500">Location</span><span className="font-semibold text-navy">{school.city}, {school.state}</span></li>
               </ul>

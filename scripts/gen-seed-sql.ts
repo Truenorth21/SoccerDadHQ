@@ -10,6 +10,9 @@
  *                                                → supabase/national-clubs-seed-ca-ny.sql
  *                                                  (just those states' clubs + coaches, for
  *                                                  databases that already hold earlier states)
+ *   npx tsx scripts/gen-seed-sql.ts --schools --states TX,GA
+ *                                                → supabase/national-schools-seed-tx-ga.sql
+ *                                                  (just those states' high schools)
  */
 import { writeFileSync } from "node:fs";
 import { CLUBS, COACHES, TRYOUTS } from "../lib/seed";
@@ -43,6 +46,38 @@ const nationalFile = onlyStates
 const onConflict = national ? "on conflict do nothing" : "on conflict (id) do nothing";
 
 const lines: string[] = [];
+
+function schoolInsert(sc: (typeof SCHOOLS)[number], conflict: string): string {
+  return (
+    `insert into public.schools (id, slug, name, region, city, state, zip, lat, lng, type, fhsaa_class, district, mascot, colors, logo_color, programs, head_coach_boys, head_coach_girls, state_titles, last_title, district_titles, enrollment, description, website, featured, plan) values (` +
+    [
+      s(sc.id), s(sc.slug), s(sc.name), s(sc.region), s(sc.city), s(sc.state), s(sc.zip),
+      n(sc.lat), n(sc.lng), s(sc.type), s(sc.fhsaa_class || null), s(sc.district || null), s(sc.mascot || null),
+      arr(sc.colors), s(sc.logo_color), arr(sc.programs), s(sc.head_coach_boys), s(sc.head_coach_girls),
+      n(sc.state_titles), n(sc.last_title), n(sc.district_titles), sc.enrollment ? n(sc.enrollment) : "null", s(sc.description), s(sc.website),
+      b(sc.featured), s(sc.plan),
+    ].join(", ") +
+    `) ${conflict};`
+  );
+}
+
+if (process.argv.includes("--schools")) {
+  const schools = SCHOOLS.filter((sc) => inScope(sc.state));
+  const file = onlyStates
+    ? `national-schools-seed-${onlyStates.map((x) => x.toLowerCase()).join("-")}.sql`
+    : "national-schools-seed.sql";
+  lines.push("-- ============================================================");
+  lines.push("--  SoccerDadHQ — national high schools seed (generated from lib/schoolsNational.ts)");
+  if (onlyStates) lines.push(`--  States: ${onlyStates.join(", ")}`);
+  lines.push("--  Run AFTER national-schools-listings-migration.sql. Safe to re-run:");
+  lines.push("--  rows that already exist (same id or slug) are skipped, never overwritten.");
+  lines.push("-- ============================================================");
+  lines.push("");
+  for (const sc of schools) lines.push(schoolInsert(sc, "on conflict do nothing"));
+  writeFileSync(new URL(`../supabase/${file}`, import.meta.url), lines.join("\n") + "\n");
+  console.log(`Wrote supabase/${file} — ${schools.length} schools.`);
+  process.exit(0);
+}
 lines.push("-- ============================================================");
 if (national) {
   lines.push("--  SoccerDadHQ — national expansion seed (generated from lib/seedNational.ts)");

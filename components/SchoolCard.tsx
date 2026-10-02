@@ -15,7 +15,7 @@ export default function SchoolCard({ school }: { school: School & { distance?: n
         <CompareButton item={{ type: "school", slug: school.slug, name: school.name }} />
         <FavoriteButton
           floating
-          item={{ type: "school", slug: school.slug, name: school.name, subtitle: `${school.mascot} · ${school.city}, ${school.state}`, color: school.logo_color }}
+          item={{ type: "school", slug: school.slug, name: school.name, subtitle: [school.mascot, `${school.city}, ${school.state}`].filter(Boolean).join(" · "), color: school.logo_color }}
         />
       </div>
 
@@ -26,7 +26,7 @@ export default function SchoolCard({ school }: { school: School & { distance?: n
             {school.name}
           </h3>
           <p className="truncate text-sm text-slate-500">
-            {school.mascot} · {school.city}, {school.state}
+            {[school.mascot, `${school.city}, ${school.state}`].filter(Boolean).join(" · ")}
           </p>
           <p className="truncate text-xs text-slate-400">{regionName(school.region)}</p>
         </div>
@@ -37,7 +37,7 @@ export default function SchoolCard({ school }: { school: School & { distance?: n
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
-        <span className="chip-sky">{school.fhsaa_class}</span>
+        {school.fhsaa_class && <span className="chip-sky">{school.fhsaa_class}</span>}
         <span className="chip">{school.type}</span>
         {school.programs.map((p) => (
           <span key={p} className="chip">{p}</span>
@@ -48,7 +48,7 @@ export default function SchoolCard({ school }: { school: School & { distance?: n
         {school.distance !== undefined ? (
           <span className="text-brand-blue">{school.distance.toFixed(0)} mi away</span>
         ) : (
-          <span>{school.district}</span>
+          <span>{school.district || `${school.city}, ${school.state}`}</span>
         )}
         {school.state_titles > 0 ? (
           <span className="chip-amber">🏆 {school.state_titles} state title{school.state_titles === 1 ? "" : "s"}</span>

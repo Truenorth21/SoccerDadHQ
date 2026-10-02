@@ -1,6 +1,7 @@
 import type { RegionKey } from "./regions";
 import type { School, SchoolReviewScores, Review } from "./types";
 import { hsAssociation, stateName } from "./states";
+import { NATIONAL_RAW_SCHOOLS } from "./schoolsNational";
 
 /* Deterministic helpers (kept local to avoid coupling with the club seed). */
 function hash(str: string): number {
@@ -42,6 +43,8 @@ interface RawSchool {
   cls: string;
   mascot: string;
   stateTitles: number;
+  programs?: string[]; // set for national schools (single-sex programs)
+  national?: boolean; // honest directory entry: no generated coaches, district, enrollment or plan
 }
 
 /* Real Florida high schools with notable soccer programs. */
@@ -223,4 +226,50 @@ function buildSchool(raw: RawSchool, idx: number): School {
   };
 }
 
-export const SCHOOLS: School[] = RAW_SCHOOLS.map(buildSchool);
+/** A national seed school: real name and city, everything unverified left blank. */
+function buildNationalSchool(raw: RawSchool, idx: number): School {
+  const slug = slugifySchool(raw.name);
+  const state = raw.state ?? "FL";
+  const programs = raw.programs ?? ["Boys", "Girls"];
+  const programText = programs.length === 2 ? "boys and girls" : programs[0].toLowerCase();
+  return {
+    id: `school-${idx + 1}`,
+    slug,
+    name: raw.name,
+    region: raw.region,
+    city: raw.city,
+    state,
+    zip: raw.zip,
+    lat: raw.lat,
+    lng: raw.lng,
+    type: raw.type,
+    fhsaa_class: "",
+    district: "",
+    mascot: raw.mascot,
+    colors: [CREST_COLORS[idx % CREST_COLORS.length], "#e8a020"],
+    logo_color: CREST_COLORS[idx % CREST_COLORS.length],
+    programs,
+    head_coach_boys: undefined,
+    head_coach_girls: undefined,
+    state_titles: 0,
+    last_title: undefined,
+    district_titles: 0,
+    enrollment: 0,
+    description: `${raw.name}${raw.mascot ? ` (${raw.mascot})` : ""} is a ${raw.type.toLowerCase()} high school in ${raw.city}, ${stateName(state)}, fielding ${programText} soccer under the ${hsAssociation(state)}. Coaches, classification and program history are added when the school claims this profile.`,
+    website: undefined,
+    featured: false,
+    plan: "free",
+    rating: 0,
+    review_count: 0,
+    scores: avgSchoolScores([]),
+    reviews: [],
+  };
+}
+
+/* Florida first, then the national schools appended so existing ids stay stable. */
+const ALL_RAW_SCHOOLS: RawSchool[] = [
+  ...RAW_SCHOOLS,
+  ...NATIONAL_RAW_SCHOOLS.map((s) => ({ ...s, cls: "", stateTitles: 0, national: true })),
+];
+
+export const SCHOOLS: School[] = ALL_RAW_SCHOOLS.map((raw, idx) => (raw.national ? buildNationalSchool(raw, idx) : buildSchool(raw, idx)));
