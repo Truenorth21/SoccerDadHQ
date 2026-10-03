@@ -1,11 +1,14 @@
 /* ------------------------------------------------------------------ *
  *  National high school seed: about 20 real high school soccer programs
- *  in ten states with predefined regions (TX, GA, NC, SC, TN, CA, NY, NJ,
- *  VA, IL), spread across that state's regions. Every school competes
- *  under its state association (UIL, GHSA, NCHSAA, SCHSL, TSSAA, CIF,
- *  NYSPHSAA, NJSIAA, VHSL, IHSA), so private schools that play in a
- *  separate independent-school league (VISAA, NCISAA, SCISA, TAPPS) and
- *  NYC PSAL / CHSAA schools are left out on purpose.
+ *  in seventeen states with predefined regions (TX, GA, NC, SC, TN, CA, NY,
+ *  NJ, VA, IL, PA, OH, MD, WA, CO, AZ, MA), spread across that state's
+ *  regions. Every school competes under its state association (UIL, GHSA,
+ *  NCHSAA, SCHSL, TSSAA, CIF, NYSPHSAA, NJSIAA, VHSL, IHSA, PIAA, OHSAA,
+ *  MPSSAA, WIAA, CHSAA, AIA, MIAA), so private schools that play in a
+ *  separate independent-school league (VISAA, NCISAA, SCISA, TAPPS, PA
+ *  Inter-Ac, MD MIAA/IAAM, New England prep leagues) and NYC PSAL / CHSAA
+ *  schools are left out on purpose. MPSSAA is public-only, so Maryland's
+ *  list is all public schools.
  *
  *  Like the national club seed these are unclaimed directory entries:
  *  classification, district, coaches, enrollment and titles are left blank
@@ -289,5 +292,173 @@ export const NATIONAL_RAW_SCHOOLS: NationalRawSchool[] = [
     ["O'Fallon Township High School", "southern-il", "O'Fallon", "62269", 38.5920, -89.9110, P, "Panthers"],
     ["Belleville East High School", "southern-il", "Belleville", "62221", 38.5250, -89.9330, P, "Lancers"],
     ["Carbondale Community High School", "southern-il", "Carbondale", "62901", 37.7270, -89.2170, P, "Terriers"],
+  ]),
+
+  // ---------------------------- Pennsylvania (PIAA) ----------------------------
+  ...state("PA", [
+    ["La Salle College High School", "philadelphia", "Wyndmoor", "19038", 40.0815, -75.1960, PV, "Explorers", BOYS],
+    ["Archbishop John Carroll High School", "philadelphia", "Radnor", "19087", 40.0420, -75.3620, PV, "Patriots"],
+    ["Conestoga High School", "philadelphia", "Berwyn", "19312", 40.0450, -75.4430, P, "Pioneers"],
+    ["Lower Merion High School", "philadelphia", "Ardmore", "19003", 40.0060, -75.2890, P, "Aces"],
+    ["Radnor High School", "philadelphia", "Radnor", "19087", 40.0380, -75.3540, P, "Raptors"],
+    ["Downingtown East High School", "philadelphia", "Exton", "19341", 40.0290, -75.6660, P, "Cougars"],
+    ["Central Bucks High School West", "philadelphia", "Doylestown", "18901", 40.3100, -75.1400, P, "Bucks"],
+    ["North Allegheny Senior High School", "pittsburgh", "Wexford", "15090", 40.6000, -80.0410, P, "Tigers"],
+    ["Mt. Lebanon High School", "pittsburgh", "Pittsburgh", "15228", 40.3760, -80.0480, P, "Blue Devils"],
+    ["Upper St. Clair High School", "pittsburgh", "Upper St. Clair", "15241", 40.3340, -80.0820, P, "Panthers"],
+    ["Central Catholic High School", "pittsburgh", "Pittsburgh", "15213", 40.4460, -79.9520, PV, "Vikings", BOYS],
+    ["Cathedral Preparatory School", "pittsburgh", "Erie", "16501", 42.1200, -80.0850, PV, "Ramblers", BOYS],
+    ["Hershey High School", "central-pa", "Hershey", "17033", 40.2860, -76.6510, P, "Trojans"],
+    ["Cumberland Valley High School", "central-pa", "Mechanicsburg", "17050", 40.2210, -77.0170, P, "Eagles"],
+    ["Manheim Township High School", "central-pa", "Lancaster", "17601", 40.0900, -76.2910, P, "Blue Streaks"],
+    ["State College Area High School", "central-pa", "State College", "16801", 40.7930, -77.8600, P, "Little Lions"],
+    ["Parkland High School", "lehigh-valley-ne", "Allentown", "18104", 40.6070, -75.5600, P, "Trojans"],
+    ["Emmaus High School", "lehigh-valley-ne", "Emmaus", "18049", 40.5390, -75.4970, P, "Green Hornets"],
+    ["Bethlehem Catholic High School", "lehigh-valley-ne", "Bethlehem", "18017", 40.6440, -75.3980, PV, "Golden Hawks"],
+    ["Abington Heights High School", "lehigh-valley-ne", "Clarks Summit", "18411", 41.4890, -75.7090, P, "Comets"],
+  ]),
+
+  // ---------------------------- Ohio (OHSAA) ----------------------------
+  ...state("OH", [
+    ["Dublin Jerome High School", "columbus", "Dublin", "43016", 40.1190, -83.1640, P, "Celtics"],
+    ["Upper Arlington High School", "columbus", "Upper Arlington", "43221", 40.0040, -83.0640, P, "Golden Bears"],
+    ["Olentangy Liberty High School", "columbus", "Powell", "43065", 40.1580, -83.0750, P, "Patriots"],
+    ["Hilliard Davidson High School", "columbus", "Hilliard", "43026", 40.0340, -83.1590, P, "Wildcats"],
+    ["Thomas Worthington High School", "columbus", "Worthington", "43085", 40.0930, -83.0180, P, "Cardinals"],
+    ["St. Charles Preparatory School", "columbus", "Columbus", "43209", 39.9690, -82.9300, PV, "Cardinals", BOYS],
+    ["Saint Ignatius High School", "cleveland-ne", "Cleveland", "44113", 41.4830, -81.6990, PV, "Wildcats", BOYS],
+    ["Saint Joseph Academy", "cleveland-ne", "Cleveland", "44111", 41.4600, -81.7880, PV, "Jaguars", GIRLS],
+    ["Walsh Jesuit High School", "cleveland-ne", "Cuyahoga Falls", "44224", 41.1660, -81.4730, PV, "Warriors"],
+    ["Hudson High School", "cleveland-ne", "Hudson", "44236", 41.2400, -81.4410, P, "Explorers"],
+    ["Strongsville High School", "cleveland-ne", "Strongsville", "44136", 41.3140, -81.8360, P, "Mustangs"],
+    ["Solon High School", "cleveland-ne", "Solon", "44139", 41.3900, -81.4410, P, "Comets"],
+    ["St. Xavier High School", "cincinnati-dayton", "Cincinnati", "45231", 39.2280, -84.5450, PV, "Bombers", BOYS],
+    ["Archbishop Moeller High School", "cincinnati-dayton", "Cincinnati", "45242", 39.2570, -84.3650, PV, "Crusaders", BOYS],
+    ["Mount Notre Dame High School", "cincinnati-dayton", "Cincinnati", "45215", 39.2560, -84.4340, PV, "Cougars", GIRLS],
+    ["Mason High School", "cincinnati-dayton", "Mason", "45040", 39.3600, -84.3100, P, "Comets"],
+    ["Centerville High School", "cincinnati-dayton", "Centerville", "45459", 39.6280, -84.1590, P, "Elks"],
+    ["St. John's Jesuit High School", "toledo-nw", "Toledo", "43614", 41.6000, -83.6470, PV, "Titans", BOYS],
+    ["Anthony Wayne High School", "toledo-nw", "Whitehouse", "43571", 41.5190, -83.8040, P, "Generals"],
+    ["Perrysburg High School", "toledo-nw", "Perrysburg", "43551", 41.5570, -83.6270, P, "Yellow Jackets"],
+  ]),
+
+  // ---------------------------- Maryland (MPSSAA, public schools only) ----------------------------
+  ...state("MD", [
+    ["Howard High School", "baltimore", "Ellicott City", "21043", 39.2420, -76.8100, P, "Lions"],
+    ["River Hill High School", "baltimore", "Clarksville", "21029", 39.2070, -76.9390, P, "Hawks"],
+    ["Marriotts Ridge High School", "baltimore", "Marriottsville", "21104", 39.3000, -76.9100, P, "Mustangs"],
+    ["Mount Hebron High School", "baltimore", "Ellicott City", "21042", 39.2850, -76.8370, P, "Vikings"],
+    ["Dulaney High School", "baltimore", "Timonium", "21093", 39.4430, -76.6130, P, "Lions"],
+    ["Catonsville High School", "baltimore", "Catonsville", "21228", 39.2720, -76.7320, P, "Comets"],
+    ["Walt Whitman High School", "dc-suburbs", "Bethesda", "20817", 38.9810, -77.1250, P, "Vikings"],
+    ["Winston Churchill High School", "dc-suburbs", "Potomac", "20854", 39.0430, -77.1730, P, "Bulldogs"],
+    ["Bethesda-Chevy Chase High School", "dc-suburbs", "Bethesda", "20814", 38.9970, -77.0880, P, "Barons"],
+    ["Thomas S. Wootton High School", "dc-suburbs", "Rockville", "20850", 39.0820, -77.1980, P, "Patriots"],
+    ["Quince Orchard High School", "dc-suburbs", "Gaithersburg", "20878", 39.1190, -77.2420, P, "Cougars"],
+    ["Broadneck High School", "annapolis-southern", "Annapolis", "21409", 39.0290, -76.4280, P, "Bruins"],
+    ["Severna Park High School", "annapolis-southern", "Severna Park", "21146", 39.0750, -76.5400, P, "Falcons"],
+    ["Annapolis High School", "annapolis-southern", "Annapolis", "21403", 38.9700, -76.5060, P, "Panthers"],
+    ["Huntingtown High School", "annapolis-southern", "Huntingtown", "20639", 38.6150, -76.6170, P, "Hurricanes"],
+    ["Urbana High School", "western-md", "Ijamsville", "21754", 39.3400, -77.3870, P, "Hawks"],
+    ["Middletown High School", "western-md", "Middletown", "21769", 39.4440, -77.5480, P, "Knights"],
+    ["Linganore High School", "western-md", "Frederick", "21774", 39.4170, -77.3080, P, "Lancers"],
+    ["Kent Island High School", "eastern-shore", "Stevensville", "21666", 38.9820, -76.3170, P, "Buccaneers"],
+    ["James M. Bennett High School", "eastern-shore", "Salisbury", "21804", 38.3540, -75.5650, P, "Clippers"],
+  ]),
+
+  // ---------------------------- Washington (WIAA) ----------------------------
+  ...state("WA", [
+    ["O'Dea High School", "seattle-eastside", "Seattle", "98104", 47.6070, -122.3250, PV, "Fighting Irish", BOYS],
+    ["Holy Names Academy", "seattle-eastside", "Seattle", "98112", 47.6310, -122.3150, PV, "Cougars", GIRLS],
+    ["Eastside Catholic School", "seattle-eastside", "Sammamish", "98074", 47.6120, -122.0350, PV, "Crusaders"],
+    ["Issaquah High School", "seattle-eastside", "Issaquah", "98027", 47.5300, -122.0300, P, "Eagles"],
+    ["Bellevue High School", "seattle-eastside", "Bellevue", "98004", 47.6080, -122.2010, P, "Wolverines"],
+    ["Mercer Island High School", "seattle-eastside", "Mercer Island", "98040", 47.5680, -122.2240, P, "Islanders"],
+    ["Bellarmine Preparatory School", "tacoma-south-sound", "Tacoma", "98407", 47.2700, -122.4980, PV, "Lions"],
+    ["Gig Harbor High School", "tacoma-south-sound", "Gig Harbor", "98332", 47.3370, -122.5960, P, "Tides"],
+    ["Puyallup High School", "tacoma-south-sound", "Puyallup", "98371", 47.1900, -122.2990, P, "Vikings"],
+    ["Olympia High School", "tacoma-south-sound", "Olympia", "98501", 47.0270, -122.8770, P, "Bears"],
+    ["Henry M. Jackson High School", "north-sound", "Mill Creek", "98012", 47.8600, -122.2040, P, "Timberwolves"],
+    ["Glacier Peak High School", "north-sound", "Snohomish", "98296", 47.8730, -122.1360, P, "Grizzlies"],
+    ["Kamiak High School", "north-sound", "Mukilteo", "98275", 47.8970, -122.2890, P, "Knights"],
+    ["Bellingham High School", "north-sound", "Bellingham", "98225", 48.7470, -122.4800, P, "Red Raiders"],
+    ["Camas High School", "southwest-wa", "Camas", "98607", 45.6150, -122.4280, P, "Papermakers"],
+    ["Skyview High School", "southwest-wa", "Vancouver", "98685", 45.7120, -122.6820, P, "Storm"],
+    ["Union High School", "southwest-wa", "Camas", "98683", 45.6100, -122.5050, P, "Titans"],
+    ["Mead High School", "eastern-wa", "Spokane", "99208", 47.7760, -117.3680, P, "Panthers"],
+    ["Gonzaga Preparatory School", "eastern-wa", "Spokane", "99207", 47.6740, -117.3990, PV, "Bullpups"],
+    ["Hanford High School", "eastern-wa", "Richland", "99354", 46.3290, -119.2830, P, "Falcons"],
+  ]),
+
+  // ---------------------------- Colorado (CHSAA) ----------------------------
+  ...state("CO", [
+    ["Regis Jesuit High School", "denver-metro", "Aurora", "80016", 39.5810, -104.7760, PV, "Raiders"],
+    ["Valor Christian High School", "denver-metro", "Highlands Ranch", "80126", 39.5290, -105.0140, PV, "Eagles"],
+    ["Cherry Creek High School", "denver-metro", "Greenwood Village", "80111", 39.6250, -104.9050, P, "Bruins"],
+    ["Kent Denver School", "denver-metro", "Englewood", "80113", 39.6400, -104.9470, PV, "Sun Devils"],
+    ["Arapahoe High School", "denver-metro", "Centennial", "80122", 39.5960, -104.9620, P, "Warriors"],
+    ["Mullen High School", "denver-metro", "Denver", "80236", 39.6480, -105.0570, PV, "Mustangs"],
+    ["Grandview High School", "denver-metro", "Aurora", "80016", 39.6080, -104.7310, P, "Wolves"],
+    ["Boulder High School", "boulder-northern", "Boulder", "80302", 40.0110, -105.2770, P, "Panthers"],
+    ["Fairview High School", "boulder-northern", "Boulder", "80305", 39.9810, -105.2520, P, "Knights"],
+    ["Monarch High School", "boulder-northern", "Louisville", "80027", 39.9550, -105.1650, P, "Coyotes"],
+    ["Silver Creek High School", "boulder-northern", "Longmont", "80503", 40.1910, -105.1610, P, "Raptors"],
+    ["Fossil Ridge High School", "boulder-northern", "Fort Collins", "80528", 40.5130, -105.0110, P, "SaberCats"],
+    ["Fort Collins High School", "boulder-northern", "Fort Collins", "80525", 40.5490, -105.0590, P, "Lambkins"],
+    ["Cheyenne Mountain High School", "colorado-springs", "Colorado Springs", "80906", 38.7690, -104.8410, P, "Red-Tailed Hawks"],
+    ["Air Academy High School", "colorado-springs", "USAF Academy", "80840", 38.9750, -104.8240, P, "Kadets"],
+    ["Pine Creek High School", "colorado-springs", "Colorado Springs", "80920", 38.9620, -104.7770, P, "Eagles"],
+    ["Discovery Canyon Campus High School", "colorado-springs", "Colorado Springs", "80921", 39.0170, -104.7930, P, "Thunder"],
+    ["Grand Junction High School", "western-slope", "Grand Junction", "81501", 39.0790, -108.5560, P, "Tigers"],
+    ["Durango High School", "western-slope", "Durango", "81301", 37.2950, -107.8710, P, "Demons"],
+    ["Steamboat Springs High School", "western-slope", "Steamboat Springs", "80487", 40.4770, -106.8270, P, "Sailors"],
+  ]),
+
+  // ---------------------------- Arizona (AIA) ----------------------------
+  ...state("AZ", [
+    ["Brophy College Preparatory", "phoenix-west", "Phoenix", "85012", 33.4990, -112.0730, PV, "Broncos", BOYS],
+    ["Xavier College Preparatory", "phoenix-west", "Phoenix", "85012", 33.4980, -112.0700, PV, "Gators", GIRLS],
+    ["Desert Vista High School", "phoenix-west", "Phoenix", "85048", 33.3120, -112.0460, P, "Thunder"],
+    ["Sandra Day O'Connor High School", "phoenix-west", "Phoenix", "85085", 33.7210, -112.0920, P, "Eagles"],
+    ["Liberty High School", "phoenix-west", "Peoria", "85383", 33.7200, -112.2580, P, "Lions"],
+    ["Shadow Ridge High School", "phoenix-west", "Surprise", "85379", 33.6430, -112.3880, P, "Stallions"],
+    ["Chaparral High School", "east-valley", "Scottsdale", "85259", 33.5640, -111.8560, P, "Firebirds"],
+    ["Notre Dame Preparatory", "east-valley", "Scottsdale", "85255", 33.6510, -111.8760, PV, "Saints"],
+    ["Hamilton High School", "east-valley", "Chandler", "85249", 33.2560, -111.8410, P, "Huskies"],
+    ["Basha High School", "east-valley", "Chandler", "85249", 33.2280, -111.8250, P, "Bears"],
+    ["Perry High School", "east-valley", "Gilbert", "85297", 33.2600, -111.7350, P, "Pumas"],
+    ["Corona del Sol High School", "east-valley", "Tempe", "85284", 33.3500, -111.9320, P, "Aztecs"],
+    ["Seton Catholic Preparatory", "east-valley", "Chandler", "85224", 33.3200, -111.8670, PV, "Sentinels"],
+    ["Salpointe Catholic High School", "tucson-southern", "Tucson", "85719", 32.2560, -110.9450, PV, "Lancers"],
+    ["Catalina Foothills High School", "tucson-southern", "Tucson", "85718", 32.3110, -110.9220, P, "Falcons"],
+    ["Tucson High Magnet School", "tucson-southern", "Tucson", "85705", 32.2290, -110.9640, P, "Badgers"],
+    ["Ironwood Ridge High School", "tucson-southern", "Oro Valley", "85742", 32.4000, -111.0010, P, "Nighthawks"],
+    ["Buena High School", "tucson-southern", "Sierra Vista", "85635", 31.5530, -110.2900, P, "Colts"],
+    ["Flagstaff High School", "northern-az", "Flagstaff", "86001", 35.2040, -111.6560, P, "Eagles"],
+    ["Prescott High School", "northern-az", "Prescott", "86301", 34.5390, -112.4590, P, "Badgers"],
+  ]),
+
+  // ---------------------------- Massachusetts (MIAA) ----------------------------
+  ...state("MA", [
+    ["Boston College High School", "boston-metro", "Boston", "02125", 42.3180, -71.0440, PV, "Eagles", BOYS],
+    ["Concord-Carlisle Regional High School", "boston-metro", "Concord", "01742", 42.4520, -71.3730, P, "Patriots"],
+    ["Newton North High School", "boston-metro", "Newtonville", "02460", 42.3510, -71.2120, P, "Tigers"],
+    ["Needham High School", "boston-metro", "Needham", "02492", 42.2810, -71.2370, P, "Rockets"],
+    ["Wellesley High School", "boston-metro", "Wellesley", "02481", 42.3010, -71.2870, P, "Raiders"],
+    ["St. John's Preparatory School", "north-shore-merrimack", "Danvers", "01923", 42.5700, -70.9460, PV, "Eagles", BOYS],
+    ["Andover High School", "north-shore-merrimack", "Andover", "01810", 42.6520, -71.1420, P, "Golden Warriors"],
+    ["Masconomet Regional High School", "north-shore-merrimack", "Boxford", "01921", 42.6460, -70.9810, P, "Chieftains"],
+    ["Marblehead High School", "north-shore-merrimack", "Marblehead", "01945", 42.4900, -70.8730, P, "Magicians"],
+    ["Chelmsford High School", "north-shore-merrimack", "Chelmsford", "01824", 42.6080, -71.3490, P, "Lions"],
+    ["Xaverian Brothers High School", "south-shore-cape", "Westwood", "02090", 42.2090, -71.2040, PV, "Hawks", BOYS],
+    ["Notre Dame Academy", "south-shore-cape", "Hingham", "02043", 42.2200, -70.8740, PV, "Cougars", GIRLS],
+    ["Hingham High School", "south-shore-cape", "Hingham", "02043", 42.2420, -70.8860, P, "Harbormen"],
+    ["Duxbury High School", "south-shore-cape", "Duxbury", "02332", 42.0410, -70.6900, P, "Dragons"],
+    ["Barnstable High School", "south-shore-cape", "Hyannis", "02601", 41.6640, -70.2980, P, "Red Raiders"],
+    ["St. John's High School", "central-ma", "Shrewsbury", "01545", 42.2730, -71.7290, PV, "Pioneers", BOYS],
+    ["Shrewsbury High School", "central-ma", "Shrewsbury", "01545", 42.2960, -71.7140, P, "Colonials"],
+    ["Algonquin Regional High School", "central-ma", "Northborough", "01532", 42.3150, -71.6380, P, "Tomahawks"],
+    ["Longmeadow High School", "western-ma", "Longmeadow", "01106", 42.0480, -72.5700, P, "Lancers"],
+    ["Amherst-Pelham Regional High School", "western-ma", "Amherst", "01002", 42.3700, -72.5170, P, "Hurricanes"],
   ]),
 ];
