@@ -6,6 +6,7 @@ const PRICE_ORDER = ["coach", "school", "club", "camp", "training-center", "tour
 const fmt = (n: number) => (n <= 0 ? "Free" : `$${n % 1 === 0 ? n : n.toFixed(2)}/yr`);
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/claim" },
   title: "Claim your profile — manage your club, school or coach page",
   description:
     "Already listed on SoccerDadHQ? Claim your profile to edit your info, post tryout dates, respond to reviews and showcase commitments — in front of the families comparing programs.",

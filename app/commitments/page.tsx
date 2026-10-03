@@ -6,6 +6,7 @@ import ShareButtons from "@/components/ShareButtons";
 import { getCommitments } from "@/lib/data";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/commitments" },
   title: "Youth Soccer Commitment Tracker — College, Pro & National Team",
   description:
     "Track college, pro and national-team commitments from youth soccer clubs and high schools. See where players are going and which programs produce them.",

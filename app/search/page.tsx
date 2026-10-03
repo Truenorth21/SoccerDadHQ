@@ -6,6 +6,7 @@ import CoachCard from "@/components/CoachCard";
 import { getClubs, getSchools, getCoaches } from "@/lib/data";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: true },
   title: "Search",
   description: "Search youth soccer clubs, high schools and coaches across the country.",
 };

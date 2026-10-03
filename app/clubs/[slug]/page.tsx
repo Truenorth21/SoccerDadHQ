@@ -36,6 +36,7 @@ import { SITE_URL } from "@/lib/utils";
 import { stateName, stateBySlug, US_STATES } from "@/lib/states";
 import { StateClubsLanding } from "@/components/StateLanding";
 import { seoCopy, seoMetadata } from "@/lib/seo";
+import { hasClubs } from "@/lib/seoIndex";
 
 export const revalidate = 3600;
 
@@ -50,7 +51,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const state = stateBySlug(params.slug);
-  if (state) return seoMetadata(seoCopy.clubsState(state));
+  if (state) return seoMetadata(seoCopy.clubsState(state), { index: await hasClubs(state) });
   const club = await getClubBySlug(params.slug);
   if (!club) return { title: "Club not found" };
   const title = `${club.name} — Reviews, Tryouts & Info`;

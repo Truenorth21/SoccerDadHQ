@@ -4,6 +4,7 @@ import NewsletterSignup from "@/components/NewsletterSignup";
 import SoccerParentBingo from "@/components/SoccerParentBingo";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/sideline" },
   title: "Sideline Life — Polls for Soccer Parents",
   description:
     "Soccer parents weigh in: fun sideline polls mixed with the serious questions — what matters most, the real cost, what parents value. Vote, share, and see how the community answers.",

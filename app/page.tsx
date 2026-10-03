@@ -15,6 +15,9 @@ import { STATES_WITH_REGIONS, regionsForState } from "@/lib/regions";
 import { stateByCode } from "@/lib/states";
 import type { RankingItem } from "@/lib/types";
 import WelcomeGuide from "@/components/WelcomeGuide";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export const revalidate = 1800;
 
