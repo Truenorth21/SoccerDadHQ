@@ -32,8 +32,8 @@ function defineRegions(state: string, defs: RegionDef[]): Region[] {
   return defs.map((d) => ({ ...d, state, key: `${prefix}${d.slug}` }));
 }
 
-/** Florida regions. Still exported as REGIONS because the Florida-only sections
- *  (FHSAA schools, listings, commitments) filter by these. */
+/** Florida regions. Still exported as REGIONS for the few Florida-only admin tools;
+ *  everything state-aware uses ALL_REGIONS / regionsForState. */
 export const REGIONS: Region[] = defineRegions("FL", [
   {
     slug: "south-florida",
