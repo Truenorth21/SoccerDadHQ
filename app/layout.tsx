@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Roboto } from "next/font/google";
+import { Analytics as VercelAnalytics } from "@vercel/analytics/next";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -76,6 +77,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <CompareTray />
         </AdsProvider>
         <Analytics />
+        {/* Vercel Web Analytics — cookieless visitor + page counts in the Vercel dashboard. */}
+        <VercelAnalytics />
         <Suspense fallback={null}>
           <Track />
         </Suspense>
