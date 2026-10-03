@@ -96,7 +96,7 @@ for (const c of clubs) {
   lines.push(
     `insert into public.clubs (id, slug, name, region, city, state, zip, lat, lng, founded, description, logo_color, website, email, phone, instagram, facebook, twitter, leagues, age_groups, genders, tryouts_open, tryout_note, claimed, verified, featured, plan) values (` +
       [
-        s(c.id), s(c.slug), s(c.name), s(c.region), s(c.city), s(c.state), s(c.zip),
+        s(c.id), s(c.slug), s(c.name), s(c.region || null), s(c.city), s(c.state), s(c.zip),
         n(c.lat), n(c.lng), n(c.founded), s(c.description), s(c.logo_color), s(c.website),
         s(c.email), s(c.phone), s(c.instagram), s(c.facebook), s(c.twitter),
         arr(c.leagues), arr(c.age_groups), arr(c.genders), b(c.tryouts_open),
@@ -113,7 +113,7 @@ for (const c of coaches) {
   lines.push(
     `insert into public.coaches (id, slug, name, region, city, state, club_id, club_name, title, bio, photo_color, certifications, specialties, age_groups, genders, private_training, private_training_note, email, phone, featured, plan) values (` +
       [
-        s(c.id), s(c.slug), s(c.name), s(c.region), s(c.city), s(c.state), s(c.club_id ?? null),
+        s(c.id), s(c.slug), s(c.name), s(c.region || null), s(c.city), s(c.state), s(c.club_id ?? null),
         s(c.club_name), s(c.title), s(c.bio), s(c.photo_color), arr(c.certifications),
         arr(c.specialties), arr(c.age_groups), arr(c.genders), b(c.private_training),
         s(c.private_training_note), s(c.email), s(c.phone), b(c.featured), s(c.plan),

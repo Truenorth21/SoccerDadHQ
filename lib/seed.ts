@@ -311,7 +311,7 @@ function buildClub(raw: RawClub, idx: number): Club {
     lat: raw.lat,
     lng: raw.lng,
     founded: raw.founded,
-    description: `${raw.name} is a youth soccer club based in ${raw.city}, ${stateName(state)}${raw.founded ? `, founded in ${raw.founded}` : ""}. The club fields competitive teams across ${ages.length} age groups and competes in ${raw.topLeagues.join(" and ")}. ${raw.name} focuses on long-term player development, a clear pathway to college and pro opportunities, and a positive team culture for families across the ${isFlorida ? raw.region.replace(/-/g, " ") : regionName(raw.region)} area.`,
+    description: `${raw.name} is a youth soccer club based in ${raw.city}, ${stateName(state)}${raw.founded ? `, founded in ${raw.founded}` : ""}. The club fields competitive teams across ${ages.length} age groups and competes in ${raw.topLeagues.join(" and ")}. ${raw.name} focuses on long-term player development, a clear pathway to college and pro opportunities, and a positive team culture for families across the ${isFlorida ? raw.region.replace(/-/g, " ") : raw.region ? regionName(raw.region) : raw.city} area.`,
     logo_color: CREST_COLORS[idx % CREST_COLORS.length],
     website: raw.website,
     // Unclaimed profiles show no fabricated contact details — the program fills these
