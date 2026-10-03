@@ -10,7 +10,7 @@ export default function PrivacyPage() {
   return (
     <div className="container-page max-w-3xl py-12">
       <h1 className="font-heading text-4xl font-bold uppercase tracking-tight text-navy">Privacy Policy</h1>
-      <p className="mt-2 text-sm text-slate-500">Last updated: July 3, 2026</p>
+      <p className="mt-2 text-sm text-slate-500">Last updated: October 3, 2026</p>
 
       <div className="prose mt-8 space-y-6 text-slate-700 [&_h2]:font-heading [&_h2]:text-xl [&_h2]:font-bold [&_h2]:uppercase [&_h2]:text-navy [&_h2]:mt-8 [&_h2]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1 [&_a]:text-brand-blue">
         <p>
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
           <li><strong>Account info</strong> — email address (and name/avatar if you sign in with Google) when you create an account.</li>
           <li><strong>Content you submit</strong> — reviews, ratings, votes, commitment announcements, claim and inquiry forms.</li>
           <li><strong>Newsletter</strong> — your email and chosen region when you subscribe to The Sideline.</li>
-          <li><strong>Usage &amp; analytics</strong> — first-party analytics to understand traffic: pages viewed, the referring site or campaign tag (UTM) that brought you here, and your approximate location (city/state) derived from your network. We don&rsquo;t store your IP address or use third-party tracking pixels for this.</li>
+          <li><strong>Usage &amp; analytics</strong> — first-party analytics to understand traffic: pages viewed, the referring site or campaign tag (UTM) that brought you here, and your approximate location (city/state) derived from your network. We don&rsquo;t store your IP address or use third-party tracking pixels for this. We also use <strong>Vercel Web Analytics</strong>, which counts visits and pages viewed without cookies and without storing your IP address.</li>
         </ul>
 
         <h2>How we use it</h2>
