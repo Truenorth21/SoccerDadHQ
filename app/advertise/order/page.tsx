@@ -7,6 +7,7 @@ import { getPricing } from "@/lib/pricing";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
+  robots: { index: false, follow: true },
   title: "Advertising Order Form — Pre-Paid Ad Submission",
   description:
     "Order a banner or newsletter ad campaign on SoccerDadHQ. Choose your placement, impressions and geo-targeting, see an instant estimate, and submit a pre-paid order.",

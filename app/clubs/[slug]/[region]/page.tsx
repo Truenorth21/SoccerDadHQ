@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { StateClubsLanding } from "@/components/StateLanding";
 import { ALL_REGIONS, regionBySlug } from "@/lib/regions";
 import { seoCopy, seoMetadata } from "@/lib/seo";
+import { hasClubs } from "@/lib/seoIndex";
 import { stateByCode, stateBySlug } from "@/lib/states";
 
 export const revalidate = 3600;
@@ -22,7 +23,7 @@ function resolve(params: { slug: string; region: string }) {
 export async function generateMetadata({ params }: { params: { slug: string; region: string } }): Promise<Metadata> {
   const found = resolve(params);
   if (!found) return { title: "Page not found" };
-  return seoMetadata(seoCopy.clubsRegion(found.state, found.region));
+  return seoMetadata(seoCopy.clubsRegion(found.state, found.region), { index: await hasClubs(found.state, found.region) });
 }
 
 export default async function RegionClubsPage({ params }: { params: { slug: string; region: string } }) {

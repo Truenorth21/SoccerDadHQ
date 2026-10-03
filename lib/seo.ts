@@ -37,10 +37,12 @@ export const seoCopy = {
 };
 
 /** Build page Metadata (title, description, canonical, Open Graph) from SEO copy. */
-export function seoMetadata(copy: { title: string; description: string; path: string }): Metadata {
+export function seoMetadata(copy: { title: string; description: string; path: string }, opts: { index?: boolean } = {}): Metadata {
   const url = `${SITE_URL}${copy.path}`;
   return {
     title: copy.title,
+    // Empty place pages stay out of Google until they have listings (thin content).
+    ...(opts.index === false ? { robots: { index: false, follow: true } } : {}),
     description: copy.description,
     alternates: { canonical: url },
     openGraph: { title: copy.title, description: copy.description, url, type: "website" },

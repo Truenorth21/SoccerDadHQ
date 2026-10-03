@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getPricing, CLAIM_TIERS } from "@/lib/pricing";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/advertise" },
   title: "Advertise & Upgrade — Reach Youth Soccer Families Nationwide",
   description:
     "Advertise on SoccerDadHQ or upgrade your club, school, training center or coach profile. Featured placement, review responses, lead capture, analytics and newsletter sponsorships.",

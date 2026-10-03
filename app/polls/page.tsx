@@ -3,6 +3,7 @@ import PollsHub from "@/components/PollsHub";
 import { POLLS } from "@/lib/funPolls";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/polls" },
   title: "Soccer Parent Polls & Results — Parent Pulse",
   description:
     "Vote in every SoccerDadHQ poll and see how youth soccer families answered — from sideline life to the serious questions about club costs, coaching and the recruiting grind.",

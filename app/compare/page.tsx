@@ -6,7 +6,8 @@ import { getClubBySlug, getSchoolBySlug } from "@/lib/data";
 import { CLUB_REVIEW_CATEGORIES, SCHOOL_REVIEW_CATEGORIES, regionName } from "@/lib/regions";
 
 export const metadata: Metadata = {
-  title: "Compare — SoccerDadHQ",
+  robots: { index: false, follow: true },
+  title: "Compare Clubs & Schools",
   description: "Compare youth soccer clubs and high school programs side by side.",
 };
 

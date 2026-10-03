@@ -11,6 +11,7 @@ import { regionName } from "@/lib/regions";
 import { hsAssociation, stateName } from "@/lib/states";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/schools" },
   title: "High School Soccer Directory",
   description:
     "Browse high school soccer programs by region, class, public/private and boys/girls. Read reviews, see state-title history and find the right school program in every state.",

@@ -33,7 +33,7 @@ export default async function ListingProfile({ kind, slug }: { kind: ListingKind
     "@type": "LocalBusiness",
     name: l.name,
     description: l.description,
-    address: { "@type": "PostalAddress", addressLocality: l.city, addressRegion: "FL", postalCode: l.zip, addressCountry: "US" },
+    address: { "@type": "PostalAddress", addressLocality: l.city, addressRegion: l.state || "FL", postalCode: l.zip, addressCountry: "US" },
     // Only advertise an aggregate rating when there are real reviews (Google policy).
     ...(reviews.length > 0
       ? { aggregateRating: { "@type": "AggregateRating", ratingValue: l.rating.toFixed(1), reviewCount: reviews.length, bestRating: "5", worstRating: "1" } }

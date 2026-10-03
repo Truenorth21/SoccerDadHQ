@@ -23,7 +23,7 @@ const RANK_CATEGORY: Record<string, string> = {
   "training-center": "training-centers", facility: "facilities", tournament: "tournaments", camp: "camps",
 };
 
-export const metadata: Metadata = { title: "My Dashboard" };
+export const metadata: Metadata = { robots: { index: false, follow: true }, title: "My Dashboard" };
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {

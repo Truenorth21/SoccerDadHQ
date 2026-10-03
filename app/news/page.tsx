@@ -6,6 +6,7 @@ import { getNews } from "@/lib/news";
 export const revalidate = 1800;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/news" },
   title: "Youth Soccer News — ECNL, MLS NEXT, Recruiting & More",
   description:
     "The latest ECNL, MLS NEXT, Girls Academy, recruiting and tournament news for youth soccer nationwide, aggregated from Top Drawer Soccer, Soccer America, College Soccer News, ECNL, SoccerWire and more.",

@@ -24,6 +24,7 @@ import { SITE_URL } from "@/lib/utils";
 import { stateName, stateBySlug, US_STATES } from "@/lib/states";
 import { StateCoachesLanding } from "@/components/StateLanding";
 import { seoCopy, seoMetadata } from "@/lib/seo";
+import { hasCoaches } from "@/lib/seoIndex";
 
 export const revalidate = 3600;
 
@@ -36,7 +37,7 @@ export async function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const state = stateBySlug(params.slug);
-  if (state) return seoMetadata(seoCopy.coachesState(state));
+  if (state) return seoMetadata(seoCopy.coachesState(state), { index: await hasCoaches(state) });
   const coach = await getCoachBySlug(params.slug);
   if (!coach) return { title: "Coach not found" };
   const title = `${coach.name} — ${coach.title}, ${coach.club_name}`;
@@ -73,7 +74,7 @@ export default async function CoachProfile({ params }: { params: { slug: string 
     description: coach.bio,
     url: `${SITE_URL}/coaches/${coach.slug}`,
     worksFor: { "@type": "SportsTeam", name: coach.club_name },
-    address: { "@type": "PostalAddress", addressLocality: coach.city, addressRegion: "FL", addressCountry: "US" },
+    address: { "@type": "PostalAddress", addressLocality: coach.city, addressRegion: coach.state || "FL", addressCountry: "US" },
     // Only advertise an aggregate rating when there are real reviews (Google policy).
     ...(reviews.length > 0
       ? {

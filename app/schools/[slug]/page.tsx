@@ -70,7 +70,7 @@ export default async function SchoolProfile({ params }: { params: { slug: string
     address: {
       "@type": "PostalAddress",
       addressLocality: school.city,
-      addressRegion: "FL",
+      addressRegion: school.state || "FL",
       postalCode: school.zip,
       addressCountry: "US",
     },

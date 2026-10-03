@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import SubmitForm from "@/components/SubmitForm";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/submit" },
   title: "Submit a Listing",
   description: "Know a youth soccer club, school, coach, training center, facility, tournament or camp that's missing? Submit it and we'll add it to the directory.",
 };
