@@ -2,6 +2,8 @@ import type { RegionKey } from "./regions";
 import type { Review } from "./types";
 import { publicClient } from "./supabase/public";
 import { stateName } from "./states";
+import { regionName } from "./regions";
+import { NATIONAL_RAW_LISTINGS } from "./listingsNational";
 
 /* ------------------------------------------------------------------ *
  *  Bespoke directory sections for the "extra" entity types:
@@ -174,9 +176,14 @@ interface Raw {
   zip: string;
   lat: number;
   lng: number;
+  /** Curated (non-Florida) listings carry their own facet values and a factual
+   *  one-liner instead of generated facts, so nothing (dates, field counts,
+   *  founding years) is guessed. */
+  tags?: string[];
+  about?: string;
 }
 
-const RAW: Record<ListingKind, Raw[]> = {
+const FL_RAW: Record<ListingKind, Raw[]> = {
   "training-center": [
     { name: "Modern Elite Training", region: "tampa-bay", city: "Tampa", zip: "33607", lat: 27.96, lng: -82.48 },
     { name: "Next Level Soccer Academy", region: "south-florida", city: "Weston", zip: "33327", lat: 26.1, lng: -80.4 },
@@ -234,6 +241,22 @@ const RAW: Record<ListingKind, Raw[]> = {
     { name: "Gator College ID Camp", region: "north-gainesville", city: "Gainesville", zip: "32607", lat: 29.65, lng: -82.37 },
   ],
 };
+
+// Florida first, then the national listings, so existing ids never shift.
+const RAW: Record<ListingKind, Raw[]> = {
+  "training-center": [...FL_RAW["training-center"], ...NATIONAL_RAW_LISTINGS["training-center"]],
+  facility: [...FL_RAW.facility, ...NATIONAL_RAW_LISTINGS.facility],
+  tournament: [...FL_RAW.tournament, ...NATIONAL_RAW_LISTINGS.tournament],
+  camp: [...FL_RAW.camp, ...NATIONAL_RAW_LISTINGS.camp],
+};
+
+/** Facts for a curated listing: just its known facet values. */
+function curatedFacts(kind: ListingKind, tags: string[]): { label: string; value: string }[] {
+  return KIND_CONFIG[kind].facets.flatMap((f) => {
+    const v = tags.find((t) => f.options.includes(t));
+    return v ? [{ label: f.label, value: v }] : [];
+  });
+}
 
 const AMENITIES = ["Lighted fields", "Covered seating", "Concessions", "Restrooms", "Ample parking", "Pro shop", "Trainer on site"];
 
@@ -303,8 +326,10 @@ function buildListing(kind: ListingKind, raw: Raw, idx: number): Listing {
   });
   const rating = 0;
   const planRoll = r();
-  const plan: Listing["plan"] = planRoll > 0.82 ? "featured" : planRoll > 0.6 ? "pro" : "free";
-  const { facts, tags } = buildFactsAndTags(kind, r);
+  const curated = raw.tags !== undefined;
+  const plan: Listing["plan"] = curated ? "free" : planRoll > 0.82 ? "featured" : planRoll > 0.6 ? "pro" : "free";
+  const { facts, tags } = curated ? { facts: curatedFacts(kind, raw.tags!), tags: raw.tags! } : buildFactsAndTags(kind, r);
+  const area = raw.region ? `the ${regionName(raw.region)} area` : `the ${raw.city} area`;
 
   return {
     id: `${kind}-${idx + 1}`,
@@ -317,7 +342,9 @@ function buildListing(kind: ListingKind, raw: Raw, idx: number): Listing {
     zip: raw.zip,
     lat: raw.lat,
     lng: raw.lng,
-    description: `${raw.name} is a ${cfg.label.toLowerCase()} based in ${raw.city}, ${stateName(state)}. ${cfg.blurb} It serves youth soccer families across the ${raw.region.replace(/-/g, " ")} area with a focus on quality, development and a positive experience.`,
+    description: curated
+      ? `${raw.name} is a ${cfg.label.toLowerCase()} in ${raw.city}, ${stateName(state)}.${raw.about ? ` ${raw.about}` : ""} Details like dates, pricing and contact info are added when the organizer claims this profile.`
+      : `${raw.name} is a ${cfg.label.toLowerCase()} based in ${raw.city}, ${stateName(state)}. ${cfg.blurb} It serves youth soccer families across ${area} with a focus on quality, development and a positive experience.`,
     // Unclaimed: no fabricated contact (these were auto-generated placeholders).
     website: undefined,
     email: undefined,
