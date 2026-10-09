@@ -1,10 +1,11 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
 /** Manage user groups: create a group, add/remove members (by email), delete a group. */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   const service = adminServiceClient();
@@ -48,7 +49,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ error: "Unknown action." }, { status: 400 });
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   const service = adminServiceClient();
@@ -65,3 +66,7 @@ export async function DELETE(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
+
+export const POST = purgeOnSuccess(handlePOST);
+
+export const DELETE = purgeOnSuccess(handleDELETE);

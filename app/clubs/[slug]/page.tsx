@@ -38,7 +38,7 @@ import { StateClubsLanding } from "@/components/StateLanding";
 import { seoCopy, seoMetadata } from "@/lib/seo";
 import { hasClubs } from "@/lib/seoIndex";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 // Build params from the live directory (seed + DB) so real imported clubs are
 // pre-rendered too — runtime DB reads on dynamic routes can't be relied on alone.

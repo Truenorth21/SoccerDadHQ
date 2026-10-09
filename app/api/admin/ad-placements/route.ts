@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
 
@@ -7,7 +8,7 @@ const SIZES = new Set(["leaderboard", "rectangle", "sidebar"]);
 
 /** Upsert one AdSense placement row (keyed by slot). Admin-only; writes with
  *  the service-role key so they bypass RLS. */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
 
@@ -43,3 +44,5 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, message: "Saved. Live within ~60s." });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

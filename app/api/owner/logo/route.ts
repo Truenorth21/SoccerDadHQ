@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { adminServiceClient } from "@/lib/admin";
@@ -10,7 +11,7 @@ const EXT: Record<string, string> = { "image/png": "png", "image/jpeg": "jpg", "
 
 /** Owner-gated logo upload (clubs/schools/coaches). Same storage as the admin
  *  uploader, but authorized by profile ownership instead of admin role. */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let form: FormData;
   try {
     form = await request.formData();
@@ -49,3 +50,5 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, url });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

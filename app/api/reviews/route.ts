@@ -1,7 +1,8 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let body: any;
   try {
     body = await request.json();
@@ -72,3 +73,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ message: "Thanks! Your review has been published." });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

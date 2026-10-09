@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description:
     "Already listed on SoccerDadHQ? Claim your profile to edit your info, post tryout dates, respond to reviews and showcase commitments — in front of the families comparing programs.",
 };
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 const DIRECTORIES = [
   { href: "/clubs", label: "Find your club" },

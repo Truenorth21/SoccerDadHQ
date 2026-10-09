@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient, MODERATION_TABLES } from "@/lib/admin";
 import { DEFAULT_ADS, adPlacementFromOrder, type Ad, type AdsConfig } from "@/lib/ads";
@@ -159,7 +160,7 @@ async function publishAdOrder(service: ReturnType<typeof adminServiceClient>, or
     .upsert({ key: "ads", value: { ...cfg, inventory }, updated_at: new Date().toISOString() }, { onConflict: "key" });
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Admin access required." }, { status: 403 });
@@ -248,3 +249,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, status: body.status, editHref });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

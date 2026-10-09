@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { getStripe } from "@/lib/stripe";
@@ -15,7 +16,7 @@ export const dynamic = "force-dynamic";
  * Setup: add the endpoint URL (/api/stripe/webhook) in the Stripe dashboard and
  * put its signing secret in STRIPE_WEBHOOK_SECRET.
  */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const stripe = getStripe();
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!stripe || !secret) {
@@ -67,3 +68,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ received: true });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

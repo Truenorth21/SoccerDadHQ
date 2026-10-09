@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
 import { resolveLocation } from "@/lib/regions";
@@ -31,7 +32,7 @@ const bool = (v: string) => /^(1|true|yes|y)$/i.test((v ?? "").trim());
 const intOr = (v: string, d: number | null) => (v?.trim() ? Number(v) : d);
 
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   const service = adminServiceClient();
@@ -105,3 +106,5 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message, errors }, { status: 500 });
   return NextResponse.json({ ok: true, imported: rows.length, skipped: errors.length, errors });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

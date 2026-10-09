@@ -26,7 +26,7 @@ import { StateCoachesLanding } from "@/components/StateLanding";
 import { seoCopy, seoMetadata } from "@/lib/seo";
 import { hasCoaches } from "@/lib/seoIndex";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 // Pre-render real imported coaches too (seed + DB), not just seed.
 // This segment also serves the /coaches/[state] SEO pages (state slugs win).
