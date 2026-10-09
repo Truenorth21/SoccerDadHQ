@@ -11,11 +11,12 @@ export const metadata: Metadata = {
   description: "Compare youth soccer clubs and high school programs side by side.",
 };
 
-export default async function ComparePage({
-  searchParams,
-}: {
-  searchParams: { type?: string; slugs?: string };
-}) {
+export default async function ComparePage(
+  props: {
+    searchParams: Promise<{ type?: string; slugs?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const type = searchParams.type === "school" ? "school" : "club";
   const slugs = (searchParams.slugs ?? "").split(",").map((s) => s.trim()).filter(Boolean).slice(0, 4);
 

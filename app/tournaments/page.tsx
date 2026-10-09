@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   description: "Showcases, cups and college-recruiting youth soccer tournaments — by region, format and level, with reviews.",
 };
 
-export default function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function Page(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   return <ListingDirectory kind="tournament" searchParams={searchParams} />;
 }

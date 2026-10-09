@@ -9,7 +9,8 @@ export async function generateStaticParams() {
   return (await loadListings()).filter((l) => l.kind === "training-center").map((l) => ({ slug: l.slug }));
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const l = await getListingBySlug("training-center", params.slug);
   if (!l) return { title: "Not found" };
   return {
@@ -19,6 +20,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default function Page({ params }: { params: { slug: string } }) {
+export default async function Page(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   return <ListingProfile kind="training-center" slug={params.slug} />;
 }

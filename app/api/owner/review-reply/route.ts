@@ -30,7 +30,7 @@ async function handlePOST(request: Request) {
   const reply = typeof b.reply === "string" ? b.reply.trim() : "";
   if (!subjectType || !slug || !reviewId) return NextResponse.json({ error: "Missing fields." }, { status: 400 });
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   const userId = supabase ? (await supabase.auth.getUser()).data.user?.id ?? null : null;
   if (!(await isProfileOwner(subjectType, slug, userId))) {
     return NextResponse.json({ error: "Only the profile owner can reply." }, { status: 403 });

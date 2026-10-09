@@ -17,11 +17,12 @@ const KIND_LABELS: Record<string, { noun: string; blurb: string }> = {
   camp: { noun: "Camp", blurb: "Missing a camp? Add it and we'll review and publish it." },
 };
 
-export default function SubmitPage({
-  searchParams,
-}: {
-  searchParams: { kind?: string };
-}) {
+export default async function SubmitPage(
+  props: {
+    searchParams: Promise<{ kind?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const kind = searchParams.kind && KIND_LABELS[searchParams.kind] ? searchParams.kind : undefined;
   const meta = kind ? KIND_LABELS[kind] : undefined;
   const heading = meta ? `Add a ${meta.noun}` : "Submit a Listing";

@@ -10,7 +10,8 @@ const PROFILE_BASE: Record<string, string> = {
   "training-center": "/training-centers", facility: "/facilities", tournament: "/tournaments", camp: "/camps",
 };
 
-export default async function ClaimSuccessPage({ searchParams }: { searchParams: { session_id?: string } }) {
+export default async function ClaimSuccessPage(props: { searchParams: Promise<{ session_id?: string }> }) {
+  const searchParams = await props.searchParams;
   let name: string | null = null;
   let profileHref: string | null = null;
   const stripe = getStripe();

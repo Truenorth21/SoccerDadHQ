@@ -13,7 +13,7 @@ export function adminServiceClient() {
 
 /** Returns the signed-in user only if their profile role is 'admin', else null. */
 export async function getCurrentAdmin(): Promise<{ id: string; email?: string } | null> {
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) return null;
   const {
     data: { user },

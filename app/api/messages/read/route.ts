@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /** Mark a message read for the signed-in user. Identity comes from their session;
  *  the write uses the service key (the table is admin/service-only). */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = (await createClient());
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const service = adminServiceClient();

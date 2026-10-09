@@ -35,7 +35,8 @@ export async function generateStaticParams() {
   return [...US_STATES.map((s) => ({ slug: s.slug })), ...coaches];
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const state = stateBySlug(params.slug);
   if (state) return seoMetadata(seoCopy.coachesState(state), { index: await hasCoaches(state) });
   const coach = await getCoachBySlug(params.slug);
@@ -51,7 +52,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function CoachProfile({ params }: { params: { slug: string } }) {
+export default async function CoachProfile(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const state = stateBySlug(params.slug);
   if (state) return <StateCoachesLanding state={state} />;
 

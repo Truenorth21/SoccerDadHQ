@@ -23,7 +23,7 @@ export default function PrivacyPage() {
           <li><strong>Account info</strong> — email address (and name/avatar if you sign in with Google) when you create an account.</li>
           <li><strong>Content you submit</strong> — reviews, ratings, votes, commitment announcements, claim and inquiry forms.</li>
           <li><strong>Newsletter</strong> — your email and chosen region when you subscribe to The Sideline.</li>
-          <li><strong>Usage &amp; analytics</strong> — first-party analytics to understand traffic: pages viewed, the referring site or campaign tag (UTM) that brought you here, and your approximate location (city/state) derived from your network. We don&rsquo;t store your IP address or use third-party tracking pixels for this. We also use <strong>Vercel Web Analytics</strong>, which counts visits and pages viewed without cookies and without storing your IP address.</li>
+          <li><strong>Usage &amp; analytics</strong> — first-party analytics to understand traffic: pages viewed, the referring site or campaign tag (UTM) that brought you here, and your approximate location (city/state) derived from your network. We don&rsquo;t store your IP address or use third-party tracking pixels for this.</li>
         </ul>
 
         <h2>How we use it</h2>
@@ -37,7 +37,7 @@ export default function PrivacyPage() {
         <h2>Service providers</h2>
         <p>
           We use trusted third parties to operate the site, including <strong>Supabase</strong> (database &amp;
-          authentication), <strong>Resend</strong> (email delivery), and <strong>Vercel</strong> (hosting). News
+          authentication), <strong>Resend</strong> (email delivery), and <strong>Cloudflare</strong> (hosting). News
           headlines link to their original publishers; we don&rsquo;t control their privacy practices.
         </p>
 

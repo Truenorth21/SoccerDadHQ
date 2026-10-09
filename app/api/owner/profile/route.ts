@@ -22,7 +22,7 @@ async function handlePOST(request: Request) {
   const allow = OVERRIDE_FIELDS[subjectType];
   if (!allow || !slug) return NextResponse.json({ error: "Unknown profile." }, { status: 400 });
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   const userId = supabase ? (await supabase.auth.getUser()).data.user?.id ?? null : null;
   if (!(await isProfileOwner(subjectType, slug, userId))) {
     return NextResponse.json({ error: "Only the profile owner can edit this." }, { status: 403 });

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/utils";
 
 // Bulk scrapers / SEO-tool crawlers that hammer thousands of directory pages
-// without sending visitors. Blocking them keeps the site inside Vercel Hobby limits.
+// without sending visitors. Blocking them keeps the site inside free hosting limits.
 // (Google, Bing and AI *search* bots that do send traffic stay allowed.)
 const HEAVY_BOTS = [
   "GPTBot",

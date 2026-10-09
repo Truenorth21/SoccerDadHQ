@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 /**
  * Captures the previous month's final ranking standings into ranking_snapshots,
  * which powers the trend arrows on /rankings. Intended to run on the 1st of each
- * month (see vercel.json). Idempotent via the (period, item_id) unique index.
+ * month (see wrangler.jsonc). Idempotent via the (period, item_id) unique index.
  *
  * Auth: when CRON_SECRET is set, requires `Authorization: Bearer <CRON_SECRET>`
- * (Vercel Cron sends this automatically) or `?secret=`. Writes use the service
+ * (the scheduled job sends this automatically) or `?secret=`. Writes use the service
  * role key so they bypass RLS.
  */
 export async function GET(request: Request) {

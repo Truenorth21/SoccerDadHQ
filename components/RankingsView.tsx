@@ -39,7 +39,7 @@ export default async function RankingsView({ state }: { state?: UsState }) {
     ])
   );
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   const authed = supabase ? Boolean((await supabase.auth.getUser()).data.user) : false;
 
   return (

@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   description: "Private and small-group youth soccer training academies — by region, focus and format, with reviews.",
 };
 
-export default function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function Page(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   return <ListingDirectory kind="training-center" searchParams={searchParams} />;
 }

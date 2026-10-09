@@ -49,7 +49,8 @@ export async function generateStaticParams() {
   return [...US_STATES.map((s) => ({ slug: s.slug })), ...clubs];
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const state = stateBySlug(params.slug);
   if (state) return seoMetadata(seoCopy.clubsState(state), { index: await hasClubs(state) });
   const club = await getClubBySlug(params.slug);
@@ -65,7 +66,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function ClubProfile({ params }: { params: { slug: string } }) {
+export default async function ClubProfile(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const state = stateBySlug(params.slug);
   if (state) return <StateClubsLanding state={state} />;
 
