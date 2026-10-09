@@ -28,5 +28,7 @@
   "triggers": {
     "crons": ["5 0 1 * *", "30 14 * * *", "0 14 * * *"]
   },
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Keep the text variables set in the Cloudflare dashboard on each deploy.
+  "keep_vars": true
 }
