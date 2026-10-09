@@ -3,7 +3,7 @@ import ListingProfile from "@/components/ListingProfile";
 import { loadListings, getListingBySlug } from "@/lib/listings";
 import { SITE_URL } from "@/lib/utils";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function generateStaticParams() {
   return (await loadListings()).filter((l) => l.kind === "training-center").map((l) => ({ slug: l.slug }));

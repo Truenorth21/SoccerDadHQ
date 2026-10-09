@@ -6,7 +6,7 @@ import { seoCopy, seoMetadata } from "@/lib/seo";
 import { hasClubs } from "@/lib/seoIndex";
 import { stateByCode, stateBySlug } from "@/lib/states";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 // /clubs/[state]/[region] — one page per predefined region (e.g. /clubs/texas/dfw).
 // The parent [slug] segment is shared with club profiles, so the param keeps that name.

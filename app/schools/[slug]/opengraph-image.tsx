@@ -4,6 +4,8 @@ import { getRankFor } from "@/lib/rankings";
 import { regionName } from "@/lib/regions";
 import { initials } from "@/lib/utils";
 
+// Cache each card for a day instead of drawing it on every crawler/share hit.
+export const revalidate = 86400;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "School soccer profile — SoccerDadHQ";

@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { adminServiceClient } from "@/lib/admin";
@@ -8,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 /** Owner-gated profile field edits. Saves a whitelisted subset to
  *  profile_overrides (merged onto the entity at read time). */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let b: any;
   try {
     b = await request.json();
@@ -42,3 +43,5 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

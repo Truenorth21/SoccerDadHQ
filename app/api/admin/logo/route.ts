@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
 
@@ -11,7 +12,7 @@ const EXT: Record<string, string> = {
   "image/svg+xml": "svg",
 };
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
 
@@ -55,3 +56,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, url });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

@@ -25,7 +25,7 @@ import { SCHOOL_REVIEW_CATEGORIES, regionName } from "@/lib/regions";
 import { hsAssociation, stateName } from "@/lib/states";
 import { SITE_URL } from "@/lib/utils";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 // Pre-render real imported schools too (seed + DB), not just seed.
 export async function generateStaticParams() {

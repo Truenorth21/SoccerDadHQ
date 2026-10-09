@@ -792,7 +792,9 @@ export async function getSupabaseReviews(
   subjectType: string,
   subjectId: string
 ): Promise<Review[]> {
-  const supabase = createClient();
+  // Reviews are public-read, so use the cookieless client: reading cookies here
+  // would force every club/coach/school/listing page to re-render on each visit.
+  const supabase = publicClient();
   if (!supabase) return [];
   try {
     const { data, error } = await supabase

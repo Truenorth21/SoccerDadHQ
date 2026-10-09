@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { adminServiceClient } from "@/lib/admin";
@@ -16,7 +17,7 @@ async function entityId(type: string, slug: string): Promise<string | undefined>
 
 /** Owner-gated reply to a review. Verifies the review belongs to the owner's
  *  profile before saving the public response. Send an empty reply to clear it. */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   let b: any;
   try {
     b = await request.json();
@@ -52,3 +53,5 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
+
+export const POST = purgeOnSuccess(handlePOST);

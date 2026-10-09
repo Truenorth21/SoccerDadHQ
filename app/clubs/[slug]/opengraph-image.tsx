@@ -5,6 +5,8 @@ import { regionName } from "@/lib/regions";
 import { initials } from "@/lib/utils";
 import { stateBySlug } from "@/lib/states";
 
+// Cache each card for a day instead of drawing it on every crawler/share hit.
+export const revalidate = 86400;
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const alt = "Club profile — SoccerDadHQ";

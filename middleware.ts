@@ -5,6 +5,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, isSupabaseConfigured } from "./lib/sup
 export async function middleware(request: NextRequest) {
   // No-op when Supabase isn't configured — the site still runs on seed data.
   if (!isSupabaseConfigured) return NextResponse.next();
+  // Signed-out visitors (and every crawler) have no Supabase auth cookie, so
+  // there is no session to refresh: skip the round-trip to Supabase.
+  if (!request.cookies.getAll().some((c) => c.name.startsWith("sb-"))) return NextResponse.next();
 
   let response = NextResponse.next({ request });
 
@@ -28,6 +31,19 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+// Only run on the pages and APIs that read the signed-in user on the server.
+// Public directory pages are cached and don't need it; running middleware on
+// every page view and bot hit was a big share of the Vercel Hobby usage.
+// (The browser client keeps its own session fresh on the public pages.)
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: [
+    "/dashboard/:path*",
+    "/admin/:path*",
+    "/auth/:path*",
+    "/login",
+    "/claim/:path*",
+    "/advertise/:path*",
+    "/rankings/:path*",
+    "/api/((?!track|ad-events|cron).*)",
+  ],
 };

@@ -1,3 +1,4 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
 import { resolveLocation } from "@/lib/regions";
@@ -14,7 +15,7 @@ function toArr(v: unknown): string[] {
 const num = (v: unknown): number | null => (v !== undefined && v !== "" && v !== null ? Number(v) : null);
 
 /** Create or update a real high school (admin only). */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   const service = adminServiceClient();
@@ -73,7 +74,7 @@ export async function POST(request: Request) {
   return NextResponse.json({ ok: true, id, slug });
 }
 
-export async function DELETE(request: Request) {
+async function handleDELETE(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
   const service = adminServiceClient();
@@ -90,3 +91,7 @@ export async function DELETE(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true });
 }
+
+export const POST = purgeOnSuccess(handlePOST);
+
+export const DELETE = purgeOnSuccess(handleDELETE);

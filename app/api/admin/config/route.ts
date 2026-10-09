@@ -1,9 +1,10 @@
+import { purgeOnSuccess } from "@/lib/purge";
 import { NextResponse } from "next/server";
 import { getCurrentAdmin, adminServiceClient } from "@/lib/admin";
 
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const admin = await getCurrentAdmin();
   if (!admin) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
 
@@ -27,3 +28,5 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ ok: true, message: "Saved. Public pages will reflect the new values." });
 }
+
+export const POST = purgeOnSuccess(handlePOST);
