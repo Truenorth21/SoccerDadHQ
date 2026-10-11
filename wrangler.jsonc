@@ -17,8 +17,7 @@
     { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "soccerdadhq-cache" }
   ],
   "d1_databases": [
-    // Replace database_id with the id Cloudflare shows after creating the database.
-    { "binding": "NEXT_TAG_CACHE_D1", "database_name": "soccerdadhq-tag-cache", "database_id": "REPLACE_WITH_D1_DATABASE_ID" }
+    { "binding": "NEXT_TAG_CACHE_D1", "database_name": "soccerdadhq-tag-cache", "database_id": "f1ffbf5d-0905-4bb7-bb86-0a87f65169a0" }
   ],
   "durable_objects": {
     "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
