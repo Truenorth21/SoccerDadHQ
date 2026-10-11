@@ -286,7 +286,7 @@ export default function NewsletterAdmin({
         {/* Approve */}
         <div className="border-t border-slate-100 pt-4">
           {!emailConfigured ? (
-            <p className="text-sm text-slate-500">Sending is off: add <code>RESEND_API_KEY</code> in Vercel to turn it on.</p>
+            <p className="text-sm text-slate-500">Sending is off: add <code>RESEND_API_KEY</code> in your hosting settings (Cloudflare) to turn it on.</p>
           ) : stateAudience.total === 0 && !resuming ? (
             <p className="text-sm text-slate-500">{nameOf(state)} has no subscribers yet, so there&rsquo;s nobody to send to.</p>
           ) : !confirmOpen ? (

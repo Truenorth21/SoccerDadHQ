@@ -20,13 +20,15 @@ function resolve(params: { slug: string; region: string }) {
   return state && region ? { state, region } : null;
 }
 
-export async function generateMetadata({ params }: { params: { slug: string; region: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ slug: string; region: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const found = resolve(params);
   if (!found) return { title: "Page not found" };
   return seoMetadata(seoCopy.clubsRegion(found.state, found.region), { index: await hasClubs(found.state, found.region) });
 }
 
-export default async function RegionClubsPage({ params }: { params: { slug: string; region: string } }) {
+export default async function RegionClubsPage(props: { params: Promise<{ slug: string; region: string }> }) {
+  const params = await props.params;
   const found = resolve(params);
   if (!found) notFound();
   return <StateClubsLanding state={found.state} region={found.region} />;

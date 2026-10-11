@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 /** Aggregated poll results: { [pollId]: { [optionIndex]: votes } }.
  *  Reads the public poll_results view (no raw rows / no PII). */
 export async function GET() {
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) return NextResponse.json({ results: {} });
   const { data, error } = await supabase.from("poll_results").select("poll_id, option_index, votes");
   if (error || !data) return NextResponse.json({ results: {} });
@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid vote." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) return NextResponse.json({ ok: true, demo: true });
 
   const { error } = await supabase.from("poll_votes").insert({ poll_id: pollId, option_index: optionIndex });

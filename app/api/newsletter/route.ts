@@ -38,7 +38,7 @@ export async function POST(request: Request) {
 
   const welcome = "Welcome to The Sideline! ⚽ Check your inbox — your first issue lands this week.";
 
-  const supabase = createClient();
+  const supabase = (await createClient());
 
   // Persist the subscriber if Supabase is configured. Plain insert (only needs
   // the "anyone subscribe" INSERT policy); a duplicate email (23505) is fine —

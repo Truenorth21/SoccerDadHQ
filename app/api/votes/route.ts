@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing item." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) {
     return NextResponse.json({ message: "Vote counted (demo mode)." });
   }

@@ -28,7 +28,7 @@ async function handlePOST(request: Request) {
   if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: "Use PNG, JPG, WEBP or SVG." }, { status: 400 });
   if (file.size > 2 * 1024 * 1024) return NextResponse.json({ error: "Max file size is 2MB." }, { status: 400 });
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   const userId = supabase ? (await supabase.auth.getUser()).data.user?.id ?? null : null;
   if (!(await isProfileOwner(subjectType, slug, userId))) {
     return NextResponse.json({ error: "Only the profile owner can change the logo." }, { status: 403 });

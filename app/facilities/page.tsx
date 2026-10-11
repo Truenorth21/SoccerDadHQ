@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   description: "Soccer complexes, fields and indoor venues for youth soccer — by region, surface and type, with reviews.",
 };
 
-export default function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function Page(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   return <ListingDirectory kind="facility" searchParams={searchParams} />;
 }

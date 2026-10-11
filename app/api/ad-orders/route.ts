@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Business, contact name and a valid email are required." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) {
     return NextResponse.json({
       message: "Order received (demo mode — configure Supabase to route it for invoicing).",

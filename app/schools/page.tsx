@@ -17,11 +17,12 @@ export const metadata: Metadata = {
     "Browse high school soccer programs by region, class, public/private and boys/girls. Read reviews, see state-title history and find the right school program in every state.",
 };
 
-export default async function SchoolsPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function SchoolsPage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const filters: Filters = Object.fromEntries(
     Object.entries(searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v ?? ""])
   );

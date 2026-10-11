@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Organization, contact name and a valid email are required." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) {
     return NextResponse.json({
       message: "Thanks! We'll be in touch to schedule your kickoff call (demo mode — add Supabase to persist inquiries).",

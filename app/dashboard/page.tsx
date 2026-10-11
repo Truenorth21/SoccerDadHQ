@@ -27,7 +27,7 @@ export const metadata: Metadata = { robots: { index: false, follow: true }, titl
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const supabase = createClient();
+  const supabase = (await createClient());
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
 
   // Pull this user's reviews + admin flag if signed in.

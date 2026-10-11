@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) return NextResponse.json({ ok: true, demo: true });
 
   await supabase.from("ad_events").insert({

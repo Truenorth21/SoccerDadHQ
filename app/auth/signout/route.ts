@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
  *  auth cookies on the redirect response (a client-only signOut often can't clear
  *  the server-set cookie). Reached via a form POST from the Sign-out button. */
 async function signOutAndRedirect(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (supabase) {
     try {
       await supabase.auth.signOut();

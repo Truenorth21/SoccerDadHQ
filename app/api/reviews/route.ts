@@ -33,7 +33,7 @@ async function handlePOST(request: Request) {
     return NextResponse.json({ error: "Please remove phone numbers, addresses or other private information." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) {
     return NextResponse.json({
       message: "Thanks! Your review was recorded (demo mode — configure Supabase to publish it).",

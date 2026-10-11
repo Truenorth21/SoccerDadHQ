@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 /* Daily: email profile owners ~30 and ~7 days before their claim lapses.
  * Auth: when CRON_SECRET is set, requires `Authorization: Bearer <CRON_SECRET>`
- * (Vercel Cron sends it) or `?secret=`. */
+ * (the scheduled job sends it) or `?secret=`. */
 
 function shell(subject: string, inner: string) {
   return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">

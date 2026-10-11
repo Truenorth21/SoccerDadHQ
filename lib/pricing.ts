@@ -252,7 +252,7 @@ export function applyPromo(cfg: PricingConfig, code: string, price: number): { o
 /** Reads admin-edited pricing from site_config (key='pricing'), falling back to
  *  the code defaults. Public-readable, so any page can call it. */
 export async function getPricing(): Promise<PricingConfig> {
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) return DEFAULT_PRICING;
   try {
     const { data } = await supabase.from("site_config").select("value").eq("key", "pricing").single();

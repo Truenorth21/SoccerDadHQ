@@ -35,12 +35,13 @@ async function loadEntity(type: string, slug: string): Promise<any | undefined> 
   return undefined;
 }
 
-export default async function ManageProfilePage({ params }: { params: { type: string; slug: string } }) {
+export default async function ManageProfilePage(props: { params: Promise<{ type: string; slug: string }> }) {
+  const params = await props.params;
   const { type, slug } = params;
   const allowed = OVERRIDE_FIELDS[type];
   if (!allowed) return <Notice title="Unknown profile type">That profile type can&rsquo;t be managed here.</Notice>;
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   const userId = supabase ? (await supabase.auth.getUser()).data.user?.id ?? null : null;
   if (!userId) return <Notice title="Log in">Sign in with the account that claimed this profile.</Notice>;
   if (!(await isProfileOwner(type, slug, userId))) {

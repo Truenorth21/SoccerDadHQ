@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   description: "Day, residential and ID camps for youth soccer players — by region, type and focus, with reviews.",
 };
 
-export default function Page({ searchParams }: { searchParams: Record<string, string | string[] | undefined> }) {
+export default async function Page(
+  props: { searchParams: Promise<Record<string, string | string[] | undefined>> }
+) {
+  const searchParams = await props.searchParams;
   return <ListingDirectory kind="camp" searchParams={searchParams} />;
 }

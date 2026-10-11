@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   const discount = Math.min(base, promo.discount + refereeDiscount);
   const finalPrice = Math.max(0, base - discount);
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   const userId = supabase ? (await supabase.auth.getUser()).data.user?.id ?? null : null;
 
   // Record the claim request (so admin always has a paper trail).

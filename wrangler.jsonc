@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "soccerdadhq",
+  // custom-worker.ts wraps the OpenNext worker so it can also run the cron jobs.
+  "main": "custom-worker.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    // Self-reference, required by OpenNext's cache. Must match "name" above.
+    { "binding": "WORKER_SELF_REFERENCE", "service": "soccerdadhq" }
+  ],
+  "r2_buckets": [
+    { "binding": "NEXT_INC_CACHE_R2_BUCKET", "bucket_name": "soccerdadhq-cache" }
+  ],
+  "d1_databases": [
+    { "binding": "NEXT_TAG_CACHE_D1", "database_name": "soccerdadhq-tag-cache", "database_id": "f1ffbf5d-0905-4bb7-bb86-0a87f65169a0" }
+  ],
+  "durable_objects": {
+    "bindings": [{ "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
+  // Same schedules as the old vercel.json (UTC).
+  "triggers": {
+    "crons": ["5 0 1 * *", "30 14 * * *", "0 14 * * *"]
+  },
+  "observability": { "enabled": true },
+  // Keep the text variables set in the Cloudflare dashboard on each deploy.
+  "keep_vars": true
+}

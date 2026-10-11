@@ -17,11 +17,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/clubs" },
 };
 
-export default async function ClubsPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
+export default async function ClubsPage(
+  props: {
+    searchParams: Promise<Record<string, string | string[] | undefined>>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const filters: Filters = Object.fromEntries(
     Object.entries(searchParams).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v ?? ""])
   );

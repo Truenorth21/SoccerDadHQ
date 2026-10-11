@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Pick a type and enter a name." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) {
     return NextResponse.json({ message: "Thanks! Your submission was recorded (demo mode — add Supabase to persist it)." });
   }

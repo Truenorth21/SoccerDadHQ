@@ -11,11 +11,12 @@ export const metadata: Metadata = {
   description: "Search youth soccer clubs, high schools and coaches across the country.",
 };
 
-export default async function SearchPage({
-  searchParams,
-}: {
-  searchParams: { q?: string };
-}) {
+export default async function SearchPage(
+  props: {
+    searchParams: Promise<{ q?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const q = (searchParams.q ?? "").trim();
   const clubs = q ? await getClubs({ q }) : [];
   const schools = q ? await getSchools({ q }) : [];

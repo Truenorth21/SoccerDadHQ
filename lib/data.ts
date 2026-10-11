@@ -708,7 +708,7 @@ export function getRecentCommitments(limit = 8): Commitment[] {
 /** Live community vote counts for the current month, keyed by item id.
  *  Empty when Supabase isn't configured (board falls back to seed baseline). */
 export async function getVoteTallies(): Promise<Record<string, number>> {
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) return {};
   const period = new Date().toISOString().slice(0, 7);
   try {
@@ -755,7 +755,7 @@ export async function getLatestSnapshotRanks(): Promise<{
   ranks: Record<string, number>;
   hasSnapshot: boolean;
 }> {
-  return latestSnapshotRanksFrom(createClient());
+  return latestSnapshotRanksFrom((await createClient()));
 }
 
 /** Cookieless variant — safe for ISR-cached pages (homepage) without forcing dynamic. */
@@ -767,7 +767,7 @@ export async function getLatestSnapshotRanksPublic(): Promise<{
 }
 
 async function latestSnapshotRanksFrom(
-  supabase: ReturnType<typeof createClient> | ReturnType<typeof publicClient>
+  supabase: Awaited<ReturnType<typeof createClient>> | ReturnType<typeof publicClient>
 ): Promise<{ ranks: Record<string, number>; hasSnapshot: boolean }> {
   if (!supabase) return { ranks: {}, hasSnapshot: false };
   try {

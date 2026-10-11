@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please provide your name and a valid email." }, { status: 400 });
   }
 
-  const supabase = createClient();
+  const supabase = (await createClient());
   if (!supabase) {
     return NextResponse.json({
       message: "Thanks! Your claim request was recorded (demo mode — configure Supabase to route it for review).",

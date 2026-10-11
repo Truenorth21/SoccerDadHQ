@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /** A profile owner marks one of their inbound messages read. Verifies the signed-in
  *  user actually owns the message's profile (via profile_claims) before updating. */
 export async function POST(request: Request) {
-  const supabase = createClient();
+  const supabase = (await createClient());
   const user = supabase ? (await supabase.auth.getUser()).data.user : null;
   if (!user) return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   const service = adminServiceClient();
